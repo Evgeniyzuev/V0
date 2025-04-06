@@ -2,16 +2,6 @@ import { NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
 import crypto from 'crypto';
 
-// Инициализируем Supabase Admin клиент для доступа к базе данных
-const supabaseUrl = process.env.SUPABASE_URL || process.env.NEXT_PUBLIC_SUPABASE_URL;
-const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
-
-if (!supabaseUrl || !supabaseServiceKey) {
-  console.error('Missing Supabase environment variables');
-}
-
-const supabaseAdmin = createClient(supabaseUrl!, supabaseServiceKey!);
-
 // Типы данных
 interface TelegramUser {
   id: number;
@@ -40,6 +30,21 @@ function verifyTelegramData(initData: string, botToken: string): boolean {
 }
 
 export async function POST(request: Request) {
+  // Инициализируем Supabase Admin клиент для доступа к базе данных только в обработчике запроса
+  const supabaseUrl = process.env.SUPABASE_URL || process.env.NEXT_PUBLIC_SUPABASE_URL;
+  const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+
+  if (!supabaseUrl || !supabaseServiceKey) {
+    console.error('Missing Supabase environment variables');
+    return NextResponse.json(
+      { error: 'Server configuration error: Missing Supabase credentials' },
+      { status: 500 }
+    );
+  }
+
+  // Создаем клиент только если есть все необходимые параметры
+  const supabaseAdmin = createClient(supabaseUrl, supabaseServiceKey);
+  
   try {
     const body = await request.json();
     const { telegramUser, initData } = body;

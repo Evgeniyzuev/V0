@@ -53,10 +53,7 @@ interface UserContextType {
 
 const UserContext = createContext<UserContextType | undefined>(undefined);
 
-// Инициализируем Supabase клиент
-const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
-const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!;
-const supabase = createClient(supabaseUrl, supabaseAnonKey);
+// Убираем инициализацию Supabase с верхнего уровня
 
 export const UserProvider = ({ children }: { children: ReactNode }) => {
   const [telegramUser, setTelegramUser] = useState<TelegramUser | null>(null);
@@ -64,10 +61,25 @@ export const UserProvider = ({ children }: { children: ReactNode }) => {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [webApp, setWebApp] = useState<TelegramWebApp | null>(null);
+  
+  // Инициализируем Supabase клиент внутри компонента
+  const supabase = React.useMemo(() => {
+    if (typeof window === 'undefined') return null; // На сервере не создаем клиента
+    
+    const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
+    const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+    
+    if (!supabaseUrl || !supabaseAnonKey) {
+      console.error('Missing Supabase environment variables');
+      return null;
+    }
+    
+    return createClient(supabaseUrl, supabaseAnonKey);
+  }, []);
 
   // Функция для обновления данных пользователя из БД
   const refreshUserData = async () => {
-    if (!telegramUser?.id) return;
+    if (!telegramUser?.id || !supabase) return;
     
     try {
       const { data, error: fetchError } = await supabase
@@ -170,7 +182,7 @@ export const UserProvider = ({ children }: { children: ReactNode }) => {
     if (webApp) {
       initUser(); // Вызываем инициализацию только после загрузки SDK
     }
-  }, [webApp, refreshUserData]); // Добавляем refreshUserData в зависимости
+  }, [webApp, refreshUserData, supabase]); // Добавляем supabase в зависимости
 
   const value = {
     telegramUser,
