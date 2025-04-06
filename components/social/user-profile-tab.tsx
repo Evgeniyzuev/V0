@@ -174,7 +174,7 @@ export default function UserProfileTab() {
       const utils = initUtils()
       
       // Имя бота (в реальном приложении лучше получать из конфигурации)
-      const botUsername = 'YOUR_BOT_USERNAME'
+      const botUsername = 'V0_aiassist_bot'
       
       // Используем формат из запроса пользователя
       const userId = dbUser?.telegram_id || telegramUser?.id

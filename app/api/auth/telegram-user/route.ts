@@ -156,6 +156,17 @@ export async function POST(request: Request) {
       last_name: telegramUser.last_name,
     };
     
+    // Логируем детали полей пользователя
+    console.log("Telegram data details:");
+    console.log("- telegram_id:", telegramId);
+    console.log("- telegram_username:", telegramUser.username);
+    console.log("- first_name:", telegramUser.first_name);
+    console.log("- last_name:", telegramUser.last_name);
+    console.log("- initData type:", typeof initData);
+    if (typeof initData === 'string') {
+      console.log("- initData preview:", initData.substring(0, 50) + "...");
+    }
+    
     // Проверяем, есть ли start_param в initData для реферальной системы
     try {
       if (initData && typeof initData === 'string') {
@@ -172,20 +183,44 @@ export async function POST(request: Request) {
             console.log(`Set referrer_id to: ${newUser.referrer_id}`);
           }
         } else {
-          // Альтернативная проверка в initDataUnsafe
-          try {
-            const parsedData = JSON.parse(initData);
-            if (parsedData.start_param) {
-              const referrerId = parsedData.start_param;
-              console.log(`Found start_param in parsed data: ${referrerId}`);
-              
-              if (/^\d+$/.test(referrerId)) {
-                newUser.referrer_id = parseInt(referrerId);
-                console.log(`Set referrer_id to: ${newUser.referrer_id} from parsed data`);
-              }
+          // Проверка на параметр startapp для Telegram Web Apps
+          const startAppMatch = initData.match(/startapp=([^&]+)/);
+          if (startAppMatch && startAppMatch[1]) {
+            const referrerId = decodeURIComponent(startAppMatch[1]);
+            console.log(`Found startapp parameter (referrer): ${referrerId}`);
+            
+            if (/^\d+$/.test(referrerId)) {
+              newUser.referrer_id = parseInt(referrerId);
+              console.log(`Set referrer_id to: ${newUser.referrer_id} from startapp parameter`);
             }
-          } catch (parseErr) {
-            console.log("Could not parse initData as JSON, skipping");
+          } else {
+            // Альтернативная проверка в initDataUnsafe
+            try {
+              const parsedData = JSON.parse(initData);
+              
+              // Проверяем start_param в JSON
+              if (parsedData.start_param) {
+                const referrerId = parsedData.start_param;
+                console.log(`Found start_param in parsed data: ${referrerId}`);
+                
+                if (/^\d+$/.test(referrerId)) {
+                  newUser.referrer_id = parseInt(referrerId);
+                  console.log(`Set referrer_id to: ${newUser.referrer_id} from parsed data (start_param)`);
+                }
+              } 
+              // Проверяем startapp в JSON
+              else if (parsedData.startapp) {
+                const referrerId = parsedData.startapp;
+                console.log(`Found startapp in parsed data: ${referrerId}`);
+                
+                if (/^\d+$/.test(referrerId)) {
+                  newUser.referrer_id = parseInt(referrerId);
+                  console.log(`Set referrer_id to: ${newUser.referrer_id} from parsed data (startapp)`);
+                }
+              }
+            } catch (parseErr) {
+              console.log("Could not parse initData as JSON, skipping");
+            }
           }
         }
       }
@@ -208,10 +243,14 @@ export async function POST(request: Request) {
       
       // Пробуем более минимальный набор полей в случае ошибки
       const minimalUser: NewUser = {
-        telegram_id: telegramId
+        telegram_id: telegramId,
+        telegram_username: telegramUser.username,
+        first_name: telegramUser.first_name,
+        last_name: telegramUser.last_name,
+        referrer_id: newUser.referrer_id
       };
       
-      console.log("Retrying with minimal fields:", minimalUser);
+      console.log("Retrying with minimal but complete fields:", minimalUser);
       
       const { data: minimalInsertedUser, error: minimalInsertError } = await supabaseAdmin
         .from('users')

@@ -167,6 +167,10 @@ export const UserProvider = ({ children }: { children: ReactNode }) => {
             isTelegram = true;
             userData = initData.user;
             console.log('Telegram user data:', userData);
+            console.log('Telegram user fields:', Object.keys(userData));
+            console.log('Username:', userData.username);
+            console.log('First name:', userData.first_name);
+            console.log('Last name:', userData.last_name);
             setTelegramUser(userData);
           }
         } catch (e) {
@@ -180,7 +184,17 @@ export const UserProvider = ({ children }: { children: ReactNode }) => {
             apiCalledRef.current = true;
             
             // Отправляем данные на API для верификации и сохранения
-            console.log("Sending Telegram user data to API:", { telegramId: userData.id });
+            console.log("Sending Telegram user data to API:", { 
+              telegramId: userData.id,
+              username: userData.username,
+              firstName: userData.first_name,
+              lastName: userData.last_name 
+            });
+            
+            // Логируем данные initData для отладки
+            console.log("initData type:", typeof webApp.initData);
+            console.log("initData startsWith:", webApp.initData.substring(0, 30) + "...");
+
             const response = await fetch('/api/auth/telegram-user', {
               method: 'POST',
               headers: {
