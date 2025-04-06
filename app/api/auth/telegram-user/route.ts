@@ -32,20 +32,36 @@ function verifyTelegramData(initData: string, botToken: string): boolean {
 export async function POST(request: Request) {
   // Инициализируем Supabase Admin клиент для доступа к базе данных только в обработчике запроса
   const supabaseUrl = process.env.SUPABASE_URL || process.env.NEXT_PUBLIC_SUPABASE_URL;
-  const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+  const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.SUPABASE_ANON_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
 
-  if (!supabaseUrl || !supabaseServiceKey) {
-    console.error('Missing Supabase environment variables');
+  console.log("API Route ENV Check:", { 
+    hasUrl: !!supabaseUrl, 
+    hasServiceKey: !!process.env.SUPABASE_SERVICE_ROLE_KEY,
+    hasAnonKey: !!process.env.SUPABASE_ANON_KEY,
+    hasClientKey: !!process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
+  });
+
+  if (!supabaseUrl) {
+    console.error('Missing Supabase URL');
     return NextResponse.json(
-      { error: 'Server configuration error: Missing Supabase credentials' },
+      { error: 'Server configuration error: Missing Supabase URL' },
       { status: 500 }
     );
   }
 
-  // Создаем клиент только если есть все необходимые параметры
-  const supabaseAdmin = createClient(supabaseUrl, supabaseServiceKey);
-  
+  if (!supabaseServiceKey) {
+    console.error('Missing Supabase Key');
+    return NextResponse.json(
+      { error: 'Server configuration error: Missing Supabase Key' },
+      { status: 500 }
+    );
+  }
+
   try {
+    // Создаем клиент с доступными учетными данными
+    const supabaseAdmin = createClient(supabaseUrl, supabaseServiceKey);
+    console.log("Supabase client created successfully");
+    
     const body = await request.json();
     const { telegramUser, initData } = body;
     

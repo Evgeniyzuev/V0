@@ -147,28 +147,40 @@ export const UserProvider = ({ children }: { children: ReactNode }) => {
 
         // Если мы получили данные пользователя из Telegram
         if (isTelegram && userData?.id) {
-          // Отправляем данные на API для верификации и сохранения
-          const response = await fetch('/api/auth/telegram-user', {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/json',
-            },
-            body: JSON.stringify({
-              telegramUser: userData,
-              initData: webApp.initData,  // Для верификации на сервере
-            }),
-          });
+          try {
+            // Отправляем данные на API для верификации и сохранения
+            console.log("Sending Telegram user data to API:", { telegramId: userData.id });
+            const response = await fetch('/api/auth/telegram-user', {
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/json',
+              },
+              body: JSON.stringify({
+                telegramUser: userData,
+                initData: webApp.initData,  // Для верификации на сервере
+              }),
+            });
 
-          const result = await response.json();
-          
-          if (!response.ok) {
-            throw new Error(result.error || 'Ошибка при сохранении данных пользователя');
-          }
-          
-          if (result.user) {
-            setDbUser(result.user);
-          } else {
-            await refreshUserData();  // Пробуем загрузить из БД если API не вернул пользователя
+            const result = await response.json();
+            console.log("API response:", result);
+            
+            if (!response.ok) {
+              throw new Error(result.error || 'Ошибка при сохранении данных пользователя');
+            }
+            
+            if (result.user) {
+              setDbUser(result.user);
+            } else {
+              await refreshUserData();  // Пробуем загрузить из БД если API не вернул пользователя
+            }
+          } catch (apiError: any) {
+            console.error('API communication error:', apiError);
+            setError(`Ошибка API: ${apiError.message}`);
+            
+            // Пробуем загрузить данные напрямую из базы как запасной вариант
+            if (supabase) {
+              await refreshUserData();
+            }
           }
         }
       } catch (e: any) {
