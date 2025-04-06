@@ -49,7 +49,7 @@ function ReferralLinkSection({ userId, telegramId }: { userId?: string, telegram
   const [copied, setCopied] = useState(false)
   
   // Имя вашего Telegram бота - в реальном приложении его нужно взять из конфигурации
-  const botUsername = '@V0_aiassist_bot' // Замените на имя вашего бота
+  const botUsername = 'V0_aiassist_bot' // Замените на имя вашего бота
   
   // Генерируем реферальную ссылку
   const generateLink = async () => {
