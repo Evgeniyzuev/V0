@@ -10,11 +10,26 @@ import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar"
 export default function UserProfileTab() {
   const { telegramUser, dbUser, isLoading, error, refreshUserData } = useUser()
   const [isRefreshing, setIsRefreshing] = useState(false)
+  const [refreshMessage, setRefreshMessage] = useState<string | null>(null)
 
   const handleRefresh = async () => {
     setIsRefreshing(true)
-    await refreshUserData()
-    setIsRefreshing(false)
+    setRefreshMessage(null)
+    
+    try {
+      console.log("Manual refresh requested by user")
+      await refreshUserData()
+      setRefreshMessage("Данные обновлены")
+      
+      // Автоматически скроем сообщение через 3 секунды
+      setTimeout(() => {
+        setRefreshMessage(null)
+      }, 3000)
+    } catch (e) {
+      setRefreshMessage("Ошибка при обновлении")
+    } finally {
+      setIsRefreshing(false)
+    }
   }
 
   if (isLoading) {
@@ -62,20 +77,27 @@ export default function UserProfileTab() {
       <Card>
         <CardHeader className="flex flex-row items-center justify-between p-4">
           <CardTitle className="text-sm">Профиль пользователя</CardTitle>
-          <Button
-            variant="outline"
-            size="icon"
-            onClick={handleRefresh}
-            disabled={isRefreshing}
-            aria-label="Refresh user data"
-          >
-            <RefreshCw className={`h-4 w-4 ${isRefreshing ? "animate-spin" : ""}`} />
-          </Button>
+          <div className="flex items-center gap-2">
+            {refreshMessage && (
+              <span className="text-xs text-green-600 animate-fade-in-out">
+                {refreshMessage}
+              </span>
+            )}
+            <Button
+              variant="outline"
+              size="icon"
+              onClick={handleRefresh}
+              disabled={isRefreshing}
+              aria-label="Refresh user data"
+            >
+              <RefreshCw className={`h-4 w-4 ${isRefreshing ? "animate-spin" : ""}`} />
+            </Button>
+          </div>
         </CardHeader>
         <CardContent className="p-4 pt-0">
           <div className="flex flex-col items-center mb-6">
             <Avatar className="w-20 h-20 mb-3">
-              <AvatarImage src={dbUser?.avatar_url || telegramUser?.photo_url} />
+              <AvatarImage src={telegramUser?.photo_url} />
               <AvatarFallback className="bg-purple-100">
                 <User className="h-10 w-10 text-purple-600" />
               </AvatarFallback>

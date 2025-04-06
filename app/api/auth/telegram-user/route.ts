@@ -83,6 +83,8 @@ export async function POST(request: Request) {
     
     const telegramId = telegramUser.id;
     
+    console.log(`Processing user with Telegram ID: ${telegramId}`);
+    
     // Ищем пользователя в базе по telegram_id
     const { data: existingUser, error: findError } = await supabaseAdmin
       .from('users')
@@ -100,25 +102,40 @@ export async function POST(request: Request) {
     
     // Если пользователь существует, возвращаем его данные
     if (existingUser) {
-      // Опционально, обновляем некоторые поля из telegram
-      const { error: updateError } = await supabaseAdmin
-        .from('users')
-        .update({
-          telegram_username: telegramUser.username,
-          first_name: existingUser.first_name || telegramUser.first_name,
-          last_name: existingUser.last_name || telegramUser.last_name,
-          avatar_url: existingUser.avatar_url || telegramUser.photo_url,
-        })
-        .eq('telegram_id', telegramId);
+      console.log(`Found existing user with Telegram ID: ${telegramId}`);
       
-      if (updateError) {
-        console.error('Error updating user:', updateError);
+      // Проверяем, нужно ли обновлять данные
+      const needsUpdate = (
+        existingUser.telegram_username !== telegramUser.username ||
+        (!existingUser.first_name && telegramUser.first_name) ||
+        (!existingUser.last_name && telegramUser.last_name)
+      );
+      
+      if (needsUpdate) {
+        console.log(`Updating user data for Telegram ID: ${telegramId}`);
+        // Опционально, обновляем некоторые поля из telegram
+        const { error: updateError } = await supabaseAdmin
+          .from('users')
+          .update({
+            telegram_username: telegramUser.username,
+            first_name: existingUser.first_name || telegramUser.first_name,
+            last_name: existingUser.last_name || telegramUser.last_name,
+          })
+          .eq('telegram_id', telegramId);
+        
+        if (updateError) {
+          console.error('Error updating user:', updateError);
+        }
+      } else {
+        console.log(`No updates needed for Telegram ID: ${telegramId}`);
       }
       
       return NextResponse.json({ success: true, user: existingUser });
     }
     
     // Если пользователя нет, создаем его
+    console.log(`User not found with Telegram ID: ${telegramId}, creating new user`);
+    
     // 1. Создаем запись в auth.users (необязательно в simple-auth случае, но нужно в полной интеграции)
     // 2. Создаем запись в публичной таблице users
     
@@ -128,8 +145,10 @@ export async function POST(request: Request) {
       telegram_username: telegramUser.username,
       first_name: telegramUser.first_name,
       last_name: telegramUser.last_name,
-      avatar_url: telegramUser.photo_url,
     };
+    
+    // Получаем структуру таблицы, чтобы проверить доступные колонки
+    console.log("Creating new user with fields:", newUser);
     
     const { data: insertedUser, error: insertError } = await supabaseAdmin
       .from('users')
@@ -139,12 +158,33 @@ export async function POST(request: Request) {
     
     if (insertError) {
       console.error('Error creating user:', insertError);
-      return NextResponse.json(
-        { error: 'Database error while creating user' },
-        { status: 500 }
-      );
+      
+      // Пробуем более минимальный набор полей в случае ошибки
+      const minimalUser = {
+        telegram_id: telegramId
+      };
+      
+      console.log("Retrying with minimal fields:", minimalUser);
+      
+      const { data: minimalInsertedUser, error: minimalInsertError } = await supabaseAdmin
+        .from('users')
+        .insert(minimalUser)
+        .select()
+        .single();
+        
+      if (minimalInsertError) {
+        console.error('Error creating user with minimal fields:', minimalInsertError);
+        return NextResponse.json(
+          { error: `Database error while creating user: ${minimalInsertError.message}` },
+          { status: 500 }
+        );
+      }
+      
+      console.log(`Successfully created user with minimal fields for Telegram ID: ${telegramId}`);
+      return NextResponse.json({ success: true, user: minimalInsertedUser });
     }
     
+    console.log(`Successfully created user for Telegram ID: ${telegramId}`);
     return NextResponse.json({ success: true, user: insertedUser });
     
   } catch (e: any) {
