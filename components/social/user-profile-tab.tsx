@@ -1,11 +1,93 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
-import { RefreshCw, User, Wallet, Award, Users, Calendar, Phone, MessageCircle } from "lucide-react"
+import { RefreshCw, User, Wallet, Award, Users, Calendar, Phone, MessageCircle, Link, Copy, Check } from "lucide-react"
 import { useUser } from "@/components/UserContext"
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar"
+
+// Добавим компонент для реферальной ссылки
+function ReferralLinkSection({ userId, telegramId }: { userId?: string, telegramId?: number }) {
+  const [referralLink, setReferralLink] = useState<string>("")
+  const [isLoading, setIsLoading] = useState(false)
+  const [copied, setCopied] = useState(false)
+  
+  // Генерируем реферальную ссылку
+  const generateLink = async () => {
+    if (!userId && !telegramId) return
+    
+    setIsLoading(true)
+    
+    try {
+      // Используем telegram_id для реферальной ссылки, если доступен
+      const paramToUse = telegramId || userId
+      // Имя вашего Telegram бота - в реальном приложении его нужно взять из конфигурации
+      const botUsername = 'YOUR_BOT_USERNAME' // Замените на имя вашего бота
+      
+      // Прямая генерация ссылки без обращения к API (можно также использовать API если нужна дополнительная логика)
+      const link = `https://t.me/${botUsername}?start=${paramToUse}`
+      setReferralLink(link)
+    } catch (error) {
+      console.error("Error generating referral link:", error)
+    } finally {
+      setIsLoading(false)
+    }
+  }
+  
+  // Генерируем ссылку при первом рендеринге
+  useEffect(() => {
+    if (!referralLink) {
+      generateLink()
+    }
+  }, [userId, telegramId, referralLink])
+  
+  // Функция для копирования ссылки в буфер обмена
+  const copyToClipboard = () => {
+    if (!referralLink) return
+    
+    navigator.clipboard.writeText(referralLink)
+      .then(() => {
+        setCopied(true)
+        // Сбросить статус "скопировано" через 2 секунды
+        setTimeout(() => setCopied(false), 2000)
+      })
+      .catch(err => {
+        console.error("Could not copy text: ", err)
+      })
+  }
+  
+  if (!userId && !telegramId) return null
+  
+  return (
+    <div className="mt-6 pt-4 border-t">
+      <h3 className="font-medium mb-3 flex items-center">
+        <Link className="h-4 w-4 text-purple-600 mr-2" />
+        Ваша реферальная ссылка
+      </h3>
+      
+      <div className="flex items-center mb-2">
+        <div className="bg-gray-50 rounded-md p-2 flex-1 text-sm overflow-hidden overflow-ellipsis whitespace-nowrap">
+          {isLoading ? "Загрузка..." : referralLink || "Не удалось сгенерировать ссылку"}
+        </div>
+        <Button 
+          variant="outline" 
+          size="icon" 
+          className="ml-2"
+          onClick={copyToClipboard}
+          disabled={!referralLink || isLoading}
+          title="Копировать ссылку"
+        >
+          {copied ? <Check className="h-4 w-4 text-green-600" /> : <Copy className="h-4 w-4" />}
+        </Button>
+      </div>
+      
+      <p className="text-xs text-gray-500">
+        Поделитесь этой ссылкой с друзьями, чтобы пригласить их в приложение
+      </p>
+    </div>
+  )
+}
 
 export default function UserProfileTab() {
   const { telegramUser, dbUser, isLoading, error, refreshUserData } = useUser()
@@ -204,6 +286,43 @@ export default function UserProfileTab() {
                     Имя пользователя: @{dbUser.telegram_username || telegramUser?.username || 'Нет данных'}
                   </p>
                 </div>
+
+                {/* Добавим отображение информации о рефералах в профиле пользователя */}
+                <div className="mt-6 pt-4 border-t">
+                  <h3 className="font-medium mb-3 flex items-center">
+                    <Users className="h-4 w-4 text-purple-600 mr-2" />
+                    Информация о рефералах
+                  </h3>
+                  
+                  {/* Отображаем информацию о реферере, если он есть */}
+                  {dbUser?.referrer_id && (
+                    <div className="flex justify-between items-center border-b pb-2 mb-2">
+                      <div className="flex items-center">
+                        <span className="text-sm">Вас пригласил</span>
+                      </div>
+                      <span className="text-sm font-medium">ID: {dbUser.referrer_id}</span>
+                    </div>
+                  )}
+                  
+                  {/* Отображаем количество приглашенных пользователей */}
+                  <div className="flex justify-between items-center border-b pb-2 mb-2">
+                    <div className="flex items-center">
+                      <span className="text-sm">Приглашено пользователей</span>
+                    </div>
+                    <span className="text-sm font-medium">{dbUser?.paid_referrals || 0}</span>
+                  </div>
+                  
+                  {/* Информация о реферальной программе */}
+                  <p className="text-xs text-gray-500 mt-2">
+                    Приглашайте друзей по вашей реферальной ссылке и получайте бонусы
+                  </p>
+                </div>
+
+                {/* Добавляем секцию с реферальной ссылкой */}
+                <ReferralLinkSection 
+                  userId={dbUser.id}
+                  telegramId={dbUser.telegram_id}
+                />
               </div>
             </>
           )}

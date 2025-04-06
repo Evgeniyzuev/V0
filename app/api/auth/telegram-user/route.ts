@@ -11,6 +11,15 @@ interface TelegramUser {
   photo_url?: string;
 }
 
+// Определяем интерфейс для нового пользователя
+interface NewUser {
+  telegram_id: number;
+  telegram_username?: string;
+  first_name?: string;
+  last_name?: string;
+  referrer_id?: number;
+}
+
 // Функция для верификации данных от Telegram
 // В идеале нужно использовать эту функцию, но в простом случае
 // можно и пропустить верификацию, если приложение не критичное
@@ -140,12 +149,50 @@ export async function POST(request: Request) {
     // 2. Создаем запись в публичной таблице users
     
     // Для упрощенного примера опустим создание auth.users и сразу создадим запись в публичной таблице
-    const newUser = {
+    const newUser: NewUser = {
       telegram_id: telegramId,
       telegram_username: telegramUser.username,
       first_name: telegramUser.first_name,
       last_name: telegramUser.last_name,
     };
+    
+    // Проверяем, есть ли start_param в initData для реферальной системы
+    try {
+      if (initData && typeof initData === 'string') {
+        // Пытаемся найти start_param в строке initData
+        const startParamMatch = initData.match(/start_param=([^&]+)/);
+        if (startParamMatch && startParamMatch[1]) {
+          const referrerId = decodeURIComponent(startParamMatch[1]);
+          console.log(`Found start_param (referrer): ${referrerId}`);
+          
+          // Проверяем, что это валидный ID
+          if (/^\d+$/.test(referrerId)) {
+            // Если это число, это может быть ID пользователя или telegram_id
+            newUser.referrer_id = parseInt(referrerId);
+            console.log(`Set referrer_id to: ${newUser.referrer_id}`);
+          }
+        } else {
+          // Альтернативная проверка в initDataUnsafe
+          try {
+            const parsedData = JSON.parse(initData);
+            if (parsedData.start_param) {
+              const referrerId = parsedData.start_param;
+              console.log(`Found start_param in parsed data: ${referrerId}`);
+              
+              if (/^\d+$/.test(referrerId)) {
+                newUser.referrer_id = parseInt(referrerId);
+                console.log(`Set referrer_id to: ${newUser.referrer_id} from parsed data`);
+              }
+            }
+          } catch (parseErr) {
+            console.log("Could not parse initData as JSON, skipping");
+          }
+        }
+      }
+    } catch (refErr) {
+      console.error("Error processing referral info:", refErr);
+      // Не прерываем создание пользователя из-за ошибки в обработке реферальной системы
+    }
     
     // Получаем структуру таблицы, чтобы проверить доступные колонки
     console.log("Creating new user with fields:", newUser);
@@ -160,7 +207,7 @@ export async function POST(request: Request) {
       console.error('Error creating user:', insertError);
       
       // Пробуем более минимальный набор полей в случае ошибки
-      const minimalUser = {
+      const minimalUser: NewUser = {
         telegram_id: telegramId
       };
       

@@ -46,6 +46,8 @@ interface DbUser {
   level?: number;
   paid_referrals?: number;
   reinvest_setup?: number;
+  // Добавляем поле для реферальной системы
+  referrer_id?: number;
   // Добавьте другие поля из вашей таблицы users
 }
 
