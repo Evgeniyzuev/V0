@@ -1,44 +1,20 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState } from "react"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
-import { RefreshCw, User, Wallet, Award, Users, Calendar } from "lucide-react"
-import { getCurrentUser, type User as UserType } from "@/app/actions/user-actions"
+import { RefreshCw, User, Wallet, Award, Users, Calendar, Phone, MessageCircle } from "lucide-react"
+import { useUser } from "@/components/UserContext"
+import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar"
 
 export default function UserProfileTab() {
-  const [user, setUser] = useState<UserType | null>(null)
-  const [isLoading, setIsLoading] = useState(true)
-  const [error, setError] = useState<string | null>(null)
+  const { telegramUser, dbUser, isLoading, error, refreshUserData } = useUser()
   const [isRefreshing, setIsRefreshing] = useState(false)
 
-  const fetchUser = async () => {
-    try {
-      setIsRefreshing(true)
-      setError(null)
-
-      const result = await getCurrentUser()
-
-      if (!result.success) {
-        setError(result.error || "Failed to fetch user data")
-      } else {
-        setUser(result.user)
-      }
-    } catch (err) {
-      console.error("Unexpected error:", err)
-      setError("An unexpected error occurred")
-    } finally {
-      setIsLoading(false)
-      setIsRefreshing(false)
-    }
-  }
-
-  useEffect(() => {
-    fetchUser()
-  }, [])
-
-  const formatDate = (dateString: string) => {
-    return new Date(dateString).toLocaleString()
+  const handleRefresh = async () => {
+    setIsRefreshing(true)
+    await refreshUserData()
+    setIsRefreshing(false)
   }
 
   if (isLoading) {
@@ -56,7 +32,7 @@ export default function UserProfileTab() {
           <CardContent className="pt-6">
             <div className="text-center text-red-500">
               <p>{error}</p>
-              <Button variant="outline" className="mt-4" onClick={fetchUser}>
+              <Button variant="outline" className="mt-4" onClick={handleRefresh}>
                 Try Again
               </Button>
             </div>
@@ -66,13 +42,14 @@ export default function UserProfileTab() {
     )
   }
 
-  if (!user) {
+  // Показываем специальное сообщение если пользователь не из Telegram
+  if (!telegramUser && !dbUser) {
     return (
       <div className="p-4">
         <Card>
           <CardContent className="pt-6">
             <div className="text-center">
-              <p>No user data found</p>
+              <p>Для доступа к профилю, пожалуйста, откройте приложение через Telegram.</p>
             </div>
           </CardContent>
         </Card>
@@ -84,11 +61,11 @@ export default function UserProfileTab() {
     <div className="p-4">
       <Card>
         <CardHeader className="flex flex-row items-center justify-between p-4">
-          <CardTitle className="text-sm">User Profile</CardTitle>
+          <CardTitle className="text-sm">Профиль пользователя</CardTitle>
           <Button
             variant="outline"
             size="icon"
-            onClick={fetchUser}
+            onClick={handleRefresh}
             disabled={isRefreshing}
             aria-label="Refresh user data"
           >
@@ -97,73 +74,127 @@ export default function UserProfileTab() {
         </CardHeader>
         <CardContent className="p-4 pt-0">
           <div className="flex flex-col items-center mb-6">
-            <div className="w-20 h-20 bg-purple-100 rounded-full flex items-center justify-center mb-3">
-              <User className="h-10 w-10 text-purple-600" />
-            </div>
+            <Avatar className="w-20 h-20 mb-3">
+              <AvatarImage src={dbUser?.avatar_url || telegramUser?.photo_url} />
+              <AvatarFallback className="bg-purple-100">
+                <User className="h-10 w-10 text-purple-600" />
+              </AvatarFallback>
+            </Avatar>
             <h2 className="text-xl font-semibold">
-              {user.first_name} {user.last_name}
+              {dbUser?.first_name || telegramUser?.first_name} {dbUser?.last_name || telegramUser?.last_name}
             </h2>
-            <p className="text-gray-500">@{user.username || "username"}</p>
+            <p className="text-gray-500">@{dbUser?.telegram_username || telegramUser?.username || "username"}</p>
+            {telegramUser && (
+              <p className="text-sm text-purple-600 mt-1">
+                Telegram ID: {telegramUser.id}
+              </p>
+            )}
           </div>
 
-          <div className="grid grid-cols-2 gap-3 mb-6">
-            <div className="bg-gray-50 p-3 rounded-lg">
-              <div className="flex items-center mb-1">
-                <Wallet className="h-4 w-4 text-purple-600 mr-2" />
-                <span className="text-xs text-gray-500">Wallet Balance</span>
-              </div>
-              <p className="text-lg font-semibold">${user.wallet_balance.toFixed(2)}</p>
-            </div>
-            <div className="bg-gray-50 p-3 rounded-lg">
-              <div className="flex items-center mb-1">
-                <Award className="h-4 w-4 text-purple-600 mr-2" />
-                <span className="text-xs text-gray-500">AICore Balance</span>
-              </div>
-              <p className="text-lg font-semibold">${user.aicore_balance.toFixed(2)}</p>
-            </div>
-          </div>
+          {dbUser && (
+            <>
+              {/* Показываем данные баланса только если они есть в dbUser */}
+              {(typeof dbUser.wallet_balance === 'number' || typeof dbUser.aicore_balance === 'number') && (
+                <div className="grid grid-cols-2 gap-3 mb-6">
+                  {typeof dbUser.wallet_balance === 'number' && (
+                    <div className="bg-gray-50 p-3 rounded-lg">
+                      <div className="flex items-center mb-1">
+                        <Wallet className="h-4 w-4 text-purple-600 mr-2" />
+                        <span className="text-xs text-gray-500">Баланс кошелька</span>
+                      </div>
+                      <p className="text-lg font-semibold">${dbUser.wallet_balance.toFixed(2)}</p>
+                    </div>
+                  )}
+                  
+                  {typeof dbUser.aicore_balance === 'number' && (
+                    <div className="bg-gray-50 p-3 rounded-lg">
+                      <div className="flex items-center mb-1">
+                        <Award className="h-4 w-4 text-purple-600 mr-2" />
+                        <span className="text-xs text-gray-500">Баланс AICore</span>
+                      </div>
+                      <p className="text-lg font-semibold">${dbUser.aicore_balance.toFixed(2)}</p>
+                    </div>
+                  )}
+                </div>
+              )}
 
-          <div className="space-y-4">
-            <div className="flex justify-between items-center border-b pb-2">
-              <div className="flex items-center">
-                <Award className="h-4 w-4 text-purple-600 mr-2" />
-                <span className="text-sm">Level</span>
-              </div>
-              <span className="font-medium">{user.level}</span>
-            </div>
+              <div className="space-y-4">
+                {dbUser.phone_number && (
+                  <div className="flex justify-between items-center border-b pb-2">
+                    <div className="flex items-center">
+                      <Phone className="h-4 w-4 text-purple-600 mr-2" />
+                      <span className="text-sm">Телефон</span>
+                    </div>
+                    <span className="font-medium">{dbUser.phone_number}</span>
+                  </div>
+                )}
 
-            <div className="flex justify-between items-center border-b pb-2">
-              <div className="flex items-center">
-                <Users className="h-4 w-4 text-purple-600 mr-2" />
-                <span className="text-sm">Paid Referrals</span>
-              </div>
-              <span className="font-medium">{user.paid_referrals}</span>
-            </div>
+                {typeof dbUser.level === 'number' && (
+                  <div className="flex justify-between items-center border-b pb-2">
+                    <div className="flex items-center">
+                      <Award className="h-4 w-4 text-purple-600 mr-2" />
+                      <span className="text-sm">Уровень</span>
+                    </div>
+                    <span className="font-medium">{dbUser.level}</span>
+                  </div>
+                )}
 
-            <div className="flex justify-between items-center border-b pb-2">
-              <div className="flex items-center">
-                <Calendar className="h-4 w-4 text-purple-600 mr-2" />
-                <span className="text-sm">Reinvest Setup</span>
-              </div>
-              <span className="font-medium">{user.reinvest_setup}%</span>
-            </div>
+                {typeof dbUser.paid_referrals === 'number' && (
+                  <div className="flex justify-between items-center border-b pb-2">
+                    <div className="flex items-center">
+                      <Users className="h-4 w-4 text-purple-600 mr-2" />
+                      <span className="text-sm">Оплаченные рефералы</span>
+                    </div>
+                    <span className="font-medium">{dbUser.paid_referrals}</span>
+                  </div>
+                )}
 
-            <div className="flex justify-between items-center border-b pb-2">
-              <div className="flex items-center">
-                <Calendar className="h-4 w-4 text-purple-600 mr-2" />
-                <span className="text-sm">Member Since</span>
-              </div>
-              <span className="font-medium text-sm">{new Date(user.created_at).toLocaleDateString()}</span>
-            </div>
+                {typeof dbUser.reinvest_setup === 'number' && (
+                  <div className="flex justify-between items-center border-b pb-2">
+                    <div className="flex items-center">
+                      <Calendar className="h-4 w-4 text-purple-600 mr-2" />
+                      <span className="text-sm">Настройка реинвестирования</span>
+                    </div>
+                    <span className="font-medium">{dbUser.reinvest_setup}%</span>
+                  </div>
+                )}
 
-            <div className="flex justify-between items-center">
-              <div className="flex items-center">
-                <Calendar className="h-4 w-4 text-purple-600 mr-2" />
-                <span className="text-sm">Last Login</span>
+                {dbUser.created_at && (
+                  <div className="flex justify-between items-center border-b pb-2">
+                    <div className="flex items-center">
+                      <Calendar className="h-4 w-4 text-purple-600 mr-2" />
+                      <span className="text-sm">Участник с</span>
+                    </div>
+                    <span className="font-medium text-sm">{new Date(dbUser.created_at).toLocaleDateString()}</span>
+                  </div>
+                )}
+
+                {/* Специальный раздел для информации из Telegram */}
+                <div className="mt-6 pt-4 border-t">
+                  <h3 className="font-medium mb-3 flex items-center">
+                    <MessageCircle className="h-4 w-4 text-purple-600 mr-2" />
+                    Telegram данные
+                  </h3>
+                  <p className="text-sm text-gray-600">
+                    ID: {dbUser.telegram_id || telegramUser?.id || 'Нет данных'}
+                  </p>
+                  <p className="text-sm text-gray-600">
+                    Имя пользователя: @{dbUser.telegram_username || telegramUser?.username || 'Нет данных'}
+                  </p>
+                </div>
               </div>
-              <span className="font-medium text-sm">{new Date(user.last_login_date).toLocaleDateString()}</span>
+            </>
+          )}
+
+          {/* Если есть только telegramUser, но нет dbUser */}
+          {telegramUser && !dbUser && (
+            <div className="text-center mt-4">
+              <p>Информация загружается из Telegram...</p>
+              <Button className="mt-4" onClick={handleRefresh}>
+                Обновить
+              </Button>
             </div>
-          </div>
+          )}
         </CardContent>
       </Card>
     </div>

@@ -1,6 +1,6 @@
 "use client"
 
-import { MessageSquare, User } from "lucide-react"
+import { MessageSquare, User, Users } from "lucide-react"
 
 interface SocialTabsProps {
   activeTab: string
@@ -10,6 +10,7 @@ interface SocialTabsProps {
 export default function SocialTabs({ activeTab, setActiveTab }: SocialTabsProps) {
   const tabs = [
     { id: "posts", icon: MessageSquare },
+    { id: "users", icon: Users },
     { id: "profile", icon: User },
   ]
 

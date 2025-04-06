@@ -4,6 +4,7 @@ import { useState } from "react"
 import SocialTabs from "@/components/social/social-tabs"
 import PostsTab from "@/components/social/posts-tab"
 import UserProfileTab from "@/components/social/user-profile-tab"
+import UsersTab from "@/components/social/users-tab"
 
 export default function CommunityTab() {
   const [activeTab, setActiveTab] = useState("posts")
@@ -12,6 +13,8 @@ export default function CommunityTab() {
     switch (activeTab) {
       case "posts":
         return <PostsTab />
+      case "users":
+        return <UsersTab />
       case "profile":
         return <UserProfileTab />
       default:
