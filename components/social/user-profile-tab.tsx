@@ -3,15 +3,53 @@
 import { useState, useEffect } from "react"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
-import { RefreshCw, User, Wallet, Award, Users, Calendar, Phone, MessageCircle, Link, Copy, Check } from "lucide-react"
+import { RefreshCw, User, Wallet, Award, Users, Calendar, Phone, MessageCircle, Link, Copy, Check, Send, Share2 } from "lucide-react"
 import { useUser } from "@/components/UserContext"
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar"
+
+// Добавляем интерфейс для utils
+interface TelegramUtils {
+  openTelegramLink: (url: string) => void;
+}
+
+// Функция инициализации утилит Telegram
+function initUtils(): TelegramUtils {
+  // Проверяем наличие Telegram WebApp
+  if (typeof window !== 'undefined' && window.Telegram && window.Telegram.WebApp) {
+    return {
+      openTelegramLink: (url: string) => {
+        window.Telegram?.WebApp?.openTelegramLink(url);
+      }
+    };
+  }
+  
+  // Фолбек для случаев, когда Telegram WebApp недоступен
+  return {
+    openTelegramLink: (url: string) => {
+      window.open(url, '_blank');
+    }
+  };
+}
+
+// Добавляем типы для Telegram WebApp
+declare global {
+  interface Window {
+    Telegram?: {
+      WebApp?: {
+        openTelegramLink: (url: string) => void;
+      }
+    }
+  }
+}
 
 // Добавим компонент для реферальной ссылки
 function ReferralLinkSection({ userId, telegramId }: { userId?: string, telegramId?: number }) {
   const [referralLink, setReferralLink] = useState<string>("")
   const [isLoading, setIsLoading] = useState(false)
   const [copied, setCopied] = useState(false)
+  
+  // Имя вашего Telegram бота - в реальном приложении его нужно взять из конфигурации
+  const botUsername = '@V0_aiassist_bot' // Замените на имя вашего бота
   
   // Генерируем реферальную ссылку
   const generateLink = async () => {
@@ -22,8 +60,6 @@ function ReferralLinkSection({ userId, telegramId }: { userId?: string, telegram
     try {
       // Используем telegram_id для реферальной ссылки, если доступен
       const paramToUse = telegramId || userId
-      // Имя вашего Telegram бота - в реальном приложении его нужно взять из конфигурации
-      const botUsername = 'YOUR_BOT_USERNAME' // Замените на имя вашего бота
       
       // Прямая генерация ссылки без обращения к API (можно также использовать API если нужна дополнительная логика)
       const link = `https://t.me/${botUsername}?start=${paramToUse}`
@@ -57,6 +93,30 @@ function ReferralLinkSection({ userId, telegramId }: { userId?: string, telegram
       })
   }
   
+  // Функция для отправки ссылки через Telegram
+  const handleInviteFriend = () => {
+    if (!referralLink) return
+    
+    try {
+      // Инициализируем утилиты
+      const utils = initUtils()
+      
+      // Используем формат из запроса пользователя
+      const paramToUse = telegramId || userId
+      const INVITE_URL = `https://t.me/${botUsername}`
+      const shareText = "Присоединяйся к нашему приложению! Используй мою реферальную ссылку:"
+      
+      // Формируем ссылку с использованием startapp параметра
+      const inviteLink = `${INVITE_URL}?startapp=${paramToUse}`
+      const fullUrl = `https://t.me/share/url?url=${encodeURIComponent(inviteLink)}&text=${encodeURIComponent(shareText)}`
+      
+      // Используем утилиты для открытия ссылки
+      utils.openTelegramLink(fullUrl)
+    } catch (err) {
+      console.error("Error sharing link:", err)
+    }
+  }
+  
   if (!userId && !telegramId) return null
   
   return (
@@ -82,9 +142,20 @@ function ReferralLinkSection({ userId, telegramId }: { userId?: string, telegram
         </Button>
       </div>
       
-      <p className="text-xs text-gray-500">
+      <p className="text-xs text-gray-500 mb-3">
         Поделитесь этой ссылкой с друзьями, чтобы пригласить их в приложение
       </p>
+      
+      {/* Кнопка "Пригласить друга" */}
+      <Button 
+        variant="secondary" 
+        className="w-full mt-2 bg-purple-100 hover:bg-purple-200 text-purple-800"
+        onClick={handleInviteFriend}
+        disabled={!referralLink || isLoading}
+      >
+        <Share2 className="h-4 w-4 mr-2" />
+        Пригласить друга в Telegram
+      </Button>
     </div>
   )
 }
@@ -93,6 +164,33 @@ export default function UserProfileTab() {
   const { telegramUser, dbUser, isLoading, error, refreshUserData } = useUser()
   const [isRefreshing, setIsRefreshing] = useState(false)
   const [refreshMessage, setRefreshMessage] = useState<string | null>(null)
+
+  // Функция для отправки приглашения через Telegram
+  const handleInviteFriend = () => {
+    if (!dbUser?.telegram_id && !telegramUser?.id) return
+    
+    try {
+      // Инициализируем утилиты
+      const utils = initUtils()
+      
+      // Имя бота (в реальном приложении лучше получать из конфигурации)
+      const botUsername = 'YOUR_BOT_USERNAME'
+      
+      // Используем формат из запроса пользователя
+      const userId = dbUser?.telegram_id || telegramUser?.id
+      const INVITE_URL = `https://t.me/${botUsername}`
+      const shareText = "Присоединяйся к нашему приложению! Используй мою реферальную ссылку:"
+      
+      // Формируем ссылку с использованием startapp параметра
+      const inviteLink = `${INVITE_URL}?startapp=${userId}`
+      const fullUrl = `https://t.me/share/url?url=${encodeURIComponent(inviteLink)}&text=${encodeURIComponent(shareText)}`
+      
+      // Используем утилиты для открытия ссылки
+      utils.openTelegramLink(fullUrl)
+    } catch (err) {
+      console.error("Error sharing link:", err)
+    }
+  }
 
   const handleRefresh = async () => {
     setIsRefreshing(true)
@@ -193,6 +291,17 @@ export default function UserProfileTab() {
                 Telegram ID: {telegramUser.id}
               </p>
             )}
+            
+            {/* Добавляем кнопку "Пригласить друга" */}
+            <Button 
+              variant="secondary" 
+              className="mt-4 bg-purple-100 hover:bg-purple-200 text-purple-800"
+              onClick={handleInviteFriend}
+              disabled={!dbUser && !telegramUser}
+            >
+              <Share2 className="h-4 w-4 mr-2" />
+              Пригласить друга
+            </Button>
           </div>
 
           {dbUser && (

@@ -17,7 +17,7 @@ export async function GET(request: Request) {
   
   // Базовый URL Telegram-бота
   // В идеале это должно быть в .env
-  const botUsername = 'YOUR_BOT_USERNAME'; // Замените на имя вашего бота
+  const botUsername = '@V0_aiassist_bot'; // Замените на имя вашего бота
   
   // Создаем ссылку t.me/{botUsername}?start={userId/telegramId}
   const referralParam = userId || telegramId;
