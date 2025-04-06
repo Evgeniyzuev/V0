@@ -151,26 +151,28 @@ export async function POST(request: Request) {
     // Для упрощенного примера опустим создание auth.users и сразу создадим запись в публичной таблице
     const newUser: NewUser = {
       telegram_id: telegramId,
-      telegram_username: telegramUser.username,
-      first_name: telegramUser.first_name,
-      last_name: telegramUser.last_name,
+      telegram_username: telegramUser.username || null,
+      first_name: telegramUser.first_name || null,
+      last_name: telegramUser.last_name || null,
     };
     
     // Логируем детали полей пользователя
     console.log("Telegram data details:");
     console.log("- telegram_id:", telegramId);
-    console.log("- telegram_username:", telegramUser.username);
-    console.log("- first_name:", telegramUser.first_name);
-    console.log("- last_name:", telegramUser.last_name);
+    console.log("- telegram_username:", telegramUser.username, "empty?", telegramUser.username === "");
+    console.log("- first_name:", telegramUser.first_name, "empty?", telegramUser.first_name === "");
+    console.log("- last_name:", telegramUser.last_name, "empty?", telegramUser.last_name === "");
     console.log("- initData type:", typeof initData);
     if (typeof initData === 'string') {
-      console.log("- initData preview:", initData.substring(0, 50) + "...");
+      console.log("- initData full:", initData);
+    } else if (initData) {
+      console.log("- initData object:", JSON.stringify(initData));
     }
     
     // Проверяем, есть ли start_param в initData для реферальной системы
     try {
       if (initData && typeof initData === 'string') {
-        // Пытаемся найти start_param в строке initData
+        // Пробуем найти start_param в строке initData
         const startParamMatch = initData.match(/start_param=([^&]+)/);
         if (startParamMatch && startParamMatch[1]) {
           const referrerId = decodeURIComponent(startParamMatch[1]);
@@ -184,6 +186,7 @@ export async function POST(request: Request) {
           }
         } else {
           // Проверка на параметр startapp для Telegram Web Apps
+          console.log("Checking for startapp parameter in:", initData);
           const startAppMatch = initData.match(/startapp=([^&]+)/);
           if (startAppMatch && startAppMatch[1]) {
             const referrerId = decodeURIComponent(startAppMatch[1]);
@@ -194,6 +197,20 @@ export async function POST(request: Request) {
               console.log(`Set referrer_id to: ${newUser.referrer_id} from startapp parameter`);
             }
           } else {
+            console.log("No startapp parameter found in initData string");
+            
+            // Проверяем в строке startApp с большой буквы A (вариации в формате параметров)
+            const startAppCapMatch = initData.match(/startApp=([^&]+)/);
+            if (startAppCapMatch && startAppCapMatch[1]) {
+              const referrerId = decodeURIComponent(startAppCapMatch[1]);
+              console.log(`Found startApp parameter (with capital A): ${referrerId}`);
+              
+              if (/^\d+$/.test(referrerId)) {
+                newUser.referrer_id = parseInt(referrerId);
+                console.log(`Set referrer_id to: ${newUser.referrer_id} from startApp parameter`);
+              }
+            }
+            
             // Альтернативная проверка в initDataUnsafe
             try {
               const parsedData = JSON.parse(initData);
@@ -240,13 +257,14 @@ export async function POST(request: Request) {
     
     if (insertError) {
       console.error('Error creating user:', insertError);
+      console.error('Insert error details:', insertError.message);
       
       // Пробуем более минимальный набор полей в случае ошибки
       const minimalUser: NewUser = {
         telegram_id: telegramId,
-        telegram_username: telegramUser.username,
-        first_name: telegramUser.first_name,
-        last_name: telegramUser.last_name,
+        telegram_username: telegramUser.username === "" ? null : telegramUser.username || null,
+        first_name: telegramUser.first_name === "" ? null : telegramUser.first_name || null,  
+        last_name: telegramUser.last_name === "" ? null : telegramUser.last_name || null,
         referrer_id: newUser.referrer_id
       };
       
@@ -260,10 +278,75 @@ export async function POST(request: Request) {
         
       if (minimalInsertError) {
         console.error('Error creating user with minimal fields:', minimalInsertError);
-        return NextResponse.json(
-          { error: `Database error while creating user: ${minimalInsertError.message}` },
-          { status: 500 }
-        );
+        console.error('Minimal insert error details:', minimalInsertError.message);
+        
+        // Еще одна попытка только с обязательным полем
+        console.log("Making final attempt with only required fields");
+        const requiredUserOnly = {
+          telegram_id: telegramId
+        };
+        
+        const { data: basicUser, error: basicError } = await supabaseAdmin
+          .from('users')
+          .insert(requiredUserOnly)
+          .select()
+          .single();
+          
+        if (basicError) {
+          console.error('Final attempt failed:', basicError);
+          return NextResponse.json(
+            { error: `Database error while creating user: ${basicError.message}` },
+            { status: 500 }
+          );
+        }
+        
+        console.log("Created user with only telegram_id:", basicUser);
+        
+        // Если пользователь создан только с telegram_id, пробуем обновить остальные поля
+        if (basicUser?.id) {
+          try {
+            console.log("Trying to update user data separately after minimal creation");
+            
+            const updateFields: any = {};
+            
+            // Добавляем только непустые поля
+            if (telegramUser.username) updateFields.telegram_username = telegramUser.username;
+            if (telegramUser.first_name) updateFields.first_name = telegramUser.first_name;
+            if (telegramUser.last_name) updateFields.last_name = telegramUser.last_name;
+            if (newUser.referrer_id) updateFields.referrer_id = newUser.referrer_id;
+            
+            console.log("Update fields:", updateFields);
+            
+            if (Object.keys(updateFields).length > 0) {
+              const { error: updateError } = await supabaseAdmin
+                .from('users')
+                .update(updateFields)
+                .eq('id', basicUser.id);
+              
+              if (updateError) {
+                console.error("Failed to update additional fields:", updateError);
+              } else {
+                console.log("Successfully updated additional fields");
+                
+                // Получаем обновленные данные пользователя
+                const { data: updatedUser } = await supabaseAdmin
+                  .from('users')
+                  .select('*')
+                  .eq('id', basicUser.id)
+                  .single();
+                
+                if (updatedUser) {
+                  console.log("Returning updated user:", updatedUser);
+                  return NextResponse.json({ success: true, user: updatedUser });
+                }
+              }
+            }
+          } catch (updateError) {
+            console.error("Error during post-creation update:", updateError);
+          }
+        }
+        
+        return NextResponse.json({ success: true, user: basicUser });
       }
       
       console.log(`Successfully created user with minimal fields for Telegram ID: ${telegramId}`);

@@ -158,6 +158,21 @@ export const UserProvider = ({ children }: { children: ReactNode }) => {
         // Проверяем, запущены ли мы в Telegram
         let isTelegram = false;
         let userData: TelegramUser | null = null;
+        let extraInitData = '';
+        
+        // Проверяем параметры URL для поиска startapp
+        if (typeof window !== 'undefined') {
+          try {
+            const urlParams = new URLSearchParams(window.location.search);
+            const startAppParam = urlParams.get('startapp') || urlParams.get('tgWebAppStartParam');
+            if (startAppParam) {
+              console.log("Found startapp parameter in URL:", startAppParam);
+              extraInitData = `startapp=${startAppParam}`;
+            }
+          } catch (urlError) {
+            console.error("Error parsing URL params:", urlError);
+          }
+        }
         
         try {
           webApp.ready();
@@ -166,11 +181,17 @@ export const UserProvider = ({ children }: { children: ReactNode }) => {
           if (initData?.user) {
             isTelegram = true;
             userData = initData.user;
+            console.log('===== TELEGRAM USER DATA =====');
             console.log('Telegram user data:', userData);
-            console.log('Telegram user fields:', Object.keys(userData));
-            console.log('Username:', userData.username);
-            console.log('First name:', userData.first_name);
-            console.log('Last name:', userData.last_name);
+            console.log('Telegram user JSON:', JSON.stringify(userData));
+            console.log('First name type:', typeof userData.first_name);
+            console.log('Last name type:', typeof userData.last_name);
+            console.log('Username type:', typeof userData.username);
+            // Проверяем типы и значения всех полей
+            Object.entries(userData).forEach(([key, value]) => {
+              console.log(`Field ${key}:`, value, `(type: ${typeof value})`);
+            });
+            console.log('===== END TELEGRAM USER DATA =====');
             setTelegramUser(userData);
           }
         } catch (e) {
@@ -184,25 +205,45 @@ export const UserProvider = ({ children }: { children: ReactNode }) => {
             apiCalledRef.current = true;
             
             // Отправляем данные на API для верификации и сохранения
-            console.log("Sending Telegram user data to API:", { 
-              telegramId: userData.id,
-              username: userData.username,
-              firstName: userData.first_name,
-              lastName: userData.last_name 
-            });
+            console.log("===== SENDING TO API =====");
+            console.log("Telegram user object:", JSON.stringify(userData));
+            
+            // Создаем копию объекта для отправки, чтобы убедиться что все поля корректны
+            const userToSend = {
+              id: userData.id,
+              first_name: userData.first_name || null,
+              last_name: userData.last_name || null,
+              username: userData.username || null,
+              photo_url: userData.photo_url || null
+            };
+            
+            console.log("Clean user object to send:", JSON.stringify(userToSend));
+            
+            // Формируем итоговые данные для отправки, добавляя startapp параметр если он найден
+            const finalInitData = webApp.initData + (extraInitData ? `&${extraInitData}` : '');
             
             // Логируем данные initData для отладки
-            console.log("initData type:", typeof webApp.initData);
-            console.log("initData startsWith:", webApp.initData.substring(0, 30) + "...");
-
+            if (typeof finalInitData === 'string') {
+              console.log("Final initData:", finalInitData);
+              console.log("initData contains startapp?", finalInitData.includes('startapp='));
+              console.log("initData contains start_param?", finalInitData.includes('start_param='));
+              
+              // Пробуем найти параметр startapp
+              const startappMatch = finalInitData.match(/startapp=([^&]+)/);
+              if (startappMatch) {
+                console.log("Found startapp parameter:", startappMatch[1]);
+              }
+            }
+            console.log("===== END SENDING TO API =====");
+            
             const response = await fetch('/api/auth/telegram-user', {
               method: 'POST',
               headers: {
                 'Content-Type': 'application/json',
               },
               body: JSON.stringify({
-                telegramUser: userData,
-                initData: webApp.initData,  // Для верификации на сервере
+                telegramUser: userToSend, // Используем очищенный объект
+                initData: finalInitData,  // Для верификации на сервере с добавленным startapp
               }),
             });
 
