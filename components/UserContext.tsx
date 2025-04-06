@@ -1,8 +1,25 @@
 "use client";
 
 import React, { createContext, useContext, useEffect, useState, ReactNode } from "react";
-import WebApp from '@twa-dev/sdk';
+// Удаляем прямой импорт
+// import WebApp from '@twa-dev/sdk';
 import { createClient } from '@supabase/supabase-js';
+
+// Интерфейс для WebApp для TypeScript
+interface TelegramWebApp {
+  ready: () => void;
+  initData: string;
+  initDataUnsafe: {
+    user?: {
+      id: number;
+      first_name?: string;
+      last_name?: string;
+      username?: string;
+      photo_url?: string;
+    };
+    [key: string]: any;
+  };
+}
 
 // Типы данных
 interface TelegramUser {
@@ -46,6 +63,7 @@ export const UserProvider = ({ children }: { children: ReactNode }) => {
   const [dbUser, setDbUser] = useState<DbUser | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [webApp, setWebApp] = useState<TelegramWebApp | null>(null);
 
   // Функция для обновления данных пользователя из БД
   const refreshUserData = async () => {
@@ -71,8 +89,28 @@ export const UserProvider = ({ children }: { children: ReactNode }) => {
   };
 
   useEffect(() => {
+    // Функция для загрузки Telegram WebApp SDK на клиенте
+    const loadTelegramWebApp = async () => {
+      // Проверка, что код выполняется в браузере
+      if (typeof window !== 'undefined') {
+        try {
+          // Динамический импорт SDK только на клиенте
+          const TelegramWebApp = (await import('@twa-dev/sdk')).default;
+          setWebApp(TelegramWebApp);
+        } catch (e) {
+          console.error('Failed to load Telegram WebApp SDK:', e);
+        }
+      }
+    };
+
+    loadTelegramWebApp();
+  }, []);
+
+  useEffect(() => {
     // Функция для инициализации данных пользователя из Telegram и проверки/создания в БД
     const initUser = async () => {
+      if (!webApp) return; // Выходим, если SDK еще не загружен
+      
       setIsLoading(true);
       setError(null);
       
@@ -82,8 +120,8 @@ export const UserProvider = ({ children }: { children: ReactNode }) => {
         let userData: TelegramUser | null = null;
         
         try {
-          WebApp.ready();
-          const initData = WebApp.initDataUnsafe;
+          webApp.ready();
+          const initData = webApp.initDataUnsafe;
           
           if (initData?.user) {
             isTelegram = true;
@@ -105,7 +143,7 @@ export const UserProvider = ({ children }: { children: ReactNode }) => {
             },
             body: JSON.stringify({
               telegramUser: userData,
-              initData: WebApp.initData,  // Для верификации на сервере
+              initData: webApp.initData,  // Для верификации на сервере
             }),
           });
 
@@ -129,8 +167,10 @@ export const UserProvider = ({ children }: { children: ReactNode }) => {
       }
     };
 
-    initUser();
-  }, []);
+    if (webApp) {
+      initUser(); // Вызываем инициализацию только после загрузки SDK
+    }
+  }, [webApp, refreshUserData]); // Добавляем refreshUserData в зависимости
 
   const value = {
     telegramUser,
