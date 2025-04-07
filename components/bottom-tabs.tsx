@@ -1,6 +1,6 @@
 "use client"
 
-import { Target, ListTodo, Bot, DollarSign, Users } from "lucide-react"
+import { ListTodo, Bot, Wallet, Users, Goal } from "lucide-react"
 
 interface BottomTabsProps {
   activeTab: string
@@ -9,10 +9,10 @@ interface BottomTabsProps {
 
 export default function BottomTabs({ activeTab, setActiveTab }: BottomTabsProps) {
   const tabs = [
-    { id: "goals", label: "Goals", icon: Target },
+    { id: "goals", label: "Goals", icon: Goal },
     { id: "tasks", label: "Tasks", icon: ListTodo },
     { id: "ai", label: "Assistant", icon: Bot },
-    { id: "finance", label: "Finance", icon: DollarSign },
+    { id: "finance", label: "Finance", icon: Wallet },
     { id: "community", label: "Social", icon: Users },
   ]
 
