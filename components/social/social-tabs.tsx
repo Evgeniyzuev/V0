@@ -9,9 +9,9 @@ interface SocialTabsProps {
 
 export default function SocialTabs({ activeTab, setActiveTab }: SocialTabsProps) {
   const tabs = [
-    { id: "posts", icon: MessageSquare },
-    { id: "users", icon: Users },
     { id: "profile", icon: User },
+    { id: "users", icon: Users },
+    { id: "posts", icon: MessageSquare },
   ]
 
   return (

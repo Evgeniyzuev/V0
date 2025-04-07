@@ -7,7 +7,7 @@ import UserProfileTab from "@/components/social/user-profile-tab"
 import UsersTab from "@/components/social/users-tab"
 
 export default function CommunityTab() {
-  const [activeTab, setActiveTab] = useState("posts")
+  const [activeTab, setActiveTab] = useState("profile")
 
   const renderActiveTab = () => {
     switch (activeTab) {

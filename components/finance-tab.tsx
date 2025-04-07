@@ -134,13 +134,10 @@ export default function FinanceTab() {
               <Button 
                 className="bg-purple-600 hover:bg-purple-700 text-white flex items-center gap-2 px-6"
                 onClick={() => {
-                  // Переходим на вкладку профиля для авторизации
-                  const profileTab = document.getElementById('profile-tab');
-                  if (profileTab) {
-                    profileTab.click();
-                  } else {
-                    // Альтернативный способ - меняем URL
-                    window.location.href = '/?tab=profile';
+                  // Находим и программно нажимаем на кнопку "Social" (community) в нижней навигации
+                  const socialButton = document.querySelector('button[aria-label="Social"]');
+                  if (socialButton instanceof HTMLElement) {
+                    socialButton.click();
                   }
                 }}
               >
