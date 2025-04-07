@@ -17,8 +17,6 @@ export default function FinanceTab() {
   const [walletBalance, setWalletBalance] = useState(0)
   const [coreBalance, setCoreBalance] = useState(0)
   const [userId, setUserId] = useState<string | null>(null)
-  const [isLoading, setIsLoading] = useState(true)
-  const [error, setError] = useState<string | null>(null)
   const [isTopUpModalOpen, setIsTopUpModalOpen] = useState(false)
   const [isTransferModalOpen, setIsTransferModalOpen] = useState(false)
   const { toast } = useToast()
@@ -29,12 +27,11 @@ export default function FinanceTab() {
       setWalletBalance(dbUser.wallet_balance || 0)
       setCoreBalance(dbUser.aicore_balance || 0)
       setUserId(dbUser.id)
-      setIsLoading(false)
     }
   }, [dbUser])
 
   // Показываем индикатор загрузки
-  if (userLoading || isLoading) {
+  if (userLoading) {
     return (
       <div className="flex justify-center items-center h-full p-4">
         <p>Loading financial data...</p>
