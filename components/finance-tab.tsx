@@ -142,19 +142,6 @@ export default function FinanceTab() {
               Refresh
             </Button>
           </div>
-          {userId && (
-            <div className="flex items-center justify-between mt-3">
-              <p className="text-sm text-white/80">User ID: {userId.substring(0, 8)}...</p>
-              <Button
-                variant="ghost"
-                size="sm"
-                className="text-white/70 hover:text-white hover:bg-white/10"
-                onClick={resetUser}
-              >
-                Change User
-              </Button>
-            </div>
-          )}
         </div>
       </div>
 
