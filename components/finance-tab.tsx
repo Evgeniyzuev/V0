@@ -23,99 +23,25 @@ export default function FinanceTab() {
   const [isTransferModalOpen, setIsTransferModalOpen] = useState(false)
   const { toast } = useToast()
 
-  // Сохраняем userId в localStorage при его изменении
+  // Обновляем балансы при изменении dbUser
   useEffect(() => {
-    if (userId) {
-      localStorage.setItem("financeUserId", userId)
-    }
-  }, [userId])
-
-  // Получаем userId из localStorage при инициализации
-  useEffect(() => {
-    const savedUserId = localStorage.getItem("financeUserId")
-    if (savedUserId) {
-      setUserId(savedUserId)
-    }
-  }, [])
-
-  // Обновляем userId когда пользователь авторизовался
-  useEffect(() => {
-    if (dbUser?.id) {
+    if (dbUser) {
+      setWalletBalance(dbUser.wallet_balance || 0)
+      setCoreBalance(dbUser.aicore_balance || 0)
       setUserId(dbUser.id)
+      setIsLoading(false)
     }
   }, [dbUser])
 
-  const fetchBalances = async () => {
-    if (!dbUser && !telegramUser) {
-      // Не загружаем балансы если пользователь не авторизован
-      setIsLoading(false)
-      return
-    }
-    
-    try {
-      setIsLoading(true)
-      setError(null)
-
-      // Используем сохраненный userId для получения данных того же пользователя
-      const result = await getUserBalances(userId || undefined)
-
-      if (result.success) {
-        setWalletBalance(result.walletBalance)
-        setCoreBalance(result.coreBalance)
-
-        // Устанавливаем userId только если его еще нет
-        if (!userId && result.userId) {
-          setUserId(result.userId)
-        }
-      } else {
-        setError(result.error || "Failed to fetch balances")
-        toast({
-          title: "Error",
-          description: result.error || "Failed to fetch balances",
-          variant: "destructive",
-        })
-      }
-    } catch (err) {
-      setError("An unexpected error occurred")
-      toast({
-        title: "Error",
-        description: "An unexpected error occurred",
-        variant: "destructive",
-      })
-    } finally {
-      setIsLoading(false)
-    }
+  // Показываем индикатор загрузки
+  if (userLoading || isLoading) {
+    return (
+      <div className="flex justify-center items-center h-full p-4">
+        <p>Loading financial data...</p>
+      </div>
+    )
   }
 
-  // Загружаем данные при первой загрузке или при изменении userId
-  useEffect(() => {
-    fetchBalances()
-  }, [userId, dbUser, telegramUser])
-
-  const handleTopUpSuccess = (newBalance: number) => {
-    setWalletBalance(newBalance)
-    toast({
-      title: "Success",
-      description: `Wallet topped up successfully. New balance: $${newBalance.toFixed(2)}`,
-    })
-  }
-
-  const handleTransferSuccess = (newWalletBalance: number, newCoreBalance: number) => {
-    setWalletBalance(newWalletBalance)
-    setCoreBalance(newCoreBalance)
-    toast({
-      title: "Success",
-      description: "Transfer to Core completed successfully",
-    })
-  }
-
-  // Функция для сброса пользователя (для тестирования)
-  const resetUser = () => {
-    localStorage.removeItem("financeUserId")
-    setUserId(null)
-    // После сброса userId, useEffect загрузит нового пользователя
-  }
-  
   // Отображаем интерфейс входа, если пользователь не авторизован
   if (!telegramUser && !dbUser && !userLoading) {
     return (
@@ -134,7 +60,6 @@ export default function FinanceTab() {
               <Button 
                 className="bg-purple-600 hover:bg-purple-700 text-white flex items-center gap-2 px-6"
                 onClick={() => {
-                  // Находим и программно нажимаем на кнопку "Social" (community) в нижней навигации
                   const socialButton = document.querySelector('button[aria-label="Social"]');
                   if (socialButton instanceof HTMLElement) {
                     socialButton.click();
@@ -155,13 +80,21 @@ export default function FinanceTab() {
     )
   }
 
-  // Показываем индикатор загрузки
-  if (userLoading || isLoading) {
-    return (
-      <div className="flex justify-center items-center h-full p-4">
-        <p>Loading financial data...</p>
-      </div>
-    )
+  const handleTopUpSuccess = (newBalance: number) => {
+    setWalletBalance(newBalance)
+    toast({
+      title: "Success",
+      description: `Wallet topped up successfully. New balance: $${newBalance.toFixed(2)}`,
+    })
+  }
+
+  const handleTransferSuccess = (newWalletBalance: number, newCoreBalance: number) => {
+    setWalletBalance(newWalletBalance)
+    setCoreBalance(newCoreBalance)
+    toast({
+      title: "Success",
+      description: "Transfer to Core completed successfully",
+    })
   }
 
   return (
@@ -200,7 +133,7 @@ export default function FinanceTab() {
               variant="outline"
               size="sm"
               className="bg-white/20 text-white border-white/40 hover:bg-white/30"
-              onClick={fetchBalances}
+              onClick={() => window.location.reload()}
             >
               <RefreshCw className="h-4 w-4 mr-1" />
               Refresh

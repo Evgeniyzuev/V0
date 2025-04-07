@@ -38,7 +38,7 @@ export default function TopUpModal({ isOpen, onClose, onSuccess, userId }: TopUp
     try {
       const result = await topUpWalletBalance(amountValue, userId)
 
-      if (result.success) {
+      if (result.success && typeof result.newBalance === 'number') {
         setAmount("")
         onSuccess(result.newBalance)
         onClose()

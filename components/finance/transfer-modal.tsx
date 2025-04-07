@@ -48,7 +48,7 @@ export default function TransferModal({
     try {
       const result = await transferToCore(amountValue, userId)
 
-      if (result.success) {
+      if (result.success && typeof result.newWalletBalance === 'number' && typeof result.newCoreBalance === 'number') {
         setAmount("")
         onSuccess(result.newWalletBalance, result.newCoreBalance)
         onClose()
