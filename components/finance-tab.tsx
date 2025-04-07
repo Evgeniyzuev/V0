@@ -1,15 +1,18 @@
 "use client"
 
 import { useState, useEffect } from "react"
-import { ArrowDown, RefreshCw, Plus, ArrowRight, Send, Wallet } from "lucide-react"
+import { ArrowDown, RefreshCw, Plus, ArrowRight, Send, Wallet, User } from "lucide-react"
 import { Card, CardContent } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { getUserBalances } from "@/app/actions/finance-actions"
 import TopUpModal from "@/components/finance/top-up-modal"
 import TransferModal from "@/components/finance/transfer-modal"
 import { useToast } from "@/hooks/use-toast"
+import { useUser } from "@/components/UserContext"
+import { Avatar, AvatarFallback } from "@/components/ui/avatar"
 
 export default function FinanceTab() {
+  const { telegramUser, dbUser, isLoading: userLoading } = useUser()
   const [activeTab, setActiveTab] = useState("wallet")
   const [walletBalance, setWalletBalance] = useState(0)
   const [coreBalance, setCoreBalance] = useState(0)
@@ -35,7 +38,20 @@ export default function FinanceTab() {
     }
   }, [])
 
+  // Обновляем userId когда пользователь авторизовался
+  useEffect(() => {
+    if (dbUser?.id) {
+      setUserId(dbUser.id)
+    }
+  }, [dbUser])
+
   const fetchBalances = async () => {
+    if (!dbUser && !telegramUser) {
+      // Не загружаем балансы если пользователь не авторизован
+      setIsLoading(false)
+      return
+    }
+    
     try {
       setIsLoading(true)
       setError(null)
@@ -74,7 +90,7 @@ export default function FinanceTab() {
   // Загружаем данные при первой загрузке или при изменении userId
   useEffect(() => {
     fetchBalances()
-  }, [userId])
+  }, [userId, dbUser, telegramUser])
 
   const handleTopUpSuccess = (newBalance: number) => {
     setWalletBalance(newBalance)
@@ -98,6 +114,57 @@ export default function FinanceTab() {
     localStorage.removeItem("financeUserId")
     setUserId(null)
     // После сброса userId, useEffect загрузит нового пользователя
+  }
+  
+  // Отображаем интерфейс входа, если пользователь не авторизован
+  if (!telegramUser && !dbUser && !userLoading) {
+    return (
+      <div className="p-4">
+        <Card>
+          <CardContent className="pt-6">
+            <div className="text-center flex flex-col items-center gap-4">
+              <h3 className="text-lg font-medium">Доступ к финансам</h3>
+              <p className="text-gray-500 mb-4">Для доступа к балансу необходимо войти в систему</p>
+              <Avatar className="h-20 w-20 mx-auto mb-2">
+                <AvatarFallback>
+                  <Wallet className="h-10 w-10 text-gray-400" />
+                </AvatarFallback>
+              </Avatar>
+              
+              <Button 
+                className="bg-purple-600 hover:bg-purple-700 text-white flex items-center gap-2 px-6"
+                onClick={() => {
+                  // Переходим на вкладку профиля для авторизации
+                  const profileTab = document.getElementById('profile-tab');
+                  if (profileTab) {
+                    profileTab.click();
+                  } else {
+                    // Альтернативный способ - меняем URL
+                    window.location.href = '/?tab=profile';
+                  }
+                }}
+              >
+                <User className="h-5 w-5" />
+                Перейти к странице профиля
+              </Button>
+
+              <p className="text-xs text-gray-400 mt-4">
+                После входа вы получите доступ к управлению финансами
+              </p>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+    )
+  }
+
+  // Показываем индикатор загрузки
+  if (userLoading || isLoading) {
+    return (
+      <div className="flex justify-center items-center h-full p-4">
+        <p>Loading financial data...</p>
+      </div>
+    )
   }
 
   return (
@@ -248,7 +315,7 @@ export default function FinanceTab() {
             onClose={() => setIsTransferModalOpen(false)}
             currentWalletBalance={walletBalance}
             onSuccess={handleTransferSuccess}
-            userId={userId}
+            userId={userId || ''}
           />
         </>
       )}
