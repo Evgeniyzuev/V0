@@ -46,8 +46,8 @@ export default function FinanceTab() {
         <Card>
           <CardContent className="pt-6">
             <div className="text-center flex flex-col items-center gap-4">
-              <h3 className="text-lg font-medium">Доступ к финансам</h3>
-              <p className="text-gray-500 mb-4">Для доступа к балансу необходимо войти в систему</p>
+              <h3 className="text-lg font-medium">Access to Finance</h3>
+              <p className="text-gray-500 mb-4">To access your balance, please log in to the system</p>
               <Avatar className="h-20 w-20 mx-auto mb-2">
                 <AvatarFallback>
                   <Wallet className="h-10 w-10 text-gray-400" />
@@ -64,11 +64,11 @@ export default function FinanceTab() {
                 }}
               >
                 <User className="h-5 w-5" />
-                Перейти к странице профиля
+                Go to Profile
               </Button>
 
               <p className="text-xs text-gray-400 mt-4">
-                После входа вы получите доступ к управлению финансами
+                After logging in, you will get access to all application features
               </p>
             </div>
           </CardContent>

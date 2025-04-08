@@ -104,7 +104,7 @@ function ReferralLinkSection({ userId, telegramId }: { userId?: string, telegram
       // Используем формат из запроса пользователя
       const paramToUse = telegramId || userId
       const INVITE_URL = `https://t.me/${botUsername}`
-      const shareText = "Присоединяйся к нашему приложению! Используй мою реферальную ссылку:"
+      const shareText = "Join our app! Use my referral link:"
       
       // Формируем ссылку с использованием startapp параметра
       const inviteLink = `${INVITE_URL}?startapp=${paramToUse}`
@@ -123,12 +123,12 @@ function ReferralLinkSection({ userId, telegramId }: { userId?: string, telegram
     <div className="mt-6 pt-4 border-t">
       <h3 className="font-medium mb-3 flex items-center">
         <Link className="h-4 w-4 text-purple-600 mr-2" />
-        Ваша реферальная ссылка
+        Your referral link
       </h3>
       
       <div className="flex items-center mb-2">
         <div className="bg-gray-50 rounded-md p-2 flex-1 text-sm overflow-hidden overflow-ellipsis whitespace-nowrap">
-          {isLoading ? "Загрузка..." : referralLink || "Не удалось сгенерировать ссылку"}
+          {isLoading ? "Loading..." : referralLink || "Failed to generate link"}
         </div>
         <Button 
           variant="outline" 
@@ -136,14 +136,14 @@ function ReferralLinkSection({ userId, telegramId }: { userId?: string, telegram
           className="ml-2"
           onClick={copyToClipboard}
           disabled={!referralLink || isLoading}
-          title="Копировать ссылку"
+          title="Copy link"
         >
           {copied ? <Check className="h-4 w-4 text-green-600" /> : <Copy className="h-4 w-4" />}
         </Button>
       </div>
       
       <p className="text-xs text-gray-500 mb-3">
-        Поделитесь этой ссылкой с друзьями, чтобы пригласить их в приложение
+        Share this link with your friends to invite them to the app
       </p>
       
       {/* Кнопка "Пригласить друга" */}
@@ -154,7 +154,7 @@ function ReferralLinkSection({ userId, telegramId }: { userId?: string, telegram
         disabled={!referralLink || isLoading}
       >
         <Share2 className="h-4 w-4 mr-2" />
-        Пригласить друга в Telegram
+        Invite a friend on Telegram
       </Button>
     </div>
   )
@@ -179,7 +179,7 @@ export default function UserProfileTab() {
       // Используем формат из запроса пользователя
       const userId = dbUser?.telegram_id || telegramUser?.id
       const INVITE_URL = `https://t.me/${botUsername}`
-      const shareText = "Присоединяйся к нашему приложению! Используй мою реферальную ссылку:"
+      const shareText = "Join our app! Use my referral link:"
       
       // Формируем ссылку с использованием startapp параметра
       const inviteLink = `${INVITE_URL}?startapp=${userId}`
@@ -199,14 +199,14 @@ export default function UserProfileTab() {
     try {
       console.log("Manual refresh requested by user")
       await refreshUserData()
-      setRefreshMessage("Данные обновлены")
+      setRefreshMessage("Data updated")
       
       // Автоматически скроем сообщение через 3 секунды
       setTimeout(() => {
         setRefreshMessage(null)
       }, 3000)
     } catch (e) {
-      setRefreshMessage("Ошибка при обновлении")
+      setRefreshMessage("Error updating")
     } finally {
       setIsRefreshing(false)
     }
@@ -244,8 +244,8 @@ export default function UserProfileTab() {
         <Card>
           <CardContent className="pt-6">
             <div className="text-center flex flex-col items-center gap-4">
-              <h3 className="text-lg font-medium">Вход в профиль</h3>
-              <p className="text-gray-500 mb-4">Выберите способ входа</p>
+              <h3 className="text-lg font-medium">Profile Login</h3>
+              <p className="text-gray-500 mb-4">Choose login method</p>
               <Avatar className="h-20 w-20 mx-auto mb-2">
                 <AvatarFallback>
                   <User className="h-10 w-10" />
@@ -353,7 +353,7 @@ export default function UserProfileTab() {
               </div>
 
               <p className="text-xs text-gray-400 mt-4">
-                После входа вы получите доступ ко всем возможностям приложения
+                After logging in, you will get access to all application features
               </p>
             </div>
           </CardContent>
@@ -366,7 +366,7 @@ export default function UserProfileTab() {
     <div className="p-4">
       <Card>
         <CardHeader className="flex flex-row items-center justify-between p-4">
-          <CardTitle className="text-sm">Профиль пользователя</CardTitle>
+          <CardTitle className="text-sm">User Profile</CardTitle>
           <div className="flex items-center gap-2">
             {refreshMessage && (
               <span className="text-xs text-green-600 animate-fade-in-out">
@@ -410,7 +410,7 @@ export default function UserProfileTab() {
               disabled={!dbUser && !telegramUser}
             >
               <Share2 className="h-4 w-4 mr-2" />
-              Пригласить друга
+              Invite a friend
             </Button>
           </div>
 
@@ -423,7 +423,7 @@ export default function UserProfileTab() {
                     <div className="bg-gray-50 p-3 rounded-lg">
                       <div className="flex items-center mb-1">
                         <Wallet className="h-4 w-4 text-purple-600 mr-2" />
-                        <span className="text-xs text-gray-500">Баланс кошелька</span>
+                        <span className="text-xs text-gray-500">Wallet Balance</span>
                       </div>
                       <p className="text-lg font-semibold">${dbUser.wallet_balance.toFixed(2)}</p>
                     </div>
@@ -433,7 +433,7 @@ export default function UserProfileTab() {
                     <div className="bg-gray-50 p-3 rounded-lg">
                       <div className="flex items-center mb-1">
                         <Award className="h-4 w-4 text-purple-600 mr-2" />
-                        <span className="text-xs text-gray-500">Баланс AICore</span>
+                        <span className="text-xs text-gray-500">AICore Balance</span>
                       </div>
                       <p className="text-lg font-semibold">${dbUser.aicore_balance.toFixed(2)}</p>
                     </div>
@@ -446,7 +446,7 @@ export default function UserProfileTab() {
                   <div className="flex justify-between items-center border-b pb-2">
                     <div className="flex items-center">
                       <Phone className="h-4 w-4 text-purple-600 mr-2" />
-                      <span className="text-sm">Телефон</span>
+                      <span className="text-sm">Phone</span>
                     </div>
                     <span className="font-medium">{dbUser.phone_number}</span>
                   </div>
@@ -456,7 +456,7 @@ export default function UserProfileTab() {
                   <div className="flex justify-between items-center border-b pb-2">
                     <div className="flex items-center">
                       <Award className="h-4 w-4 text-purple-600 mr-2" />
-                      <span className="text-sm">Уровень</span>
+                      <span className="text-sm">Level</span>
                     </div>
                     <span className="font-medium">{dbUser.level}</span>
                   </div>
@@ -466,7 +466,7 @@ export default function UserProfileTab() {
                   <div className="flex justify-between items-center border-b pb-2">
                     <div className="flex items-center">
                       <Users className="h-4 w-4 text-purple-600 mr-2" />
-                      <span className="text-sm">Оплаченные рефералы</span>
+                      <span className="text-sm">Paid Referrals</span>
                     </div>
                     <span className="font-medium">{dbUser.paid_referrals}</span>
                   </div>
@@ -476,7 +476,7 @@ export default function UserProfileTab() {
                   <div className="flex justify-between items-center border-b pb-2">
                     <div className="flex items-center">
                       <Calendar className="h-4 w-4 text-purple-600 mr-2" />
-                      <span className="text-sm">Настройка реинвестирования</span>
+                      <span className="text-sm">Reinvestment Setup</span>
                     </div>
                     <span className="font-medium">{dbUser.reinvest_setup}%</span>
                   </div>
@@ -486,23 +486,23 @@ export default function UserProfileTab() {
                   <div className="flex justify-between items-center border-b pb-2">
                     <div className="flex items-center">
                       <Calendar className="h-4 w-4 text-purple-600 mr-2" />
-                      <span className="text-sm">Участник с</span>
+                      <span className="text-sm">Member Since</span>
                     </div>
                     <span className="font-medium text-sm">{new Date(dbUser.created_at).toLocaleDateString()}</span>
                   </div>
                 )}
 
-                {/* Специальный раздел для информации из Telegram */}
+                {/* Telegram Data Section */}
                 <div className="mt-6 pt-4 border-t">
                   <h3 className="font-medium mb-3 flex items-center">
                     <MessageCircle className="h-4 w-4 text-purple-600 mr-2" />
-                    Telegram данные
+                    Telegram Data
                   </h3>
                   <p className="text-sm text-gray-600">
-                    ID: {dbUser.telegram_id || telegramUser?.id || 'Нет данных'}
+                    ID: {dbUser.telegram_id || telegramUser?.id || 'No data'}
                   </p>
                   <p className="text-sm text-gray-600">
-                    Имя пользователя: @{dbUser.telegram_username || telegramUser?.username || 'Нет данных'}
+                    Username: @{dbUser.telegram_username || telegramUser?.username || 'No data'}
                   </p>
                 </div>
 
@@ -510,14 +510,14 @@ export default function UserProfileTab() {
                 <div className="mt-6 pt-4 border-t">
                   <h3 className="font-medium mb-3 flex items-center">
                     <Users className="h-4 w-4 text-purple-600 mr-2" />
-                    Информация о рефералах
+                    Referral Information
                   </h3>
                   
                   {/* Отображаем информацию о реферере, если он есть */}
                   {dbUser?.referrer_id && (
                     <div className="flex justify-between items-center border-b pb-2 mb-2">
                       <div className="flex items-center">
-                        <span className="text-sm">Вас пригласил</span>
+                        <span className="text-sm">Referred by</span>
                       </div>
                       <span className="text-sm font-medium">ID: {dbUser.referrer_id}</span>
                     </div>
@@ -526,14 +526,14 @@ export default function UserProfileTab() {
                   {/* Отображаем количество приглашенных пользователей */}
                   <div className="flex justify-between items-center border-b pb-2 mb-2">
                     <div className="flex items-center">
-                      <span className="text-sm">Приглашено пользователей</span>
+                      <span className="text-sm">Referred Users</span>
                     </div>
                     <span className="text-sm font-medium">{dbUser?.paid_referrals || 0}</span>
                   </div>
                   
                   {/* Информация о реферальной программе */}
                   <p className="text-xs text-gray-500 mt-2">
-                    Приглашайте друзей по вашей реферальной ссылке и получайте бонусы
+                    Invite friends through your referral link and earn bonuses
                   </p>
                 </div>
 
