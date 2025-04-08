@@ -1,6 +1,7 @@
 -- Create tasks table
 CREATE TABLE tasks (
     id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
+    number INTEGER NOT NULL,
     title TEXT NOT NULL,
     icon_url TEXT,
     due_date TIMESTAMP WITH TIME ZONE,
