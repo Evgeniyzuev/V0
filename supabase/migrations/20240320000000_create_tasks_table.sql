@@ -1,27 +1,14 @@
--- Create tasks table
-CREATE TABLE tasks (
-    id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
-    number INTEGER NOT NULL,
-    title TEXT NOT NULL,
-    icon_url TEXT,
-    due_date TIMESTAMP WITH TIME ZONE,
-    reward DECIMAL(10,2),
-    description TEXT,
-    notes TEXT
-);
+--number,title,reward,icon_url,description,due_date,notes
 
--- Create index for faster queries
-CREATE INDEX tasks_due_date_idx ON tasks(due_date);
-
--- Add RLS (Row Level Security) policies
-ALTER TABLE tasks ENABLE ROW LEVEL SECURITY;
-
-INSERT INTO tasks (title, reward, icon_url, description)
+INSERT INTO tasks (number, title, reward, icon_url, description, due_date, notes)
 VALUES (
-  'Регистрация',                             -- title
-  1.00,                                      -- reward
-  'https://img.icons8.com/?size=32&id=7899&format=png', -- icon_url (Пример иконки "user")
-  'Завершите процесс регистрации в приложении.' -- description (простое описание)
+  2,                             -- number
+  'Выбрать первое желание',      -- title
+  1.00,                          -- reward
+  'https://blush-keen-constrictor-906.mypinata.cloud/ipfs/bafkreieapembv4igmvsagw4ssbzcvoes2k2tg3g6sqwlrn6bi3xuqcejl4', -- icon_url (Heart icon)
+  'Выберите свое первое желание из списка доступных.', -- description
+  , -- due_date
+  'Выберите свое первое желание из списка доступных.' -- notes
 );
 
  
