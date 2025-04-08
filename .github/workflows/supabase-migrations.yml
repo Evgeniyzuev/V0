@@ -11,55 +11,37 @@ jobs:
   migrate:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
       
-      - name: Install Supabase CLI
-        run: |
-          echo "Fetching latest Supabase CLI release URL..."
-          DOWNLOAD_URL=$(curl -s https://api.github.com/repos/supabase/cli/releases/latest | \
-            grep "browser_download_url.*linux_amd64.tar.gz" | \
-            cut -d : -f 2,3 | \
-            tr -d \" | \
-            head -n 1) # Ensure we only get one URL
-          
-          if [ -z "$DOWNLOAD_URL" ]; then
-            echo "Error: Could not find download URL for Supabase CLI."
-            exit 1
-          fi
-          
-          echo "Downloading Supabase CLI from $DOWNLOAD_URL..."
-          wget -O supabase_latest.tar.gz "$DOWNLOAD_URL"
-          
-          if [ ! -f supabase_latest.tar.gz ]; then
-            echo "Error: Failed to download Supabase CLI archive."
-            exit 1
-          fi
-          
-          echo "Extracting archive..."
-          tar -xzf supabase_latest.tar.gz
-          chmod +x supabase
-          
-          echo "Moving supabase binary to /usr/local/bin/..."
-          sudo mv supabase /usr/local/bin/
-          echo "Supabase CLI installed successfully."
+      - name: Set up Supabase CLI
+        uses: supabase/setup-cli@v1
+        with:
+          version: latest
       
       - name: Show Supabase version
         run: supabase --version
       
-      - name: Login to Supabase
-        run: supabase login --token ${{ secrets.SUPABASE_ACCESS_TOKEN }}
-      
-      - name: Link to project
-        run: |
-          echo "Project Ref: ${{ secrets.SUPABASE_PROJECT_REF }}"
-          supabase link --project-ref ${{ secrets.SUPABASE_PROJECT_REF }}
-      
+      - name: Link project
+        run: supabase link --project-ref ${{ secrets.SUPABASE_PROJECT_ID }}
+        env:
+          SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+          SUPABASE_DB_PASSWORD: ${{ secrets.SUPABASE_DB_PASSWORD }}
+
       - name: List migrations
         run: supabase migration list
-      
+        env:
+          SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+          SUPABASE_DB_PASSWORD: ${{ secrets.SUPABASE_DB_PASSWORD }}
+
       - name: Push migrations
-        run: supabase db push
-        continue-on-error: false
+        run: supabase db push --linked
+        env:
+          SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+          SUPABASE_DB_PASSWORD: ${{ secrets.SUPABASE_DB_PASSWORD }}
       
-      - name: Show migration status
-        run: supabase migration status 
+      # Status check might be redundant if push succeeds, but keep if desired
+      # - name: Show migration status
+      #   run: supabase migration status
+      #   env:
+      #     SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+      #     SUPABASE_DB_PASSWORD: ${{ secrets.SUPABASE_DB_PASSWORD }} 

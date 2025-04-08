@@ -9,5 +9,10 @@ CREATE TABLE tasks (
     notes TEXT
 );
 
+-- Create index for faster queries
+CREATE INDEX tasks_due_date_idx ON tasks(due_date);
+
+-- Add RLS (Row Level Security) policies
+ALTER TABLE tasks ENABLE ROW LEVEL SECURITY;
 
  
