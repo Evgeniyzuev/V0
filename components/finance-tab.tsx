@@ -99,7 +99,7 @@ export default function FinanceTab() {
       {/* Tabs */}
       <div className="flex bg-white border-b">
         <button
-          className={`flex-1 py-3 text-center font-medium text-sm ${
+          className={`flex-1 py-1.5 text-center font-medium text-sm ${
             activeTab === "wallet" ? "text-purple-600 border-b-2 border-purple-600" : "text-gray-500"
           }`}
           onClick={() => setActiveTab("wallet")}
@@ -107,7 +107,7 @@ export default function FinanceTab() {
           Wallet
         </button>
         <button
-          className={`flex-1 py-3 text-center font-medium text-sm ${
+          className={`flex-1 py-1.5 text-center font-medium text-sm ${
             activeTab === "core" ? "text-purple-600 border-b-2 border-purple-600" : "text-gray-500"
           }`}
           onClick={() => setActiveTab("core")}

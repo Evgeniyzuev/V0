@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { ThumbsUp, MessageCircle, Share2, Bookmark, MoreHorizontal } from 'lucide-react';
 import { cn } from '@/lib/utils';
@@ -153,11 +152,6 @@ const recommendations = [
 const Feed: React.FC = () => {
   return (
     <div className="animate-fade-in pb-16">
-      <div className="p-4 bg-white sticky top-0 z-10 shadow-sm">
-        <h1 className="text-xl font-bold">Success Stories</h1>
-        <p className="text-sm text-gray-500">Inspiration from people who achieved their goals</p>
-      </div>
-      
       <div className="divide-y">
         {successStories.map((story) => (
           <Card key={story.id} className="border-none rounded-none shadow-none">

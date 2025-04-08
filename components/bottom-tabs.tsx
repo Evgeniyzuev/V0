@@ -17,7 +17,7 @@ export default function BottomTabs({ activeTab, setActiveTab }: BottomTabsProps)
   ]
 
   return (
-    <div className="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 flex justify-around items-center h-14 px-2 z-10">
+    <div className="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 flex justify-around items-center h-12 px-2 z-10">
       {tabs.map((tab) => {
         const Icon = tab.icon
         const isActive = activeTab === tab.id
@@ -31,8 +31,8 @@ export default function BottomTabs({ activeTab, setActiveTab }: BottomTabsProps)
             onClick={() => setActiveTab(tab.id)}
             aria-label={tab.label}
           >
-            <Icon className={`h-5 w-5 ${isActive ? "text-purple-600" : "text-gray-400"}`} />
-            <span className="text-[10px] mt-1">{tab.label}</span>
+            <Icon className={`h-4 w-4 ${isActive ? "text-purple-600" : "text-gray-400"}`} />
+            <span className="text-[10px] mt-0.5">{tab.label}</span>
           </button>
         )
       })}

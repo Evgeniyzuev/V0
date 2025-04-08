@@ -18,7 +18,7 @@ export default function SecondaryTabs({ activeTab, setActiveTab }: SecondaryTabs
   ]
 
   return (
-    <div className="flex justify-around p-3 border-b border-gray-100">
+    <div className="flex justify-around p-2 border-b border-gray-100">
       {tabs.map((tab) => {
         const Icon = tab.icon
         const isActive = activeTab === tab.id
