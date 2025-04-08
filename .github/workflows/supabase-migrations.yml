@@ -15,15 +15,33 @@ jobs:
       
       - name: Install Supabase CLI
         run: |
-          # Install from official GitHub release
-          curl -s https://api.github.com/repos/supabase/cli/releases/latest | \
+          echo "Fetching latest Supabase CLI release URL..."
+          DOWNLOAD_URL=$(curl -s https://api.github.com/repos/supabase/cli/releases/latest | \
             grep "browser_download_url.*linux_amd64.tar.gz" | \
             cut -d : -f 2,3 | \
             tr -d \" | \
-            wget -qi -
-          tar -xzf supabase_*_linux_amd64.tar.gz
+            head -n 1) # Ensure we only get one URL
+          
+          if [ -z "$DOWNLOAD_URL" ]; then
+            echo "Error: Could not find download URL for Supabase CLI."
+            exit 1
+          fi
+          
+          echo "Downloading Supabase CLI from $DOWNLOAD_URL..."
+          wget -O supabase_latest.tar.gz "$DOWNLOAD_URL"
+          
+          if [ ! -f supabase_latest.tar.gz ]; then
+            echo "Error: Failed to download Supabase CLI archive."
+            exit 1
+          fi
+          
+          echo "Extracting archive..."
+          tar -xzf supabase_latest.tar.gz
           chmod +x supabase
+          
+          echo "Moving supabase binary to /usr/local/bin/..."
           sudo mv supabase /usr/local/bin/
+          echo "Supabase CLI installed successfully."
       
       - name: Show Supabase version
         run: supabase --version
