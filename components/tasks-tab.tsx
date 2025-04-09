@@ -1,8 +1,13 @@
 "use client"
 
 import { useState, useEffect } from "react"
-import { Calendar, Tag, ChevronDown, ChevronUp, Check } from "lucide-react"
+import { Calendar, Tag, ChevronDown, ChevronUp, Check, User } from "lucide-react"
 import { createClient } from "@supabase/supabase-js"
+import { useUser } from "@/components/UserContext"
+import { Button } from "@/components/ui/button"
+import { Card, CardContent } from "@/components/ui/card"
+import { Avatar, AvatarFallback } from "@/components/ui/avatar"
+import Link from "next/link"
 
 // Initialize Supabase client
 const supabase = createClient(
@@ -21,6 +26,8 @@ type Task = {
 }
 
 export default function TasksTab() {
+  const { dbUser, isLoading: isUserLoading } = useUser()
+
   const [activeTab, setActiveTab] = useState("all")
   const [expandedTaskId, setExpandedTaskId] = useState<number | null>(null)
   const [tasks, setTasks] = useState<Task[]>([])
@@ -28,8 +35,12 @@ export default function TasksTab() {
   const [error, setError] = useState<string | null>(null)
 
   useEffect(() => {
-    fetchTasks()
-  }, [])
+    if (dbUser?.id) {
+      fetchTasks()
+    } else if (!isUserLoading) {
+      setLoading(false)
+    }
+  }, [dbUser, isUserLoading])
 
   const fetchTasks = async () => {
     try {
@@ -75,6 +86,47 @@ export default function TasksTab() {
       default:
         return tasks
     }
+  }
+
+  if (isUserLoading) {
+    return <div className="flex items-center justify-center h-full">Loading user data...</div>
+  }
+
+  if (!dbUser?.id) {
+    return (
+      <div className="p-4">
+        <Card>
+          <CardContent className="pt-6">
+            <div className="text-center flex flex-col items-center gap-4">
+              <h3 className="text-lg font-medium">Access to Tasks</h3>
+              <p className="text-gray-500 mb-4">To access your tasks, please log in to the system</p>
+              <Avatar className="h-20 w-20 mx-auto mb-2">
+                <AvatarFallback>
+                  <User className="h-10 w-10 text-gray-400" />
+                </AvatarFallback>
+              </Avatar>
+              
+              <Button 
+                className="bg-purple-600 hover:bg-purple-700 text-white flex items-center gap-2 px-6"
+                onClick={() => {
+                  const socialButton = document.querySelector('button[aria-label="Social"]');
+                  if (socialButton instanceof HTMLElement) {
+                    socialButton.click();
+                  }
+                }}
+              >
+                <User className="h-5 w-5" />
+                Go to Profile
+              </Button>
+
+              <p className="text-xs text-gray-400 mt-4">
+                After logging in, you will get access to all application features
+              </p>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+    )
   }
 
   if (loading) {
