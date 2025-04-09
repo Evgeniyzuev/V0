@@ -22,8 +22,7 @@ CREATE TABLE public.user_tasks (
   assigned_at timestamp with time zone DEFAULT now() NOT NULL,
   current_step_index integer DEFAULT 0, -- 0-based index corresponding to tasks.steps_definition
   progress_details jsonb, -- Store specific progress data, e.g., { "step_0_completed": true, "input_value": "xyz" }
-  notes text, -- User or system notes regarding this specific task instance
-  -- removed updated_at
+  notes text -- User or system notes regarding this specific task instance
 );
 
 -- 3. Add comments for clarity
