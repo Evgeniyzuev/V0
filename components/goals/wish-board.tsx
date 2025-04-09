@@ -1,8 +1,12 @@
 import React, { useState } from 'react';
 import { Dialog } from '@/components/ui/dialog';
-import { Edit, X, Calendar, DollarSign, CheckSquare } from 'lucide-react';
+import { Edit, X, Calendar, DollarSign, CheckSquare, User } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Separator } from '@/components/ui/separator';
+import { Button } from "@/components/ui/button"
+import { Card, CardContent } from "@/components/ui/card"
+import { Avatar, AvatarFallback } from "@/components/ui/avatar"
+import { useUser } from "@/components/UserContext"
 
 // Example wishes data
 const wishes = [
@@ -232,7 +236,12 @@ const personalGoals = [
   },
 ];
 
-const WishBoard: React.FC = () => {
+interface WishBoardProps {
+  // No props needed now
+}
+
+const WishBoard: React.FC<WishBoardProps> = () => {
+  const { dbUser } = useUser()
   const [selectedWish, setSelectedWish] = useState<typeof wishes[0] | null>(null);
   const [isEditing, setIsEditing] = useState(false);
   const [editedTitle, setEditedTitle] = useState('');
@@ -265,12 +274,18 @@ const WishBoard: React.FC = () => {
   const handleSave = () => {
     setIsEditing(false);
     if (selectedWish) {
-      selectedWish.title = editedTitle;
-      selectedWish.description = editedDescription;
-      selectedWish.steps = editedSteps;
-      selectedWish.targetDate = editedTargetDate;
-      selectedWish.estimatedCost = editedEstimatedCost;
-      selectedWish.progress = editedProgress;
+      // In a real app, you'd likely update this in your state management or backend
+      const wishToUpdate = [...personalGoals, ...wishes].find(w => w.id === selectedWish.id);
+      if (wishToUpdate) {
+        wishToUpdate.title = editedTitle;
+        wishToUpdate.description = editedDescription;
+        wishToUpdate.steps = editedSteps;
+        wishToUpdate.targetDate = editedTargetDate;
+        wishToUpdate.estimatedCost = editedEstimatedCost;
+        wishToUpdate.progress = editedProgress;
+        // Force re-render if needed, depending on state management
+        setSelectedWish({ ...wishToUpdate }); // Update the selectedWish state to reflect changes
+      }
     }
   };
 
@@ -291,50 +306,86 @@ const WishBoard: React.FC = () => {
   };
 
   return (
-    <div className="animate-fade-in space-y-6">
-      {/* Personal Goals Section */}
-      <div className="mb-6">
-        <div className="image-grid grid grid-cols-3 gap-1">
-          {personalGoals.map((goal) => (
-            <div 
-              key={goal.id} 
-              className="image-item animate-fade-in rounded-lg overflow-hidden shadow-md aspect-square" 
-              onClick={() => handleWishClick(goal)}
-            >
-              <div className="relative w-full h-full">
-                <img 
-                  src={goal.imageUrl} 
-                  alt={goal.title} 
-                  className="w-full h-full object-cover"
-                  loading="lazy"
-                />
-                <div className="absolute inset-0 bg-gradient-to-t from-black/50 to-transparent opacity-100 flex items-end">
-                  <div className="p-3 text-white text-lg font-medium">
-                    {goal.title}
+    <div className="p-4 space-y-6"> {/* Added space-y-6 for spacing */}
+      {!dbUser?.id ? (
+        // Auth UI for unauthenticated users
+        <div className="mb-6"> {/* Adjusted margin */}
+          <Card>
+            <CardContent className="pt-6">
+              <div className="text-center flex flex-col items-center gap-4">
+                <h3 className="text-lg font-medium">Access to Personal Goals</h3>
+                <p className="text-gray-500 mb-4">To access your personal goals, please log in to the system</p>
+                <Avatar className="h-20 w-20 mx-auto mb-2">
+                  <AvatarFallback>
+                    <User className="h-10 w-10 text-gray-400" />
+                  </AvatarFallback>
+                </Avatar>
+                <Button
+                  className="bg-purple-600 hover:bg-purple-700 text-white flex items-center gap-2 px-6"
+                  onClick={() => {
+                    const socialButton = document.querySelector('button[aria-label="Social"]');
+                    if (socialButton instanceof HTMLElement) {
+                      socialButton.click();
+                    }
+                  }}
+                >
+                  <User className="h-5 w-5" />
+                  Go to Profile
+                </Button>
+                <p className="text-xs text-gray-400 mt-4">
+                  After logging in, you will get access to all application features
+                </p>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+      ) : (
+        // Personal Goals Section for authenticated users
+        <div className="mb-6">
+          {/* Intentionally no title here, mirroring previous structure */}
+          <div className="image-grid grid grid-cols-3 gap-1">
+            {personalGoals.map((goal) => (
+              <div
+                key={goal.id}
+                className="image-item animate-fade-in rounded-lg overflow-hidden shadow-md aspect-square cursor-pointer" // Added cursor-pointer
+                onClick={() => handleWishClick(goal)}
+              >
+                <div className="relative w-full h-full">
+                  <img
+                    src={goal.imageUrl}
+                    alt={goal.title}
+                    className="w-full h-full object-cover"
+                    loading="lazy"
+                  />
+                  <div className="absolute inset-0 bg-gradient-to-t from-black/50 to-transparent opacity-100 flex items-end">
+                    <div className="p-3 text-white text-lg font-medium">
+                      {goal.title}
+                    </div>
                   </div>
                 </div>
               </div>
-            </div>
-          ))}
+            ))}
+          </div>
         </div>
-      </div>
+      )}
 
       {/* Separator */}
-      <Separator className="my-8 h-[2px] bg-app-accent/30" />
+      <Separator className="my-8 h-[2px] bg-purple-500/30" /> {/* Used purple color */}
 
       {/* Recommendations Section */}
       <div>
+        {/* Intentionally no title here, mirroring previous structure */}
         <div className="image-grid grid grid-cols-3 gap-1">
           {wishes.map((wish) => (
-            <div 
-              key={wish.id} 
-              className="image-item animate-fade-in rounded-lg overflow-hidden shadow-md aspect-square" 
+            <div
+              key={wish.id}
+              className="image-item animate-fade-in rounded-lg overflow-hidden shadow-md aspect-square cursor-pointer" // Added cursor-pointer
               onClick={() => handleWishClick(wish)}
             >
               <div className="relative w-full h-full">
-                <img 
-                  src={wish.imageUrl} 
-                  alt={wish.title} 
+                <img
+                  src={wish.imageUrl}
+                  alt={wish.title}
                   className="w-full h-full object-cover"
                   loading="lazy"
                 />
@@ -349,26 +400,28 @@ const WishBoard: React.FC = () => {
         </div>
       </div>
 
-      {/* Wish Detail Modal */}
+      {/* Wish Detail Modal (unchanged structure, just ensure class names are consistent) */}
       {selectedWish && (
         <div className="modal-overlay fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4" onClick={closeModal}>
-          <div className="modal-content bg-white rounded-lg shadow-xl max-w-md w-full overflow-hidden" onClick={(e) => e.stopPropagation()}>
-            <div className="relative">
-              <img 
-                src={selectedWish.imageUrl} 
-                alt={selectedWish.title} 
+           <div className="modal-content bg-white rounded-lg shadow-xl max-w-md w-full overflow-hidden" onClick={(e) => e.stopPropagation()}>
+            {/* ... modal content as before ... */}
+             <div className="relative">
+              <img
+                src={selectedWish.imageUrl}
+                alt={selectedWish.title}
                 className="w-full h-56 object-cover"
               />
-              <button 
+              <button
                 className="absolute top-3 right-3 p-1 rounded-full bg-black/30 text-white hover:bg-black/50 transition-colors"
                 onClick={closeModal}
               >
                 <X size={20} />
               </button>
             </div>
-            
+
             <div className="p-5">
               {isEditing ? (
+                // ... Editing UI ...
                 <div className="space-y-4">
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-1">
@@ -378,10 +431,10 @@ const WishBoard: React.FC = () => {
                       type="text"
                       value={editedTitle}
                       onChange={(e) => setEditedTitle(e.target.value)}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-app-accent"
+                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-purple-500" // Changed focus ring color
                     />
                   </div>
-                  
+
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-1">
                       Description
@@ -390,10 +443,10 @@ const WishBoard: React.FC = () => {
                       value={editedDescription}
                       onChange={(e) => setEditedDescription(e.target.value)}
                       rows={3}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-app-accent"
+                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-purple-500" // Changed focus ring color
                     />
                   </div>
-                  
+
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-1">
                       Progress (%)
@@ -404,10 +457,10 @@ const WishBoard: React.FC = () => {
                       max="100"
                       value={editedProgress}
                       onChange={(e) => setEditedProgress(Number(e.target.value))}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-app-accent"
+                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-purple-500" // Changed focus ring color
                     />
                   </div>
-                  
+
                   <div className="grid grid-cols-2 gap-4">
                     <div>
                       <label className="block text-sm font-medium text-gray-700 mb-1">
@@ -417,7 +470,7 @@ const WishBoard: React.FC = () => {
                         type="text"
                         value={editedTargetDate}
                         onChange={(e) => setEditedTargetDate(e.target.value)}
-                        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-app-accent"
+                        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-purple-500" // Changed focus ring color
                         placeholder="e.g. Dec 2023"
                       />
                     </div>
@@ -429,12 +482,12 @@ const WishBoard: React.FC = () => {
                         type="text"
                         value={editedEstimatedCost}
                         onChange={(e) => setEditedEstimatedCost(e.target.value)}
-                        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-app-accent"
+                        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-purple-500" // Changed focus ring color
                         placeholder="e.g. $5,000"
                       />
                     </div>
                   </div>
-                  
+
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-2">
                       Steps to Achieve
@@ -446,7 +499,7 @@ const WishBoard: React.FC = () => {
                             type="text"
                             value={step}
                             onChange={(e) => handleStepChange(index, e.target.value)}
-                            className="flex-grow px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-app-accent"
+                            className="flex-grow px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-purple-500" // Changed focus ring color
                           />
                           <button
                             onClick={() => removeStep(index)}
@@ -458,13 +511,13 @@ const WishBoard: React.FC = () => {
                       ))}
                       <button
                         onClick={addStep}
-                        className="text-sm text-app-accent hover:text-app-accent/80 font-medium"
+                        className="text-sm text-purple-600 hover:text-purple-800 font-medium" // Changed text color
                       >
                         + Add Step
                       </button>
                     </div>
                   </div>
-                  
+
                   <div className="flex justify-end space-x-2">
                     <button
                       onClick={() => setIsEditing(false)}
@@ -474,24 +527,25 @@ const WishBoard: React.FC = () => {
                     </button>
                     <button
                       onClick={handleSave}
-                      className="px-4 py-2 text-sm font-medium text-white bg-app-accent rounded-md hover:bg-app-accent/90 transition-colors"
+                      className="px-4 py-2 text-sm font-medium text-white bg-purple-600 rounded-md hover:bg-purple-700 transition-colors" // Changed background color
                     >
                       Save
                     </button>
                   </div>
                 </div>
               ) : (
-                <div className="space-y-4">
+                // ... Viewing UI ...
+                 <div className="space-y-4">
                   <div className="flex items-center justify-between mb-2">
                     <h3 className="text-xl font-semibold">{selectedWish.title}</h3>
-                    <button 
+                    <button
                       onClick={handleEdit}
-                      className="p-2 text-gray-500 hover:text-app-accent transition-colors"
+                      className="p-2 text-gray-500 hover:text-purple-600 transition-colors" // Changed hover color
                     >
                       <Edit size={18} />
                     </button>
                   </div>
-                  
+
                   {selectedWish.progress !== undefined && (
                     <div className="space-y-1">
                       <div className="flex justify-between text-sm">
@@ -499,38 +553,38 @@ const WishBoard: React.FC = () => {
                         <span className="font-medium">{selectedWish.progress}%</span>
                       </div>
                       <div className="w-full bg-gray-200 rounded-full h-2.5">
-                        <div 
-                          className="bg-app-accent h-2.5 rounded-full" 
+                        <div
+                          className="bg-purple-600 h-2.5 rounded-full" // Changed background color
                           style={{ width: `${selectedWish.progress}%` }}
                         ></div>
                       </div>
                     </div>
                   )}
-                  
+
                   <p className="text-gray-600">{selectedWish.description}</p>
-                  
+
                   <div className="grid grid-cols-2 gap-2 text-sm text-gray-600">
                     {selectedWish.targetDate && (
                       <div className="flex items-center">
-                        <Calendar className="h-4 w-4 mr-2 text-app-accent" />
+                        <Calendar className="h-4 w-4 mr-2 text-purple-600" /> {/* Changed icon color */}
                         <span className="font-medium mr-1">Target:</span>
                         {selectedWish.targetDate}
                       </div>
                     )}
-                    
+
                     {selectedWish.estimatedCost && (
                       <div className="flex items-center">
-                        <DollarSign className="h-4 w-4 mr-2 text-app-accent" />
+                        <DollarSign className="h-4 w-4 mr-2 text-purple-600" /> {/* Changed icon color */}
                         <span className="font-medium mr-1">Cost:</span>
                         {selectedWish.estimatedCost}
                       </div>
                     )}
                   </div>
-                  
+
                   {selectedWish.steps && selectedWish.steps.length > 0 && (
                     <div>
                       <h4 className="font-medium mb-2 flex items-center">
-                        <CheckSquare className="h-4 w-4 mr-2 text-app-accent" />
+                        <CheckSquare className="h-4 w-4 mr-2 text-purple-600" /> {/* Changed icon color */}
                         Steps to achieve:
                       </h4>
                       <ul className="list-disc pl-5 space-y-1">

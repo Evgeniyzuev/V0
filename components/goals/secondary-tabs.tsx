@@ -10,7 +10,7 @@ interface SecondaryTabsProps {
 
 export default function SecondaryTabs({ activeTab, setActiveTab, isAuthenticated }: SecondaryTabsProps) {
   const tabs = [
-    { id: "wishboard", icon: Image, requiresAuth: true },
+    { id: "wishboard", icon: Image, requiresAuth: false },
     { id: "addwish", icon: Plus, requiresAuth: true },
     { id: "recommendations", icon: Radio, requiresAuth: false },
     { id: "tasks", icon: LayoutList, requiresAuth: true },
@@ -18,20 +18,24 @@ export default function SecondaryTabs({ activeTab, setActiveTab, isAuthenticated
     { id: "notebook", icon: BookOpen, requiresAuth: true },
   ]
 
-  const visibleTabs = tabs.filter(tab => !tab.requiresAuth || isAuthenticated)
-
   return (
     <div className="flex justify-around p-2 border-b border-gray-100">
-      {visibleTabs.map((tab) => {
+      {tabs.map((tab) => {
         const Icon = tab.icon
         const isActive = activeTab === tab.id
+        const isDisabled = tab.requiresAuth && !isAuthenticated
 
         return (
           <button
             key={tab.id}
-            className={`p-2 rounded-md ${isActive ? "text-purple-600" : "text-gray-400"}`}
-            onClick={() => setActiveTab(tab.id)}
+            className={`p-2 rounded-md ${
+              isActive ? "text-purple-600" : 
+              isDisabled ? "text-gray-300 cursor-not-allowed" : 
+              "text-gray-400 hover:text-gray-600"
+            }`}
+            onClick={() => !isDisabled && setActiveTab(tab.id)}
             aria-label={tab.id}
+            disabled={isDisabled}
           >
             <Icon className="h-5 w-5" />
           </button>

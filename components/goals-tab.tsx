@@ -24,47 +24,14 @@ export default function GoalsTab() {
       return <RecommendationsFeed />
     }
 
-    // Show auth required message for other tabs if not authenticated
+    // Show recommendations from WishBoard for unauthorized users
     if (!dbUser?.id) {
-      return (
-        <div className="p-4">
-          <Card>
-            <CardContent className="pt-6">
-              <div className="text-center flex flex-col items-center gap-4">
-                <h3 className="text-lg font-medium">Access to Goals</h3>
-                <p className="text-gray-500 mb-4">To access your goals, please log in to the system</p>
-                <Avatar className="h-20 w-20 mx-auto mb-2">
-                  <AvatarFallback>
-                    <User className="h-10 w-10 text-gray-400" />
-                  </AvatarFallback>
-                </Avatar>
-                
-                <Button 
-                  className="bg-purple-600 hover:bg-purple-700 text-white flex items-center gap-2 px-6"
-                  onClick={() => {
-                    const socialButton = document.querySelector('button[aria-label="Social"]');
-                    if (socialButton instanceof HTMLElement) {
-                      socialButton.click();
-                    }
-                  }}
-                >
-                  <User className="h-5 w-5" />
-                  Go to Profile
-                </Button>
-
-                <p className="text-xs text-gray-400 mt-4">
-                  After logging in, you will get access to all application features
-                </p>
-              </div>
-            </CardContent>
-          </Card>
-        </div>
-      )
+      return <WishBoard showOnlyRecommendations={true} />
     }
 
     switch (activeSecondaryTab) {
       case "wishboard":
-        return <WishBoard />
+        return <WishBoard showOnlyRecommendations={false} />
       case "addwish":
         return <AddWish />
       case "tasks":
@@ -74,7 +41,7 @@ export default function GoalsTab() {
       case "notebook":
         return <Notebook />
       default:
-        return <WishBoard />
+        return <WishBoard showOnlyRecommendations={false} />
     }
   }
 
