@@ -8,6 +8,7 @@ import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
 import { Avatar, AvatarFallback } from "@/components/ui/avatar"
 import Link from "next/link"
+import TaskUpdater from "@/components/TaskUpdater"
 
 // Initialize Supabase client
 const supabase = createClient(
@@ -190,6 +191,11 @@ export default function TasksTab() {
           {statusMessage.text}
         </div>
       )}
+      
+      {/* Task Updater Component */}
+      <div className="px-4 pt-3">
+        <TaskUpdater />
+      </div>
 
       {/* Tabs */}
       <div className="flex p-2 bg-white border-b overflow-x-auto">
