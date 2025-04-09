@@ -8,8 +8,6 @@ import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
 import { Avatar, AvatarFallback } from "@/components/ui/avatar"
 import Link from "next/link"
-import TaskCheck from "@/components/TaskCheck"
-import { Dialog, DialogContent } from "@/components/ui/dialog"
 
 // Initialize Supabase client
 const supabase = createClient(
@@ -36,8 +34,8 @@ export default function TasksTab() {
   const [tasks, setTasks] = useState<Task[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
-  const [checkingTask, setCheckingTask] = useState<number | null>(null)
   const [statusMessage, setStatusMessage] = useState<{ type: 'success' | 'error', text: string } | null>(null)
+  const [verifying, setVerifying] = useState(false)
 
   useEffect(() => {
     if (dbUser?.id) {
@@ -79,29 +77,44 @@ export default function TasksTab() {
     }
   }
 
-  const handleTaskVerification = (taskNumber: number) => {
-    setCheckingTask(taskNumber)
-  }
-
-  const handleTaskComplete = async (success: boolean, message: string) => {
+  const handleTaskVerification = async (taskNumber: number) => {
+    if (verifying) return;
+    
+    setVerifying(true);
+    
+    // Default result is failure
+    let success = false;
+    let message = "Task not completed. Requirements not met.";
+    
+    // Special case for task #1: just check if user is logged in
+    if (taskNumber === 1) {
+      success = !!dbUser?.id;
+      message = success 
+        ? "Congratulations! Task completed successfully." 
+        : "Task not completed. You must be logged in.";
+    }
+    
+    // Display result message
     if (success) {
       setStatusMessage({
         type: 'success',
-        text: `Task completed successfully! ${message}`
-      })
+        text: message
+      });
       // Refresh user data to update wallet balance
-      await refreshUserData()
+      await refreshUserData();
     } else {
       setStatusMessage({
         type: 'error',
         text: message
-      })
+      });
     }
-    setCheckingTask(null)
-    // Clear status message after 5 seconds
+    
+    // Clear status message after 3 seconds
     setTimeout(() => {
-      setStatusMessage(null)
-    }, 5000)
+      setStatusMessage(null);
+    }, 3000);
+    
+    setVerifying(false);
   }
 
   const filteredTasks = () => {
@@ -253,7 +266,13 @@ export default function TasksTab() {
                       e.stopPropagation(); // Prevent expansion toggle when clicking button
                       handleTaskVerification(task.number);
                      }}
+                    disabled={verifying}
                   >
+                    {verifying ? (
+                      <span className="animate-spin rounded-full h-4 w-4 border-b-2 border-gray-800 mr-2"></span>
+                    ) : (
+                      <Check className="h-4 w-4 mr-2" />
+                    )}
                     Check
                   </Button>
                   <div onClick={() => toggleTaskExpansion(task.number)} style={{ cursor: 'pointer' }}>
@@ -286,19 +305,6 @@ export default function TasksTab() {
           </div>
         ))}
       </div>
-
-      {/* Task verification dialog */}
-      <Dialog open={checkingTask !== null} onOpenChange={(open) => !open && setCheckingTask(null)}>
-        <DialogContent className="sm:max-w-md">
-          {checkingTask !== null && (
-            <TaskCheck
-              taskNumber={checkingTask}
-              onComplete={handleTaskComplete}
-              onCancel={() => setCheckingTask(null)}
-            />
-          )}
-        </DialogContent>
-      </Dialog>
     </div>
   )
 }
