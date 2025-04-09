@@ -21,6 +21,7 @@ type Task = {
   reward: number
   icon_url: string
   description: string
+  completion_condition: string
   due_date: string | null
   notes: string
 }
