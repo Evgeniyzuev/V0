@@ -1,18 +1,6 @@
 -- Migration: Create user_tasks table (v2 - removed timestamps, uses tasks.number)
 -- Timestamp: Set this to the current timestamp when creating the file
 
--- Drop existing objects if they exist (useful for development/testing)
--- Be cautious using DROP in production migrations
-DROP TRIGGER IF EXISTS on_user_tasks_update ON public.user_tasks;
-DROP FUNCTION IF EXISTS public.handle_user_task_updated_at();
-DROP FUNCTION IF EXISTS public.handle_updated_at();
-DROP INDEX IF EXISTS user_tasks_user_id_task_id_key;
-DROP INDEX IF EXISTS user_tasks_user_id_idx;
-DROP INDEX IF EXISTS user_tasks_task_id_idx;
-DROP INDEX IF EXISTS user_tasks_status_idx;
-DROP TABLE IF EXISTS public.user_tasks;
-DROP TYPE IF EXISTS task_status;
-
 -- 1. Create ENUM type for task statuses
 CREATE TYPE task_status AS ENUM (
   'assigned',       -- Task assigned to user
