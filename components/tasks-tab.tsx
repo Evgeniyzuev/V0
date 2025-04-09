@@ -8,7 +8,6 @@ import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
 import { Avatar, AvatarFallback } from "@/components/ui/avatar"
 import Link from "next/link"
-import TaskCheck from "@/components/TaskCheck"
 import { Dialog, DialogContent } from "@/components/ui/dialog"
 
 // Initialize Supabase client
@@ -36,8 +35,8 @@ export default function TasksTab() {
   const [tasks, setTasks] = useState<Task[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
-  const [checkingTask, setCheckingTask] = useState<number | null>(null)
   const [statusMessage, setStatusMessage] = useState<{ type: 'success' | 'error', text: string } | null>(null)
+  const [showResult, setShowResult] = useState<{success: boolean, message: string} | null>(null)
 
   useEffect(() => {
     if (dbUser?.id) {
@@ -79,29 +78,107 @@ export default function TasksTab() {
     }
   }
 
-  const handleTaskVerification = (taskNumber: number) => {
-    setCheckingTask(taskNumber)
-  }
-
-  const handleTaskComplete = async (success: boolean, message: string) => {
-    if (success) {
-      setStatusMessage({
-        type: 'success',
-        text: `Task completed successfully! ${message}`
-      })
-      // Refresh user data to update wallet balance
-      await refreshUserData()
-    } else {
+  const handleTaskVerification = async (taskNumber: number) => {
+    // Обработка только для задания №1
+    if (taskNumber !== 1) {
       setStatusMessage({
         type: 'error',
-        text: message
+        text: 'Только задание №1 может быть проверено в данный момент'
+      })
+      setTimeout(() => setStatusMessage(null), 3000)
+      return
+    }
+
+    // Проверка авторизации
+    if (!dbUser?.id) {
+      setShowResult({
+        success: false,
+        message: "Для выполнения этого задания необходимо авторизоваться"
+      })
+      return
+    }
+
+    try {
+      // Проверяем существование задания
+      const { data: existingTask } = await supabase
+        .from("user_tasks")
+        .select("*")
+        .eq("user_id", dbUser.id)
+        .eq("task_id", taskNumber)
+        .single()
+
+      let result
+      
+      if (existingTask) {
+        // Обновляем существующее задание
+        result = await supabase
+          .from("user_tasks")
+          .update({
+            status: "completed",
+            current_step_index: existingTask.current_step_index + 1,
+            progress_details: {
+              ...existingTask.progress_details,
+              [`step_${existingTask.current_step_index}_completed`]: true,
+              last_attempt_message: "Задание успешно выполнено"
+            }
+          })
+          .eq("id", existingTask.id)
+      } else {
+        // Создаем новую запись о задании
+        result = await supabase
+          .from("user_tasks")
+          .insert({
+            user_id: dbUser.id,
+            task_id: taskNumber,
+            status: "completed",
+            current_step_index: 1,
+            progress_details: {
+              step_0_completed: true,
+              last_attempt_message: "Задание успешно выполнено"
+            }
+          })
+      }
+
+      if (result.error) {
+        throw result.error
+      }
+
+      // Добавляем награду пользователю
+      const { data: taskData } = await supabase
+        .from("tasks")
+        .select("reward")
+        .eq("number", taskNumber)
+        .single()
+
+      if (taskData?.reward) {
+        await supabase
+          .from("users")
+          .update({
+            wallet_balance: (dbUser.wallet_balance || 0) + taskData.reward
+          })
+          .eq("id", dbUser.id)
+      }
+      
+      // Обновляем данные пользователя
+      await refreshUserData()
+      
+      // Показываем окно поздравления
+      setShowResult({
+        success: true,
+        message: `Поздравляем! Вы успешно выполнили задание #1 и получили вознаграждение ${taskData?.reward || 0}$`
+      })
+      
+    } catch (err) {
+      console.error("Error completing task:", err)
+      setShowResult({
+        success: false,
+        message: "Не удалось выполнить задание. Попробуйте еще раз."
       })
     }
-    setCheckingTask(null)
-    // Clear status message after 5 seconds
-    setTimeout(() => {
-      setStatusMessage(null)
-    }, 5000)
+  }
+
+  const closeResultDialog = () => {
+    setShowResult(null)
   }
 
   const filteredTasks = () => {
@@ -287,15 +364,32 @@ export default function TasksTab() {
         ))}
       </div>
 
-      {/* Task verification dialog */}
-      <Dialog open={checkingTask !== null} onOpenChange={(open) => !open && setCheckingTask(null)}>
+      {/* Task result dialog */}
+      <Dialog open={showResult !== null} onOpenChange={(open) => !open && closeResultDialog()}>
         <DialogContent className="sm:max-w-md">
-          {checkingTask !== null && (
-            <TaskCheck
-              taskNumber={checkingTask}
-              onComplete={handleTaskComplete}
-              onCancel={() => setCheckingTask(null)}
-            />
+          {showResult && (
+            <div className="p-4">
+              <div className={`p-4 rounded-lg ${
+                showResult.success ? 'bg-green-50 border border-green-200' : 'bg-red-50 border border-red-200'
+              }`}>
+                <h3 className={`text-lg font-medium mb-2 ${
+                  showResult.success ? 'text-green-800' : 'text-red-800'
+                }`}>
+                  {showResult.success ? 'Задание выполнено!' : 'Задание не выполнено'}
+                </h3>
+                <p className={`text-sm ${
+                  showResult.success ? 'text-green-600' : 'text-red-600'
+                }`}>
+                  {showResult.message}
+                </p>
+              </div>
+              
+              <div className="flex justify-end mt-4">
+                <Button onClick={closeResultDialog}>
+                  OK
+                </Button>
+              </div>
+            </div>
           )}
         </DialogContent>
       </Dialog>
