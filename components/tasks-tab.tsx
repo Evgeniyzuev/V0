@@ -8,6 +8,8 @@ import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
 import { Avatar, AvatarFallback } from "@/components/ui/avatar"
 import Link from "next/link"
+import TaskCheck from "@/components/TaskCheck"
+import { Dialog, DialogContent } from "@/components/ui/dialog"
 
 // Initialize Supabase client
 const supabase = createClient(
@@ -27,13 +29,15 @@ type Task = {
 }
 
 export default function TasksTab() {
-  const { dbUser, isLoading: isUserLoading } = useUser()
+  const { dbUser, isLoading: isUserLoading, refreshUserData } = useUser()
 
   const [activeTab, setActiveTab] = useState("all")
   const [expandedTaskId, setExpandedTaskId] = useState<number | null>(null)
   const [tasks, setTasks] = useState<Task[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
+  const [checkingTask, setCheckingTask] = useState<number | null>(null)
+  const [statusMessage, setStatusMessage] = useState<{ type: 'success' | 'error', text: string } | null>(null)
 
   useEffect(() => {
     if (dbUser?.id) {
@@ -73,6 +77,31 @@ export default function TasksTab() {
     } else {
       setExpandedTaskId(taskNumber)
     }
+  }
+
+  const handleTaskVerification = (taskNumber: number) => {
+    setCheckingTask(taskNumber)
+  }
+
+  const handleTaskComplete = async (success: boolean, message: string) => {
+    if (success) {
+      setStatusMessage({
+        type: 'success',
+        text: `Task completed successfully! ${message}`
+      })
+      // Refresh user data to update wallet balance
+      await refreshUserData()
+    } else {
+      setStatusMessage({
+        type: 'error',
+        text: message
+      })
+    }
+    setCheckingTask(null)
+    // Clear status message after 5 seconds
+    setTimeout(() => {
+      setStatusMessage(null)
+    }, 5000)
   }
 
   const filteredTasks = () => {
@@ -140,6 +169,15 @@ export default function TasksTab() {
 
   return (
     <div className="flex flex-col h-full bg-gray-50">
+      {/* Status Message */}
+      {statusMessage && (
+        <div className={`p-3 text-sm ${
+          statusMessage.type === 'success' ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'
+        } transition-opacity duration-500`}>
+          {statusMessage.text}
+        </div>
+      )}
+
       {/* Tabs */}
       <div className="flex p-2 bg-white border-b overflow-x-auto">
         <button
@@ -210,11 +248,10 @@ export default function TasksTab() {
               <div className="flex items-center flex-shrink-0 ml-2 space-x-2">
                   <Button 
                     size="sm" 
-                    variant="outline" // Use outline or another suitable variant
+                    variant="outline"
                     onClick={(e) => { 
                       e.stopPropagation(); // Prevent expansion toggle when clicking button
-                      // TODO: Implement check logic later
-                      console.log(`Check button clicked for task ${task.number}`);
+                      handleTaskVerification(task.number);
                      }}
                   >
                     Check
@@ -249,6 +286,19 @@ export default function TasksTab() {
           </div>
         ))}
       </div>
+
+      {/* Task verification dialog */}
+      <Dialog open={checkingTask !== null} onOpenChange={(open) => !open && setCheckingTask(null)}>
+        <DialogContent className="sm:max-w-md">
+          {checkingTask !== null && (
+            <TaskCheck
+              taskNumber={checkingTask}
+              onComplete={handleTaskComplete}
+              onCancel={() => setCheckingTask(null)}
+            />
+          )}
+        </DialogContent>
+      </Dialog>
     </div>
   )
 }
