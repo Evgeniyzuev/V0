@@ -101,7 +101,9 @@ function ReferralLinkSection({ userId, telegramId }: { userId?: string, telegram
       // Инициализируем утилиты
       const utils = initUtils()
       
-      // Используем формат из запроса пользователя
+      // Имя бота берется из внешней области видимости (line 52)
+      
+      // Используем telegram_id или userId из пропсов
       const paramToUse = telegramId || userId
       const INVITE_URL = `https://t.me/${botUsername}`
       const shareText = "Join our app! Use my referral link:"
@@ -174,7 +176,7 @@ export default function UserProfileTab() {
       const utils = initUtils()
       
       // Имя бота (в реальном приложении лучше получать из конфигурации)
-      const botUsername = 'V0_aiassist_bot'
+      const botUsername = 'V0_aiassist_bot/V0app'
       
       // Используем формат из запроса пользователя
       const userId = dbUser?.telegram_id || telegramUser?.id

@@ -180,19 +180,20 @@ export default function TasksTab() {
       <div className="flex-1 overflow-y-auto">
         {filteredTasks().map((task) => (
           <div key={task.number} className="border-b">
-            {/* Task header */}
-            <div className="flex items-start p-4 cursor-pointer" onClick={() => toggleTaskExpansion(task.number)}>
+            {/* Task header - Modified to include button */}
+            <div className="flex items-center p-4">
+              {/* Icon */}
               <img
                 src={task.icon_url || "/placeholder.svg"}
                 alt={task.title}
-                className="flex-shrink-0 w-8 h-8 rounded-full object-cover mr-3 mt-1"
+                className="flex-shrink-0 w-8 h-8 rounded-full object-cover mr-3"
               />
 
-              <div className="flex-1">
-                <h3 className="text-base text-gray-800">
+              {/* Title and Meta (Takes remaining space) */}
+              <div className="flex-1 min-w-0 mr-4" onClick={() => toggleTaskExpansion(task.number)} style={{ cursor: 'pointer' }}>
+                <h3 className="text-base text-gray-800 truncate">
                   {task.title}
                 </h3>
-
                 <div className="flex flex-wrap items-center mt-1 text-xs text-gray-500">
                   <div className="flex items-center mr-3">
                     <Calendar className="h-3 w-3 mr-1" />
@@ -205,12 +206,26 @@ export default function TasksTab() {
                 </div>
               </div>
 
-              <div className="flex-shrink-0 ml-2">
-                {expandedTaskId === task.number ? (
-                  <ChevronUp className="h-5 w-5 text-gray-400" />
-                ) : (
-                  <ChevronDown className="h-5 w-5 text-gray-400" />
-                )}
+              {/* Actions (Button and Chevron) */}
+              <div className="flex items-center flex-shrink-0 ml-2 space-x-2">
+                  <Button 
+                    size="sm" 
+                    variant="outline" // Use outline or another suitable variant
+                    onClick={(e) => { 
+                      e.stopPropagation(); // Prevent expansion toggle when clicking button
+                      // TODO: Implement check logic later
+                      console.log(`Check button clicked for task ${task.number}`);
+                     }}
+                  >
+                    Check
+                  </Button>
+                  <div onClick={() => toggleTaskExpansion(task.number)} style={{ cursor: 'pointer' }}>
+                    {expandedTaskId === task.number ? (
+                      <ChevronUp className="h-5 w-5 text-gray-400" />
+                    ) : (
+                      <ChevronDown className="h-5 w-5 text-gray-400" />
+                    )}
+                  </div>
               </div>
             </div>
 
