@@ -4,6 +4,7 @@ import React, { createContext, useContext, useEffect, useState, useRef, ReactNod
 // Удаляем прямой импорт
 // import WebApp from '@twa-dev/sdk';
 import { createClient } from '@supabase/supabase-js';
+import { calculateLevelFromCore } from "@/lib/utils";
 
 // Интерфейс для WebApp для TypeScript
 interface TelegramWebApp {
@@ -57,6 +58,7 @@ interface UserContextType {
   isLoading: boolean;
   error: string | null;
   refreshUserData: () => Promise<void>;
+  setLevelUpCallback: (callback: (newLevel: number) => void) => void;
 }
 
 const UserContext = createContext<UserContextType | undefined>(undefined);
@@ -69,6 +71,7 @@ export const UserProvider = ({ children }: { children: ReactNode }) => {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [webApp, setWebApp] = useState<TelegramWebApp | null>(null);
+  const [levelUpCallback, setLevelUpCallback] = useState<((newLevel: number) => void) | undefined>(undefined);
   
   // Флаги для предотвращения повторных запросов
   const apiCalledRef = useRef(false);
@@ -89,6 +92,28 @@ export const UserProvider = ({ children }: { children: ReactNode }) => {
     return createClient(supabaseUrl, supabaseAnonKey);
   }, []);
 
+  // Check and update user level if needed
+  const checkAndUpdateLevel = async (userData: DbUser) => {
+    if (!supabase || !userData.aicore_balance) return;
+
+    const newLevel = calculateLevelFromCore(userData.aicore_balance);
+    
+    if (newLevel > (userData.level || 1)) {
+      // Update level in database
+      const { error: updateError } = await supabase
+        .from('users')
+        .update({ level: newLevel })
+        .eq('id', userData.id);
+
+      if (!updateError) {
+        // Notify about level up
+        levelUpCallback?.(newLevel);
+        // Update local user data
+        setDbUser(prev => prev ? { ...prev, level: newLevel } : null);
+      }
+    }
+  };
+
   // Функция для обновления данных пользователя из БД
   const refreshUserData = async (force = false) => {
     if (!telegramUser?.id || !supabase) return;
@@ -105,13 +130,15 @@ export const UserProvider = ({ children }: { children: ReactNode }) => {
         .eq('telegram_id', telegramUser.id)
         .single();
 
-      if (fetchError && fetchError.code !== 'PGRST116') {  // PGRST116 = 'не найдено'
+      if (fetchError && fetchError.code !== 'PGRST116') {
         console.error('Error fetching user data:', fetchError);
         setError('Ошибка при получении данных пользователя');
       } else if (data) {
         console.log("User data loaded from DB:", data);
         setDbUser(data);
         userLoadedRef.current = true;
+        // Check level after updating user data
+        await checkAndUpdateLevel(data);
       }
     } catch (err) {
       console.error('Error refreshing user data:', err);
@@ -291,7 +318,8 @@ export const UserProvider = ({ children }: { children: ReactNode }) => {
     dbUser,
     isLoading,
     error,
-    refreshUserData: manualRefresh, // Используем функцию-обертку для публичного API
+    refreshUserData,
+    setLevelUpCallback: (callback) => setLevelUpCallback(() => callback)
   };
 
   return <UserContext.Provider value={value}>{children}</UserContext.Provider>;

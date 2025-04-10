@@ -11,6 +11,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "
 import Link from "next/link"
 import TaskUpdater from "@/components/TaskUpdater"
 import { useTaskVerification } from '@/hooks/useTaskVerification'
+import LevelUpModal from '@/components/level-up-modal'
 
 // Initialize Supabase client
 const supabase = createClient(
@@ -50,6 +51,10 @@ export default function TasksTab() {
     oldCore?: number;
     newCore?: number;
   } | null>(null)
+  const [levelUpModal, setLevelUpModal] = useState<{
+    isOpen: boolean;
+    newLevel: number;
+  } | null>(null)
 
   const { verifying, handleTaskVerification } = useTaskVerification({
     dbUser,
@@ -73,6 +78,19 @@ export default function TasksTab() {
       setLoading(false)
     }
   }, [dbUser?.id, isUserLoading])
+
+  useEffect(() => {
+    // Subscribe to level up events
+    if (dbUser?.id) {
+      const { setLevelUpCallback } = useUser();
+      setLevelUpCallback((newLevel: number) => {
+        setLevelUpModal({
+          isOpen: true,
+          newLevel
+        });
+      });
+    }
+  }, [dbUser?.id]);
 
   const fetchTasks = async () => {
     if (!dbUser?.id) return;
@@ -196,7 +214,7 @@ export default function TasksTab() {
       <Dialog open={completionModal?.isOpen} onOpenChange={(open) => {
         if (!open) {
           setCompletionModal(null);
-          fetchTasks(); // Refresh tasks when closing the modal
+          fetchTasks();
         }
       }}>
         <DialogContent className="sm:max-w-md">
@@ -233,7 +251,7 @@ export default function TasksTab() {
               className="w-full"
               onClick={() => {
                 setCompletionModal(null);
-                fetchTasks(); // Refresh tasks when clicking Continue
+                fetchTasks();
               }}
             >
               Continue
@@ -241,6 +259,15 @@ export default function TasksTab() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      {/* Level Up Modal */}
+      {levelUpModal && (
+        <LevelUpModal
+          isOpen={levelUpModal.isOpen}
+          onClose={() => setLevelUpModal(null)}
+          newLevel={levelUpModal.newLevel}
+        />
+      )}
 
       {/* Tabs and TaskUpdater */}
       <div className="flex items-center justify-between p-2 bg-white border-b">
