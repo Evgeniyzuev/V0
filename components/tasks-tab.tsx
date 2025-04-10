@@ -218,7 +218,7 @@ export default function TasksTab() {
                 <div className="flex justify-center items-center gap-2">
                   <span className="text-xl text-blue-700">${completionModal?.oldCore}</span>
                   <ChevronUp className="h-6 w-6 text-green-500" />
-                  <span className="text-2xl font-bold text-blue-700">${completionModal?.newCore}</span>
+                  <span className="text-2xl font-bold text-blue-700">${(completionModal?.oldCore || 0) + (completionModal?.reward || 0)}</span>
                 </div>
               </div>
             </div>
