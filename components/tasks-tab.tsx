@@ -36,7 +36,7 @@ type Task = {
 }
 
 export default function TasksTab() {
-  const { dbUser, isLoading: isUserLoading, refreshUserData } = useUser()
+  const { dbUser, isLoading: isUserLoading, refreshUserData, setLevelUpCallback } = useUser()
 
   const [activeTab, setActiveTab] = useState("new")
   const [expandedTaskId, setExpandedTaskId] = useState<number | null>(null)
@@ -82,7 +82,6 @@ export default function TasksTab() {
   useEffect(() => {
     // Subscribe to level up events
     if (dbUser?.id) {
-      const { setLevelUpCallback } = useUser();
       setLevelUpCallback((newLevel: number) => {
         setLevelUpModal({
           isOpen: true,
@@ -90,7 +89,7 @@ export default function TasksTab() {
         });
       });
     }
-  }, [dbUser?.id]);
+  }, [dbUser?.id, setLevelUpCallback]);
 
   const fetchTasks = async () => {
     if (!dbUser?.id) return;
