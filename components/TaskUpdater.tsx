@@ -21,6 +21,7 @@ const supabase = createClient(
 export default function TaskUpdater() {
   const { dbUser, isLoading: isUserLoading } = useUser()
   const [isUpdating, setIsUpdating] = useState(false)
+  const [debugError, setDebugError] = useState<string | null>(null)
 
   // Function to update user tasks
   const updateUserTasks = async () => {
@@ -72,8 +73,9 @@ export default function TaskUpdater() {
           .from("user_tasks")
           .insert(newUserTasks)
       }
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error updating tasks:', error)
+      setDebugError(error?.message || 'Unknown error')
     } finally {
       setIsUpdating(false)
     }
@@ -91,7 +93,8 @@ export default function TaskUpdater() {
   }
 
   return (
-    <div className="flex justify-end mb-3">
+    <div className="flex justify-end mb-3 flex-col">
+      {debugError && <div className="text-red-500 text-xs mb-1">Debug Error: {debugError}</div>}
       <Button
         variant="outline"
         size="sm"
