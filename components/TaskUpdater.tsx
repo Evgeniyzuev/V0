@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState, useEffect, useRef } from "react"
 import { createClient } from "@supabase/supabase-js"
 import { useUser } from "@/components/UserContext"
 import { Button } from "@/components/ui/button"
@@ -22,9 +22,10 @@ export default function TaskUpdater({ onUpdate }: { onUpdate?: () => void }) {
   const { dbUser, isLoading: isUserLoading } = useUser()
   const [isUpdating, setIsUpdating] = useState(false)
   const [debugError, setDebugError] = useState<string | null>(null)
+  const initialLoadDone = useRef(false)
 
   // Function to update user tasks
-  const updateUserTasks = async () => {
+  const updateUserTasks = async (isManualRefresh = false) => {
     if (!dbUser?.id || isUpdating) return
     
     setIsUpdating(true)
@@ -53,10 +54,6 @@ export default function TaskUpdater({ onUpdate }: { onUpdate?: () => void }) {
         ?.filter(task => !userTaskIds.includes(task.number))
         ?.map(task => task.number) || []
       
-      console.log('All task numbers:', allTasks?.map(t => t.number));
-      console.log('User task IDs:', userTaskIds);
-      console.log('Missing tasks to add:', missingTasks);
-      
       // 4. If there are missing tasks, add them to user_tasks
       if (missingTasks.length > 0) {
         tasksWereAdded = true;
@@ -69,22 +66,24 @@ export default function TaskUpdater({ onUpdate }: { onUpdate?: () => void }) {
           progress_details: { initialized: true }
         }))
         
-        console.log('Adding these tasks:', newUserTasks);
-        
         // Use upsert with ignoreDuplicates to prevent errors if tasks already exist
         const { error: upsertError } = await supabase
           .from("user_tasks")
           .upsert(newUserTasks, {
-            onConflict: 'user_id, task_id', // Specify the columns for conflict detection
-            ignoreDuplicates: true       // If conflict, do nothing
+            onConflict: 'user_id, task_id',
+            ignoreDuplicates: true
           })
         
-        if (upsertError) throw upsertError; // Throw error if upsert fails for other reasons
+        if (upsertError) throw upsertError;
       }
 
-      // Call onUpdate if tasks were added or if it's a manual refresh
-      if (tasksWereAdded || !isUserLoading) {
+      // Call onUpdate only if:
+      // 1. New tasks were actually added, or
+      // 2. It's a manual refresh (user clicked the button), or
+      // 3. It's the first load and we haven't loaded tasks yet
+      if (tasksWereAdded || isManualRefresh || !initialLoadDone.current) {
         onUpdate?.();
+        initialLoadDone.current = true;
       }
     } catch (error: any) {
       console.error('Error updating tasks:', error)
@@ -94,10 +93,10 @@ export default function TaskUpdater({ onUpdate }: { onUpdate?: () => void }) {
     }
   }
 
-  // Auto-update tasks when component mounts and user is loaded
+  // Auto-update tasks only on initial mount
   useEffect(() => {
-    if (dbUser?.id && !isUserLoading) {
-      updateUserTasks()
+    if (dbUser?.id && !isUserLoading && !initialLoadDone.current) {
+      updateUserTasks(false)
     }
   }, [dbUser?.id, isUserLoading])
 
@@ -111,7 +110,7 @@ export default function TaskUpdater({ onUpdate }: { onUpdate?: () => void }) {
       <Button
         variant="ghost"
         size="icon"
-        onClick={updateUserTasks}
+        onClick={() => updateUserTasks(true)}
         disabled={isUpdating}
         className="h-8 w-8"
       >
