@@ -26,6 +26,11 @@ type Task = {
   completion_condition: string
   due_date: string | null
   notes: string
+  status: string
+  assigned_at: string
+  current_step_index: number
+  progress_details: string
+  steps_total?: number
 }
 
 export default function TasksTab() {
@@ -53,20 +58,35 @@ export default function TasksTab() {
   }, [dbUser, isUserLoading])
 
   const fetchTasks = async () => {
+    if (!dbUser?.id) return;
+    
     try {
       setLoading(true)
       setError(null)
 
       const { data, error } = await supabase
-        .from("tasks")
-        .select("*")
-        .order("number", { ascending: true })
+        .from("user_tasks")
+        .select(`
+          *,
+          task:tasks(*)
+        `)
+        .eq("user_id", dbUser.id)
+        .order("assigned_at", { ascending: false })
 
       if (error) {
         console.error("Error fetching tasks:", error)
         setError("Failed to fetch tasks. Please try again later.")
       } else {
-        setTasks(data || [])
+        // Transform the data to match the Task interface
+        const transformedTasks = data.map(userTask => ({
+          ...userTask.task,
+          status: userTask.status,
+          assigned_at: userTask.assigned_at,
+          current_step_index: userTask.current_step_index,
+          progress_details: userTask.progress_details,
+          steps_total: userTask.task.steps_total
+        }))
+        setTasks(transformedTasks)
       }
     } catch (err) {
       console.error("Unexpected error:", err)
@@ -87,11 +107,11 @@ export default function TasksTab() {
   const filteredTasks = () => {
     switch (activeTab) {
       case "new":
-        return tasks.filter((task) => !task.due_date)
+        return tasks.filter((task) => task.status === 'assigned' || task.status === 'in_progress')
       case "completed":
-        return tasks.filter((task) => task.due_date)
+        return tasks.filter((task) => task.status === 'completed')
       default:
-        return tasks.filter((task) => !task.due_date)
+        return tasks.filter((task) => task.status === 'assigned' || task.status === 'in_progress')
     }
   }
 
@@ -199,24 +219,32 @@ export default function TasksTab() {
                 <div className="flex flex-wrap items-center mt-1 text-xs text-gray-500">
                   <div className="flex items-center mr-3">
                     <Calendar className="h-3 w-3 mr-1" />
-                    {task.due_date || ""}
+                    {task.assigned_at ? new Date(task.assigned_at).toLocaleDateString() : "Not started"}
                   </div>
-                  <div className="flex items-center text-green-500">
+                  <div className="flex items-center mr-3">
                     <Tag className="h-3 w-3 mr-1" />
                     {task.reward}$
+                  </div>
+                  <div className={`flex items-center ${
+                    task.status === 'completed' ? 'text-green-500' :
+                    task.status === 'in_progress' ? 'text-blue-500' :
+                    'text-gray-500'
+                  }`}>
+                    {task.status}
                   </div>
                 </div>
               </div>
 
               {/* Actions (Button and Chevron) */}
-              <div className="flex items-center flex-shrink-0 ml-2 space-x-2">
+              <div className="flex items-center space-x-2">
+                {task.status !== 'completed' && (
                   <Button 
                     size="sm" 
                     variant="outline"
                     onClick={(e) => { 
-                      e.stopPropagation(); // Prevent expansion toggle when clicking button
+                      e.stopPropagation();
                       handleTaskVerification(task.number);
-                     }}
+                    }}
                     disabled={verifying}
                   >
                     {verifying ? (
@@ -226,13 +254,14 @@ export default function TasksTab() {
                     )}
                     Check
                   </Button>
-                  <div onClick={() => toggleTaskExpansion(task.number)} style={{ cursor: 'pointer' }}>
-                    {expandedTaskId === task.number ? (
-                      <ChevronUp className="h-5 w-5 text-gray-400" />
-                    ) : (
-                      <ChevronDown className="h-5 w-5 text-gray-400" />
-                    )}
-                  </div>
+                )}
+                <div onClick={() => toggleTaskExpansion(task.number)} style={{ cursor: 'pointer' }}>
+                  {expandedTaskId === task.number ? (
+                    <ChevronUp className="h-5 w-5 text-gray-400" />
+                  ) : (
+                    <ChevronDown className="h-5 w-5 text-gray-400" />
+                  )}
+                </div>
               </div>
             </div>
 
@@ -244,8 +273,21 @@ export default function TasksTab() {
                     <p className="text-sm text-gray-700">{task.description}</p>
                   </div>
 
+                  {task.current_step_index !== null && (
+                    <div className="bg-gray-50 p-3 rounded-lg mb-3">
+                      <h4 className="text-xs font-medium text-gray-700 mb-2">Progress:</h4>
+                      <div className="w-full bg-gray-200 rounded-full h-2 mb-2">
+                        <div
+                          className="bg-purple-600 h-2 rounded-full"
+                          style={{ width: `${(task.current_step_index / (task.steps_total || 1)) * 100}%` }}
+                        ></div>
+                      </div>
+                      <p className="text-xs text-gray-600">Step {task.current_step_index + 1} of {task.steps_total || '?'}</p>
+                    </div>
+                  )}
+
                   {task.notes && (
-                    <div className="bg-gray-100 p-3 rounded-lg">
+                    <div className="bg-gray-50 p-3 rounded-lg">
                       <h4 className="text-xs font-medium text-gray-700 mb-1">Notes:</h4>
                       <p className="text-xs text-gray-600">{task.notes}</p>
                     </div>

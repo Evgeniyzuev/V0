@@ -1,50 +1,102 @@
 /**
+ * Database schema types for the application
+ */
+
+/**
  * Represents the structure of the public.tasks table.
  */
 export interface Task {
-  id: number; // Assuming 'number' from TasksTab corresponds to an ID field, adjust if needed
-  number: number; // Keeping this as per TasksTab usage, might be redundant with id
+  id: number;
   title: string;
-  reward: number;
   icon_url: string | null;
+  due_date: string | null; // ISO timestamp
+  reward: number;
   description: string | null;
-  due_date: string | null; // Consider using Date or ISOString type for consistency
   notes: string | null;
-  category?: string | null; // Added based on previous discussion
-  steps_definition?: any | null; // Added based on previous discussion, use a more specific type if possible
-  created_at?: string; // Standard Supabase timestamp
+  number: number;
+  completion_condition: string | null;
 }
 
 /**
- * Represents the structure of the public.profiles table (linked to auth.users).
- * Adjust fields based on your actual table structure.
+ * Represents the structure of the public.entries table.
  */
-export interface Profile {
-  id: string; // Typically UUID from auth.users
-  user_id: string; // Foreign key to auth.users.id
-  username: string | null;
-  avatar_url: string | null;
-  full_name?: string | null;
-  // Add other relevant profile fields
-  created_at?: string;
-  updated_at?: string;
+export interface Entry {
+  id: number;
+  text: string;
+  created_at: string; // ISO timestamp
 }
 
 /**
- * Represents the structure of the new public.user_tasks table.
- * (v2: removed completed_at, updated_at; task_id references tasks.number)
+ * Represents the structure of the public.users table.
+ */
+export interface User {
+  id: string; // UUID
+  telegram_id: number;
+  referrer_id: number | null;
+  username: string | null;
+  first_name: string | null;
+  last_name: string | null;
+  reinvest_setup: number;
+  score_balance: number;
+  wallet_balance: number;
+  level: number;
+  created_at: string; // ISO timestamp
+  last_login_date: string | null; // ISO timestamp
+  paid_referrals: number;
+  phone_number: string | null;
+  avatar_url: string | null;
+  telegram_username: string | null;
+}
+
+/**
+ * Valid task status values
+ */
+export type TaskStatus = 'assigned' | 'in_progress' | 'completed' | 'failed' | 'pending_review' | 'archived';
+
+/**
+ * Represents the structure of the public.user_tasks table.
  */
 export interface UserTask {
-  id: number; // Or string if using UUID
-  user_id: string; // Foreign key to auth.users.id or profiles.user_id
-  task_id: number; // Foreign key to tasks.number (assuming tasks.number is number type)
-  status: 'assigned' | 'in_progress' | 'completed' | 'failed' | 'pending_review' | 'archived';
-  assigned_at: string; // ISOString format
+  id: number;
+  user_id: string; // Foreign key to users.id
+  task_id: number; // Foreign key to tasks.id
+  status: TaskStatus;
+  assigned_at: string; // ISO timestamp
   current_step_index: number | null;
-  progress_details: any | null; // Use a more specific type based on your needs
+  progress_details: Record<string, any> | null; // JSON data
   notes: string | null;
 
-  // Optional: Include related data if you fetch it using joins
-  tasks?: Task; // Associated task details
-  profiles?: Profile; // Associated user profile details
+  // Optional: Include related data when fetching with joins
+  task?: Task;
+  user?: User;
+}
+
+/**
+ * Type for database schema
+ */
+export interface Database {
+  public: {
+    Tables: {
+      tasks: {
+        Row: Task;
+        Insert: Omit<Task, 'id'>;
+        Update: Partial<Task>;
+      };
+      entries: {
+        Row: Entry;
+        Insert: Omit<Entry, 'id' | 'created_at'>;
+        Update: Partial<Entry>;
+      };
+      users: {
+        Row: User;
+        Insert: Omit<User, 'id' | 'created_at' | 'last_login_date'>;
+        Update: Partial<User>;
+      };
+      user_tasks: {
+        Row: UserTask;
+        Insert: Omit<UserTask, 'id'>;
+        Update: Partial<UserTask>;
+      };
+    };
+  };
 } 
