@@ -51,6 +51,10 @@ export default function TaskUpdater() {
         ?.filter(task => !userTaskIds.includes(task.number))
         ?.map(task => task.number) || []
       
+      console.log('All task numbers:', allTasks?.map(t => t.number));
+      console.log('User task IDs:', userTaskIds);
+      console.log('Missing tasks to add:', missingTasks);
+      
       // 4. If there are missing tasks, add them to user_tasks
       if (missingTasks.length > 0) {
         const newUserTasks = missingTasks.map(taskId => ({
@@ -61,6 +65,8 @@ export default function TaskUpdater() {
           current_step_index: 0,
           progress_details: { initialized: true }
         }))
+        
+        console.log('Adding these tasks:', newUserTasks);
         
         await supabase
           .from("user_tasks")
