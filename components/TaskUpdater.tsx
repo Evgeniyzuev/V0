@@ -18,7 +18,7 @@ const supabase = createClient(
  * Synchronizes user's tasks with available tasks from the tasks table.
  * Any task that exists in tasks but not in user_tasks gets added with 'assigned' status.
  */
-export default function TaskUpdater() {
+export default function TaskUpdater({ onUpdate }: { onUpdate?: () => void }) {
   const { dbUser, isLoading: isUserLoading } = useUser()
   const [isUpdating, setIsUpdating] = useState(false)
   const [debugError, setDebugError] = useState<string | null>(null)
@@ -28,6 +28,7 @@ export default function TaskUpdater() {
     if (!dbUser?.id || isUpdating) return
     
     setIsUpdating(true)
+    let tasksWereAdded = false
     
     try {
       // 1. Get all available tasks
@@ -58,6 +59,7 @@ export default function TaskUpdater() {
       
       // 4. If there are missing tasks, add them to user_tasks
       if (missingTasks.length > 0) {
+        tasksWereAdded = true;
         const newUserTasks = missingTasks.map(taskId => ({
           user_id: dbUser.id,
           task_id: taskId,
@@ -78,6 +80,11 @@ export default function TaskUpdater() {
           })
         
         if (upsertError) throw upsertError; // Throw error if upsert fails for other reasons
+      }
+
+      // Call onUpdate if tasks were added or if it's a manual refresh
+      if (tasksWereAdded || !isUserLoading) {
+        onUpdate?.();
       }
     } catch (error: any) {
       console.error('Error updating tasks:', error)

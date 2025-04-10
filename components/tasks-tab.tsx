@@ -254,7 +254,7 @@ export default function TasksTab() {
             Completed
           </button>
         </div>
-        <TaskUpdater />
+        <TaskUpdater onUpdate={fetchTasks} />
       </div>
 
       {/* Task list */}
