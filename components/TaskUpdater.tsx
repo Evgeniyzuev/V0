@@ -69,9 +69,15 @@ export default function TaskUpdater() {
         
         console.log('Adding these tasks:', newUserTasks);
         
-        await supabase
+        // Use upsert with ignoreDuplicates to prevent errors if tasks already exist
+        const { error: upsertError } = await supabase
           .from("user_tasks")
-          .insert(newUserTasks)
+          .upsert(newUserTasks, {
+            onConflict: 'user_id, task_id', // Specify the columns for conflict detection
+            ignoreDuplicates: true       // If conflict, do nothing
+          })
+        
+        if (upsertError) throw upsertError; // Throw error if upsert fails for other reasons
       }
     } catch (error: any) {
       console.error('Error updating tasks:', error)
