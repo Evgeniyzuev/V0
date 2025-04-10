@@ -9,6 +9,7 @@ import { Card, CardContent } from "@/components/ui/card"
 import { Avatar, AvatarFallback } from "@/components/ui/avatar"
 import Link from "next/link"
 import TaskUpdater from "@/components/TaskUpdater"
+import { useTaskVerification } from '@/hooks/useTaskVerification'
 
 // Initialize Supabase client
 const supabase = createClient(
@@ -30,13 +31,18 @@ type Task = {
 export default function TasksTab() {
   const { dbUser, isLoading: isUserLoading, refreshUserData } = useUser()
 
-  const [activeTab, setActiveTab] = useState("all")
+  const [activeTab, setActiveTab] = useState("new")
   const [expandedTaskId, setExpandedTaskId] = useState<number | null>(null)
   const [tasks, setTasks] = useState<Task[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [statusMessage, setStatusMessage] = useState<{ type: 'success' | 'error', text: string } | null>(null)
-  const [verifying, setVerifying] = useState(false)
+
+  const { verifying, handleTaskVerification } = useTaskVerification({
+    dbUser,
+    refreshUserData,
+    setStatusMessage,
+  })
 
   useEffect(() => {
     if (dbUser?.id) {
@@ -78,57 +84,14 @@ export default function TasksTab() {
     }
   }
 
-  const handleTaskVerification = async (taskNumber: number) => {
-    if (verifying) return;
-    
-    setVerifying(true);
-    
-    // Default result is failure
-    let success = false;
-    let message = "Task not completed. Requirements not met.";
-    
-    // Special case for task #1: just check if user is logged in
-    if (taskNumber === 1) {
-      success = !!dbUser?.id;
-      message = success 
-        ? "Congratulations! Task completed successfully." 
-        : "Task not completed. You must be logged in.";
-    }
-    
-    // Display result message
-    if (success) {
-      setStatusMessage({
-        type: 'success',
-        text: message
-      });
-      // Refresh user data to update wallet balance
-      await refreshUserData();
-    } else {
-      setStatusMessage({
-        type: 'error',
-        text: message
-      });
-    }
-    
-    // Clear status message after 3 seconds
-    setTimeout(() => {
-      setStatusMessage(null);
-    }, 3000);
-    
-    setVerifying(false);
-  }
-
   const filteredTasks = () => {
     switch (activeTab) {
-      case "today":
-        const today = new Date().toLocaleDateString("en-US", { month: "short", day: "numeric" })
-        return tasks.filter((task) => task.due_date === today)
-      case "upcoming":
+      case "new":
         return tasks.filter((task) => !task.due_date)
       case "completed":
         return tasks.filter((task) => task.due_date)
       default:
-        return tasks
+        return tasks.filter((task) => !task.due_date)
     }
   }
 
@@ -192,45 +155,27 @@ export default function TasksTab() {
         </div>
       )}
       
-      {/* Task Updater Component */}
-      <div className="px-4 pt-3">
+      {/* Tabs and TaskUpdater */}
+      <div className="flex items-center justify-between p-2 bg-white border-b">
+        <div className="flex space-x-2">
+          <button
+            className={`px-4 py-2 rounded-full text-sm font-medium ${
+              activeTab === "new" ? "bg-purple-500 text-white" : "bg-white text-gray-700"
+            }`}
+            onClick={() => setActiveTab("new")}
+          >
+            New
+          </button>
+          <button
+            className={`px-4 py-2 rounded-full text-sm font-medium ${
+              activeTab === "completed" ? "bg-purple-500 text-white" : "bg-white text-gray-700"
+            }`}
+            onClick={() => setActiveTab("completed")}
+          >
+            Completed
+          </button>
+        </div>
         <TaskUpdater />
-      </div>
-
-      {/* Tabs */}
-      <div className="flex p-2 bg-white border-b overflow-x-auto">
-        <button
-          className={`px-4 py-2 rounded-full text-sm font-medium mr-2 ${
-            activeTab === "all" ? "bg-purple-500 text-white" : "bg-white text-gray-700"
-          }`}
-          onClick={() => setActiveTab("all")}
-        >
-          All Tasks
-        </button>
-        <button
-          className={`px-4 py-2 rounded-full text-sm font-medium mr-2 ${
-            activeTab === "today" ? "bg-purple-500 text-white" : "bg-white text-gray-700"
-          }`}
-          onClick={() => setActiveTab("today")}
-        >
-          Today
-        </button>
-        <button
-          className={`px-4 py-2 rounded-full text-sm font-medium mr-2 ${
-            activeTab === "upcoming" ? "bg-purple-500 text-white" : "bg-white text-gray-700"
-          }`}
-          onClick={() => setActiveTab("upcoming")}
-        >
-          Upcoming
-        </button>
-        <button
-          className={`px-4 py-2 rounded-full text-sm font-medium ${
-            activeTab === "completed" ? "bg-purple-500 text-white" : "bg-white text-gray-700"
-          }`}
-          onClick={() => setActiveTab("completed")}
-        >
-          Completed
-        </button>
       </div>
 
       {/* Task list */}

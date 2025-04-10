@@ -99,21 +99,16 @@ export default function TaskUpdater() {
   }
 
   return (
-    <div className="flex justify-end mb-3 flex-col">
+    <div className="inline-block">
       {debugError && <div className="text-red-500 text-xs mb-1">Debug Error: {debugError}</div>}
       <Button
-        variant="outline"
-        size="sm"
+        variant="ghost"
+        size="icon"
         onClick={updateUserTasks}
         disabled={isUpdating}
-        className="flex items-center gap-2"
+        className="h-8 w-8"
       >
-        {isUpdating ? (
-          <RefreshCw className="h-4 w-4 animate-spin" />
-        ) : (
-          <RefreshCw className="h-4 w-4" />
-        )}
-        Update Tasks
+        <RefreshCw className={`h-4 w-4 ${isUpdating ? 'animate-spin' : ''}`} />
       </Button>
     </div>
   )
