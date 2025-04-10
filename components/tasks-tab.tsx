@@ -72,7 +72,7 @@ export default function TasksTab() {
     } else if (!isUserLoading) {
       setLoading(false)
     }
-  }, [dbUser, isUserLoading])
+  }, [dbUser?.id, isUserLoading])
 
   const fetchTasks = async () => {
     if (!dbUser?.id) return;

@@ -79,11 +79,9 @@ export default function TaskUpdater({ onUpdate }: { onUpdate?: () => void }) {
 
       // Call onUpdate only if:
       // 1. New tasks were actually added, or
-      // 2. It's a manual refresh (user clicked the button), or
-      // 3. It's the first load and we haven't loaded tasks yet
-      if (tasksWereAdded || isManualRefresh || !initialLoadDone.current) {
+      // 2. It's a manual refresh (user clicked the button)
+      if (tasksWereAdded || isManualRefresh) {
         onUpdate?.();
-        initialLoadDone.current = true;
       }
     } catch (error: any) {
       console.error('Error updating tasks:', error)
@@ -95,7 +93,7 @@ export default function TaskUpdater({ onUpdate }: { onUpdate?: () => void }) {
 
   // Auto-update tasks only on initial mount
   useEffect(() => {
-    if (dbUser?.id && !isUserLoading && !initialLoadDone.current) {
+    if (dbUser?.id && !isUserLoading) {
       updateUserTasks(false)
     }
   }, [dbUser?.id, isUserLoading])
