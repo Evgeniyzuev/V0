@@ -44,6 +44,7 @@ interface DbUser {
   wallet_balance?: number;
   aicore_balance?: number;
   level?: number;
+  core?: number;
   paid_referrals?: number;
   reinvest_setup?: number;
   // Добавляем поле для реферальной системы
