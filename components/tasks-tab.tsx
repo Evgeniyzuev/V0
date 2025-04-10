@@ -26,6 +26,7 @@ type Task = {
   completion_condition: string
   due_date: string | null
   notes: string
+  status: string
 }
 
 export default function TasksTab() {
@@ -57,17 +58,61 @@ export default function TasksTab() {
       setLoading(true)
       setError(null)
 
-      const { data, error } = await supabase
-        .from("tasks")
-        .select("*")
-        .order("number", { ascending: true })
-
-      if (error) {
-        console.error("Error fetching tasks:", error)
-        setError("Failed to fetch tasks. Please try again later.")
-      } else {
-        setTasks(data || [])
+      if (!dbUser?.id) {
+        setError("User ID is missing")
+        return
       }
+
+      // First, get the user's tasks with their status
+      const { data: userTasks, error: userTasksError } = await supabase
+        .from("user_tasks")
+        .select("task_number, status")
+        .eq("user_id", dbUser.id)
+        .order("task_number", { ascending: true })
+
+      if (userTasksError) {
+        console.error("Error fetching user tasks:", userTasksError)
+        setError("Failed to fetch tasks. Please try again later.")
+        return
+      }
+
+      if (!userTasks || userTasks.length === 0) {
+        setTasks([])
+        return
+      }
+
+      // Get the task details for all task numbers
+      const taskNumbers = userTasks.map(ut => ut.task_number)
+      const { data: taskDetails, error: taskDetailsError } = await supabase
+        .from("tasks")
+        .select("number, title, reward, icon_url, description, completion_condition, due_date, notes")
+        .in("number", taskNumbers)
+
+      if (taskDetailsError) {
+        console.error("Error fetching task details:", taskDetailsError)
+        setError("Failed to fetch task details. Please try again later.")
+        return
+      }
+
+      // Combine the user tasks with their details
+      const formattedTasks = userTasks.map(userTask => {
+        const taskDetail = taskDetails?.find(td => td.number === userTask.task_number)
+        if (!taskDetail) return null
+
+        return {
+          number: taskDetail.number,
+          title: taskDetail.title,
+          reward: taskDetail.reward,
+          icon_url: taskDetail.icon_url,
+          description: taskDetail.description,
+          completion_condition: taskDetail.completion_condition,
+          due_date: taskDetail.due_date,
+          notes: taskDetail.notes,
+          status: userTask.status
+        }
+      }).filter((task): task is Task => task !== null)
+      
+      setTasks(formattedTasks)
     } catch (err) {
       console.error("Unexpected error:", err)
       setError("An unexpected error occurred")
@@ -87,11 +132,15 @@ export default function TasksTab() {
   const filteredTasks = () => {
     switch (activeTab) {
       case "new":
-        return tasks.filter((task) => !task.due_date)
+        return tasks.filter((task) => 
+          task.status === "assigned" || task.status === "in_progress"
+        )
       case "completed":
-        return tasks.filter((task) => task.due_date)
+        return tasks.filter((task) => task.status === "completed")
       default:
-        return tasks.filter((task) => !task.due_date)
+        return tasks.filter((task) => 
+          task.status === "assigned" || task.status === "in_progress"
+        )
     }
   }
 
@@ -259,4 +308,3 @@ export default function TasksTab() {
     </div>
   )
 }
-
