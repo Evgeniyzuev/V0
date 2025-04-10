@@ -14,11 +14,10 @@ BEGIN
   BEGIN
     -- Update task status to completed
     UPDATE public.user_tasks
-    SET 
-      status = 'completed'::task_status,
-      updated_at = NOW()
-    WHERE 
-      user_id = p_user_id 
+    SET
+      status = 'completed'::task_status
+    WHERE
+      user_id = p_user_id
       AND task_id = p_task_id
       AND status IN ('assigned', 'in_progress');
 
