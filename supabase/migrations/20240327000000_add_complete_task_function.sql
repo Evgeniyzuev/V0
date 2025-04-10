@@ -29,8 +29,7 @@ BEGIN
     -- Update user's aicore_balance
     UPDATE public.profiles
     SET 
-      aicore_balance = COALESCE(aicore_balance, 0) + p_reward_amount,
-      updated_at = NOW()
+      aicore_balance = COALESCE(aicore_balance, 0) + p_reward_amount
     WHERE user_id = p_user_id;
 
     -- If no rows were updated, the user wasn't found
