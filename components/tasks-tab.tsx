@@ -193,7 +193,12 @@ export default function TasksTab() {
       )}
       
       {/* Completion Modal */}
-      <Dialog open={completionModal?.isOpen} onOpenChange={(open) => !open && setCompletionModal(null)}>
+      <Dialog open={completionModal?.isOpen} onOpenChange={(open) => {
+        if (!open) {
+          setCompletionModal(null);
+          fetchTasks(); // Refresh tasks when closing the modal
+        }
+      }}>
         <DialogContent className="sm:max-w-md">
           <DialogHeader>
             <DialogTitle className="text-center flex items-center justify-center gap-2">
@@ -226,7 +231,10 @@ export default function TasksTab() {
           <DialogFooter>
             <Button 
               className="w-full"
-              onClick={() => setCompletionModal(null)}
+              onClick={() => {
+                setCompletionModal(null);
+                fetchTasks(); // Refresh tasks when clicking Continue
+              }}
             >
               Continue
             </Button>
