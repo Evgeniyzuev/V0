@@ -108,16 +108,16 @@ export function useTaskVerification({
 
         if (updateError) throw updateError;
 
-        // Calculate new core value (old core + reward)
-        const newCore = oldCore + task.reward;
-
-        // Update the core value in the profile
-        const { error: coreUpdateError } = await supabase
+        // Get the updated core value after complete_task
+        const { data: updatedUser, error: fetchError } = await supabase
           .from('profiles')
-          .update({ core: newCore })
-          .eq('id', dbUser.id);
+          .select('core')
+          .eq('id', dbUser.id)
+          .single();
 
-        if (coreUpdateError) throw coreUpdateError;
+        if (fetchError) throw fetchError;
+
+        const newCore = updatedUser?.core || oldCore;
 
         // Call onTaskComplete if provided
         if (onTaskComplete) {
