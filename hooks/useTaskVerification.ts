@@ -91,13 +91,17 @@ export function useTaskVerification({
 
       if (success) {
         // Get current core value before update
-        const { data: currentUser } = await supabase
+        const { data: currentUser, error: currentUserError } = await supabase
           .from('users')
           .select('aicore_balance')
           .eq('id', dbUser.id)
           .single();
 
-        const oldCore = currentUser?.aicore_balance || 0;
+        // Add explicit error check
+        if (currentUserError) throw new Error(`Failed to fetch current user balance: ${currentUserError.message}`);
+        if (!currentUser) throw new Error('Could not find current user data.');
+
+        const oldCore = currentUser.aicore_balance || 0;
 
         // Begin a transaction to update both user_tasks and profiles
         const { error: updateError } = await supabase.rpc('complete_task', {
@@ -106,16 +110,20 @@ export function useTaskVerification({
           p_reward_amount: task.reward
         });
 
-        if (updateError) throw updateError;
+        if (updateError) throw new Error(`Failed to complete task via RPC: ${updateError.message}`);
 
         // Get updated core value
-        const { data: updatedUser } = await supabase
+        const { data: updatedUser, error: updatedUserError } = await supabase
           .from('users')
           .select('aicore_balance')
           .eq('id', dbUser.id)
           .single();
 
-        const newCore = updatedUser?.aicore_balance || 0;
+        // Add explicit error check
+        if (updatedUserError) throw new Error(`Failed to fetch updated user balance: ${updatedUserError.message}`);
+        if (!updatedUser) throw new Error('Could not find updated user data.');
+
+        const newCore = updatedUser.aicore_balance || 0;
 
         // Call onTaskComplete if provided
         if (onTaskComplete) {
@@ -129,9 +137,11 @@ export function useTaskVerification({
       }
     } catch (error: any) {
       console.error(`Error verifying task ${taskNumber}:`, error);
-      setStatusMessage({ 
-        type: 'error', 
-        text: `An error occurred during verification for task ${taskNumber}: ${error.message}` 
+      // Refine error message generation
+      const errorMessage = error instanceof Error ? error.message : 'An unknown error occurred.';
+      setStatusMessage({
+        type: 'error',
+        text: `Verification failed for task ${taskNumber}: ${errorMessage}`
       });
     } finally {
       setTimeout(() => {
