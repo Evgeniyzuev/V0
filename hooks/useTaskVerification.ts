@@ -92,12 +92,12 @@ export function useTaskVerification({
       if (success) {
         // Get current core value before update
         const { data: currentUser } = await supabase
-          .from('profiles')
-          .select('core')
+          .from('users')
+          .select('aicore_balance')
           .eq('id', dbUser.id)
           .single();
 
-        const oldCore = currentUser?.core || 0;
+        const oldCore = currentUser?.aicore_balance || 0;
 
         // Begin a transaction to update both user_tasks and profiles
         const { error: updateError } = await supabase.rpc('complete_task', {
@@ -110,12 +110,12 @@ export function useTaskVerification({
 
         // Get updated core value
         const { data: updatedUser } = await supabase
-          .from('profiles')
-          .select('core')
+          .from('users')
+          .select('aicore_balance')
           .eq('id', dbUser.id)
           .single();
 
-        const newCore = updatedUser?.core || 0;
+        const newCore = updatedUser?.aicore_balance || 0;
 
         // Call onTaskComplete if provided
         if (onTaskComplete) {
