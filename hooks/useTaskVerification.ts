@@ -1,8 +1,15 @@
 import { useState } from 'react';
+import { createClient } from '@supabase/supabase-js';
 // Remove the explicit import for User if it's causing an error
 // import { User } from '@/lib/types'; 
 // Import the hook itself to infer the type (adjust path if needed)
 import { useUser } from '@/components/UserContext'; 
+
+// Initialize Supabase client
+const supabase = createClient(
+  process.env.NEXT_PUBLIC_SUPABASE_URL!,
+  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+)
 
 type StatusMessage = { type: 'success' | 'error'; text: string } | null;
 
@@ -10,7 +17,7 @@ type StatusMessage = { type: 'success' | 'error'; text: string } | null;
 type DbUserType = ReturnType<typeof useUser>['dbUser'];
 
 interface UseTaskVerificationProps {
-  dbUser: DbUserType; // Use the inferred type
+  dbUser: DbUserType;
   refreshUserData: () => Promise<void>;
   setStatusMessage: (message: StatusMessage) => void;
 }
@@ -27,62 +34,87 @@ export function useTaskVerification({
   const [verifying, setVerifying] = useState(false);
 
   const handleTaskVerification = async (taskNumber: number) => {
-    if (verifying) return; // Prevent multiple simultaneous verifications
+    if (verifying || !dbUser?.id) return;
     setVerifying(true);
-    console.log(`Starting verification for task ${taskNumber}...`); // Added console log
-
-    // Default result is failure
-    let success = false;
-    let message = `Task ${taskNumber} not completed. Requirements not met.`;
+    console.log(`Starting verification for task ${taskNumber}...`);
 
     try {
+      // 1. Check task status
+      const { data: userTask, error: statusError } = await supabase
+        .from('user_tasks')
+        .select('status, task_id')
+        .eq('user_id', dbUser.id)
+        .eq('task_id', taskNumber)
+        .single();
+
+      if (statusError) throw statusError;
+
+      if (!userTask) {
+        setStatusMessage({ type: 'error', text: `Task ${taskNumber} not found.` });
+        return;
+      }
+
+      if (userTask.status !== 'assigned' && userTask.status !== 'in_progress') {
+        setStatusMessage({ 
+          type: 'error', 
+          text: `Task ${taskNumber} cannot be verified in its current status: ${userTask.status}` 
+        });
+        return;
+      }
+
+      // 2. Get task reward
+      const { data: task, error: taskError } = await supabase
+        .from('tasks')
+        .select('reward')
+        .eq('number', taskNumber)
+        .single();
+
+      if (taskError) throw taskError;
+
+      // Default result is failure
+      let success = false;
+      let message = `Task ${taskNumber} not completed. Requirements not met.`;
+
       // --- Task verification logic ---
-      // Specific logic for task #1
       if (taskNumber === 1) {
-        // Now uses the inferred type, property access remains the same
-        success = !!dbUser?.id; // Check if user ID exists 
+        success = !!dbUser.id;
         message = success
           ? `Task ${taskNumber}: Congratulations! Task completed successfully.`
           : `Task ${taskNumber}: Task not completed. You must be logged in.`;
       }
-      // TODO: Add verification logic for other task numbers here
-      // Example:
-      // else if (taskNumber === 2) {
-      //   // Call an API or check some condition
-      //   // const result = await checkSomeConditionForTask2();
-      //   // success = result.isSuccess;
-      //   // message = result.feedbackMessage;
-      // }
+      // Add more task verifications here
       // --- End task verification logic ---
 
-      console.log(`Verification result for task ${taskNumber}: ${success ? 'Success' : 'Failure'}`); // Added console log
+      console.log(`Verification result for task ${taskNumber}: ${success ? 'Success' : 'Failure'}`);
 
-      // Update status message based on verification outcome
       if (success) {
+        // Begin a transaction to update both user_tasks and profiles
+        const { error: updateError } = await supabase.rpc('complete_task', {
+          p_user_id: dbUser.id,
+          p_task_id: taskNumber,
+          p_reward_amount: task.reward
+        });
+
+        if (updateError) throw updateError;
+
         setStatusMessage({ type: 'success', text: message });
-        // Refresh user data only on success, e.g., to update balance or task status
-        console.log(`Task ${taskNumber} successful, refreshing user data...`); // Added console log
         await refreshUserData();
       } else {
         setStatusMessage({ type: 'error', text: message });
       }
-    } catch (error) {
+    } catch (error: any) {
       console.error(`Error verifying task ${taskNumber}:`, error);
-      // Set a generic error message in case of unexpected errors during verification
-      setStatusMessage({ type: 'error', text: `An error occurred during verification for task ${taskNumber}.` });
-      success = false; // Ensure failure state on error
+      setStatusMessage({ 
+        type: 'error', 
+        text: `An error occurred during verification for task ${taskNumber}: ${error.message}` 
+      });
     } finally {
-      // Clear the status message after 3 seconds regardless of outcome
       setTimeout(() => {
         setStatusMessage(null);
-        console.log(`Cleared status message for task ${taskNumber}.`); // Added console log
       }, 3000);
-      // Reset verification state
       setVerifying(false);
-      console.log(`Finished verification process for task ${taskNumber}.`); // Added console log
     }
   };
 
-  // Return the verification state and the handler function
   return { verifying, handleTaskVerification };
 }

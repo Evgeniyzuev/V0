@@ -7,7 +7,73 @@ import { Card, CardContent } from '@/components/ui/card';
 // Success stories data
 const successStories = [
   {
-    id: 1,
+  id: 1,
+  name: 'Sarah',
+  avatar: 'https://randomuser.me/api/portraits/women/65.jpg',
+  title: 'From Corporate Grey to Creative Color',
+  category: 'Career Change',
+  story: "Five years in marketing... sounds respectable, right? For me, it was five years under flickering fluorescent lights, drowning in spreadsheets, feeling like a ghost in my own life. Every evening, I'd drag myself home, utterly drained, collapsing on the sofa with zero energy for anything but doom-scrolling. I ached for something different, something real, but the thought of actually changing careers? Pure terror. What else could I even do? Failure felt inevitable, so I stayed stuck, the grey seeping into everything.",
+  image: 'https://images.unsplash.com/photo-1517245386807-bb43f82c33c4?w=500&auto=format&fit=crop&q=60&ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxzZWFyY2h8Mnx8Z3JhcGhpYyUyMGRlc2lnbnxlbnwwfHwwfHx8MA%3D%3D',
+  likes: 356,
+  comments: 78
+},
+{
+  id: 2,
+  name: 'Mark',
+  avatar: 'https://randomuser.me/api/portraits/men/82.jpg',
+  title: 'From "Someday" Idea to First Paying User',
+  category: 'Entrepreneurship',
+  story: "For years, my app idea lived in my head, a brilliant ghost I'd excitedly tell friends about... and then do absolutely nothing. Business plans, coding, marketing – it felt like this insurmountable mountain I didn't even know how to start climbing. Where would the money come from? What if no one cared? The 'what ifs' weren't just doubts; they were chains, locking me in procrastination.",
+  image: 'https://images.unsplash.com/photo-1517842645767-c639042777db?w=500&auto=format&fit=crop&q=60&ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxzZWFyY2h8M3x8c3RhcnR1cHxlbnwwfHwwfHx8MA%3D%3D',
+  likes: 412,
+  comments: 95
+},
+{
+  id: 3,
+  name: 'Chloe',
+  avatar: 'https://randomuser.me/api/portraits/women/79.jpg',
+  title: 'From Debt\'s Shadow to Financial Breathing Room',
+  category: 'Finance',
+  story: "Living paycheck to paycheck wasn't just inconvenient; it was a constant, suffocating anxiety. Every unexpected bill – a car repair, a dentist visit – sent a jolt of panic through me, pushing me deeper into credit card debt I couldn't seem to escape. I felt trapped, ashamed, like I was failing at being an adult.",
+  image: 'https://images.unsplash.com/photo-1579264688258-c0c5c4dc8f75?w=500&auto=format&fit=crop&q=60&ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxzZWFyY2h8Mnx8ZmluYW5jZXxlbnwwfHwwfHx8MA%3D%3D',
+  likes: 287,
+  comments: 62
+},
+{
+  id: 4,
+  name: 'Ethan',
+  avatar: 'https://randomuser.me/api/portraits/men/47.jpg',
+  title: 'From Lonely Echo Chamber to Real Connection',
+  category: 'Relationships',
+  story: "Moving to a new city for work should've been exciting. Instead, it was crushingly lonely. Remote job, old friends hundreds of miles away... my apartment became an echo chamber. Evenings blurred into a Netflix haze, weekends were silent. I desperately wanted friends, maybe even a relationship, but the idea of putting myself 'out there'? Cripplingly awkward.",
+  image: 'https://images.unsplash.com/photo-1519085360753-5e26425eab83?w=500&auto=format&fit=crop&q=60&ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxzZWFyY2h8Mnx8ZnJpZW5kc2hpcHxlbnwwfHwwfHx8MA%3D%3D',
+  likes: 329,
+  comments: 81
+},
+{
+  id: 5,
+  name: 'Olivia',
+  avatar: 'https://randomuser.me/api/portraits/women/54.jpg',
+  title: 'From Couch Potato to Morning Runner',
+  category: 'Health',
+  story: "Hitting 40 felt less like a milestone and more like hitting a wall. Overweight, breathless climbing stairs, perpetually exhausted... I avoided mirrors and felt deeply ashamed of how I'd let myself go. Every 'Monday I'll start' ended by Wednesday with a junk food binge and a wave of self-loathing.",
+  image: 'https://images.unsplash.com/photo-1517649763962-0c623066013b?w=500&auto=format&fit=crop&q=60&ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxzZWFyY2h8Mnx8cnVubmluZ3xlbnwwfHwwfHx8MA%3D%3D',
+  likes: 402,
+  comments: 76
+},
+{
+  id: 6,
+  name: 'Isaac',
+  avatar: 'https://randomuser.me/api/portraits/men/33.jpg',
+  title: 'From Blank Page Terror to "The End"',
+  category: 'Creativity',
+  story: "I dreamed of writing a novel for years. This epic fantasy world lived vividly in my head, characters whispering their stories... but it stayed locked inside. Every time I faced the blank screen, sheer panic set in. My inner critic screamed: 'You're not talented enough! Nobody will read this! Where do you even start?!'",
+  image: 'https://images.unsplash.com/photo-1455390582262-044cdead277a?w=500&auto=format&fit=crop&q=60&ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxzZWFyY2h8MzR8fHdyaXRpbmd8ZW58MHx8MHx8fDA%3D',
+  likes: 276,
+  comments: 54
+},
+  {
+    id: 7,
     name: 'David',
     avatar: 'https://randomuser.me/api/portraits/men/42.jpg',
     title: 'Career Pivot Success',
@@ -18,7 +84,7 @@ const successStories = [
     category: 'Career',
   },
   {
-    id: 2,
+    id: 8,
     name: 'Priya',
     avatar: 'https://randomuser.me/api/portraits/women/32.jpg',
     title: 'Entrepreneurial Launch',
@@ -29,7 +95,7 @@ const successStories = [
     category: 'Business',
   },
   {
-    id: 3,
+    id: 9,
     name: 'Leo',
     avatar: 'https://randomuser.me/api/portraits/men/24.jpg',
     title: 'Finding a Meaningful Relationship',
@@ -40,7 +106,7 @@ const successStories = [
     category: 'Relationships',
   },
   {
-    id: 4,
+    id: 10,
     name: 'Chloe',
     avatar: 'https://randomuser.me/api/portraits/women/44.jpg',
     title: 'Overcoming Creative Block',
@@ -51,7 +117,7 @@ const successStories = [
     category: 'Creativity',
   },
   {
-    id: 5,
+    id: 11,
     name: 'Kenji',
     avatar: 'https://randomuser.me/api/portraits/men/52.jpg',
     title: 'Mastering a New Language',
@@ -62,7 +128,7 @@ const successStories = [
     category: 'Learning',
   },
   {
-    id: 6,
+    id: 12,
     name: 'Fatima',
     avatar: 'https://randomuser.me/api/portraits/women/67.jpg',
     title: 'Achieving Financial Freedom',
@@ -73,7 +139,7 @@ const successStories = [
     category: 'Finance',
   },
   {
-    id: 7,
+    id: 13,
     name: 'Sarah',
     avatar: 'https://randomuser.me/api/portraits/women/22.jpg',
     title: 'Conquering Performance Anxiety',
@@ -84,7 +150,7 @@ const successStories = [
     category: 'Performance',
   },
   {
-    id: 8,
+    id: 14,
     name: 'Marcus',
     avatar: 'https://randomuser.me/api/portraits/men/36.jpg',
     title: 'Improving Family Connections',
@@ -95,7 +161,7 @@ const successStories = [
     category: 'Relationships',
   },
   {
-    id: 9,
+    id: 15,
     name: 'Maria',
     avatar: 'https://randomuser.me/api/portraits/women/57.jpg',
     title: 'Completing a Fitness Endurance Challenge',
@@ -106,7 +172,7 @@ const successStories = [
     category: 'Fitness',
   },
   {
-    id: 10,
+    id: 16,
     name: 'Isabelle',
     avatar: 'https://randomuser.me/api/portraits/women/8.jpg',
     title: 'Launching a Community Initiative',
