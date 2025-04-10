@@ -20,6 +20,7 @@ interface UseTaskVerificationProps {
   dbUser: DbUserType;
   refreshUserData: () => Promise<void>;
   setStatusMessage: (message: StatusMessage) => void;
+  onTaskComplete?: (taskNumber: number, reward: number, oldCore: number, newCore: number) => void;
 }
 
 /**
@@ -30,6 +31,7 @@ export function useTaskVerification({
   dbUser,
   refreshUserData,
   setStatusMessage,
+  onTaskComplete
 }: UseTaskVerificationProps) {
   const [verifying, setVerifying] = useState(false);
 
@@ -88,6 +90,15 @@ export function useTaskVerification({
       console.log(`Verification result for task ${taskNumber}: ${success ? 'Success' : 'Failure'}`);
 
       if (success) {
+        // Get current core value before update
+        const { data: currentUser } = await supabase
+          .from('profiles')
+          .select('core')
+          .eq('id', dbUser.id)
+          .single();
+
+        const oldCore = currentUser?.core || 0;
+
         // Begin a transaction to update both user_tasks and profiles
         const { error: updateError } = await supabase.rpc('complete_task', {
           p_user_id: dbUser.id,
@@ -96,6 +107,20 @@ export function useTaskVerification({
         });
 
         if (updateError) throw updateError;
+
+        // Get updated core value
+        const { data: updatedUser } = await supabase
+          .from('profiles')
+          .select('core')
+          .eq('id', dbUser.id)
+          .single();
+
+        const newCore = updatedUser?.core || 0;
+
+        // Call onTaskComplete if provided
+        if (onTaskComplete) {
+          onTaskComplete(taskNumber, task.reward, oldCore, newCore);
+        }
 
         setStatusMessage({ type: 'success', text: message });
         await refreshUserData();

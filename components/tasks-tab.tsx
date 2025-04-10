@@ -1,12 +1,13 @@
 "use client"
 
 import { useState, useEffect } from "react"
-import { Calendar, Tag, ChevronDown, ChevronUp, Check, User } from "lucide-react"
+import { Calendar, Tag, ChevronDown, ChevronUp, Check, User, Trophy } from "lucide-react"
 import { createClient } from "@supabase/supabase-js"
 import { useUser } from "@/components/UserContext"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
 import { Avatar, AvatarFallback } from "@/components/ui/avatar"
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog"
 import Link from "next/link"
 import TaskUpdater from "@/components/TaskUpdater"
 import { useTaskVerification } from '@/hooks/useTaskVerification'
@@ -42,11 +43,27 @@ export default function TasksTab() {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [statusMessage, setStatusMessage] = useState<{ type: 'success' | 'error', text: string } | null>(null)
+  const [completionModal, setCompletionModal] = useState<{
+    isOpen: boolean;
+    taskNumber: number;
+    reward: number;
+    oldCore?: number;
+    newCore?: number;
+  } | null>(null)
 
   const { verifying, handleTaskVerification } = useTaskVerification({
     dbUser,
     refreshUserData,
     setStatusMessage,
+    onTaskComplete: (taskNumber: number, reward: number, oldCore: number, newCore: number) => {
+      setCompletionModal({
+        isOpen: true,
+        taskNumber,
+        reward,
+        oldCore,
+        newCore
+      });
+    }
   })
 
   useEffect(() => {
@@ -175,6 +192,48 @@ export default function TasksTab() {
         </div>
       )}
       
+      {/* Completion Modal */}
+      <Dialog open={completionModal?.isOpen} onOpenChange={(open) => !open && setCompletionModal(null)}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle className="text-center flex items-center justify-center gap-2">
+              <Trophy className="h-6 w-6 text-yellow-500" />
+              Task Completed!
+            </DialogTitle>
+          </DialogHeader>
+          <div className="py-6">
+            <div className="text-center space-y-4">
+              <p className="text-lg font-medium">Congratulations!</p>
+              <p className="text-gray-600">
+                You've successfully completed Task {completionModal?.taskNumber}
+              </p>
+              <div className="bg-purple-50 p-4 rounded-lg">
+                <p className="text-sm text-purple-700 mb-2">Rewards:</p>
+                <div className="flex justify-center items-center gap-2 text-2xl font-bold text-purple-700">
+                  +${completionModal?.reward}
+                </div>
+              </div>
+              <div className="bg-blue-50 p-4 rounded-lg">
+                <p className="text-sm text-blue-700 mb-2">Core Progress:</p>
+                <div className="flex justify-center items-center gap-2">
+                  <span className="text-xl text-blue-700">${completionModal?.oldCore}</span>
+                  <ChevronUp className="h-6 w-6 text-green-500" />
+                  <span className="text-2xl font-bold text-blue-700">${completionModal?.newCore}</span>
+                </div>
+              </div>
+            </div>
+          </div>
+          <DialogFooter>
+            <Button 
+              className="w-full"
+              onClick={() => setCompletionModal(null)}
+            >
+              Continue
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
       {/* Tabs and TaskUpdater */}
       <div className="flex items-center justify-between p-2 bg-white border-b">
         <div className="flex space-x-2">
