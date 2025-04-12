@@ -44,7 +44,7 @@ export default function AddWish() {
     try {
       const supabase = createClientSupabaseClient()
 
-      // First, create a new goal
+      // First, create a new goal without specifying the id
       const { data: newGoal, error: goalError } = await supabase
         .from("goals")
         .insert([
@@ -78,6 +78,11 @@ export default function AddWish() {
         ])
 
       if (userGoalError) {
+        // If user_goal creation fails, we should clean up the created goal
+        await supabase
+          .from("goals")
+          .delete()
+          .eq("id", newGoal.id)
         throw new Error(userGoalError.message)
       }
 
