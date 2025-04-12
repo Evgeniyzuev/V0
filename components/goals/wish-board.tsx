@@ -281,11 +281,14 @@ const WishBoard: React.FC<WishBoardProps> = () => {
     queryFn: fetchGoals
   })
 
-  // Fetch user goals from the database
+  // Fetch user goals from the database, passing the user ID
   const { data: userGoals = [], isLoading: isLoadingUserGoals, error: userGoalsError } = useQuery({
-    queryKey: ['user-goals'],
-    queryFn: fetchUserGoals,
-    enabled: !!dbUser?.id // Only fetch if user is authenticated
+    // Query key теперь включает userId, чтобы запрос перезагружался при смене пользователя
+    queryKey: ['user-goals', dbUser?.id], 
+    // Передаем userId в функцию запроса
+    queryFn: () => fetchUserGoals(dbUser?.id), 
+    // Запрос активен только если есть dbUser.id
+    enabled: !!dbUser?.id 
   })
 
   const goalUpdaterRef = useRef<GoalUpdaterRef>(null);

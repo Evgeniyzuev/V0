@@ -54,8 +54,8 @@ create table public.user_goals (
 -- Add comments to user_goals table columns
 comment on table public.user_goals is 'User-specific instances of goals with progress tracking';
 comment on column public.user_goals.id is 'Primary Key';
-comment on column public.user_goals.user_id is 'Foreign key to auth.users.id';
-comment on column public.user_goals.goal_id is 'Foreign key to goals.id';
+comment on column public.user_goals.user_id is 'Foreign key to public.users.id';
+comment on column public.user_goals.goal_id is 'Foreign key to public.goals.id';
 comment on column public.user_goals.created_at is 'Timestamp when the user added this goal';
 comment on column public.user_goals.updated_at is 'Timestamp when the user goal was last updated';
 comment on column public.user_goals.status is 'Current status of the goal for the user';

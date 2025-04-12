@@ -52,32 +52,48 @@ export async function updateGoal(id: number, updates: Partial<Goal>) {
   return data
 }
 
-export const fetchUserGoals = async () => {
+export const fetchUserGoals = async (userId: string | undefined) => {
+  if (!userId) {
+    console.log('fetchUserGoals: No user ID provided, returning empty array.');
+    return []; // Возвращаем пустой массив, если нет user ID
+  }
+
   const supabase = createClientSupabaseClient()
   
-  console.log('Fetching user goals...')
+  console.log(`Fetching user goals for user ID: ${userId}...`)
   const { data: userGoals, error } = await supabase
     .from('user_goals')
     .select(`
       *,
       goal:goals(*)
     `)
+    .eq('user_id', userId) // <-- Добавляем фильтр по user_id
     .order('created_at', { ascending: false })
 
   if (error) {
     console.error('Error fetching user goals:', error)
     toast.error('Error fetching user goals: ' + error.message)
-    throw error
+    throw error // Или можно вернуть пустой массив: return []
   }
 
   console.log('Fetched user goals:', userGoals)
 
   // Transform the data to match the Goal type
   const transformedGoals = userGoals.map(userGoal => ({
-    ...userGoal.goal,
-    progress_percentage: userGoal.progress_percentage,
+    // Добавляем user_goal.id и status для отображения в личных целях
+    id: userGoal.goal.id, // Используем id из связанной таблицы goals
+    user_goal_id: userGoal.id, // Сохраняем id самой записи user_goals
     status: userGoal.status,
-    notes: userGoal.notes
+    progress_percentage: userGoal.progress_percentage,
+    notes: userGoal.notes,
+    // Копируем остальные поля из goal
+    created_at: userGoal.goal.created_at,
+    title: userGoal.goal.title,
+    description: userGoal.goal.description,
+    image_url: userGoal.goal.image_url,
+    estimated_cost: userGoal.goal.estimated_cost,
+    steps: userGoal.goal.steps,
+    difficulty_level: userGoal.goal.difficulty_level
   }))
 
   console.log('Transformed goals:', transformedGoals)
