@@ -51,9 +51,9 @@ export default function AddWish() {
           {
             user_id: dbUser.id,
             title,
-            description,
+            description: description || null,
             image_url: imageUrl,
-            estimated_cost: estimatedCost,
+            estimated_cost: estimatedCost || null,
             difficulty_level: difficultyLevel,
             status: "not_started",
             progress_percentage: 0,
