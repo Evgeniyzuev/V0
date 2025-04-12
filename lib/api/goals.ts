@@ -76,16 +76,21 @@ export const fetchUserGoals = async () => {
 export async function addUserGoal(goalId: number) {
   const supabase = createClientSupabaseClient()
   
-  // Get the current user's ID from the authenticated session
-  const { data: { session }, error: sessionError } = await supabase.auth.getSession()
-  if (sessionError || !session?.user?.id) {
+  // Get the current user from the public.users table
+  const { data: currentUser, error: userError } = await supabase
+    .from('users')
+    .select('id')
+    .single()
+
+  if (userError || !currentUser?.id) {
+    console.error('Error getting current user:', userError)
     throw new Error('User not authenticated')
   }
   
   const { data, error } = await supabase
     .from('user_goals')
     .upsert({
-      user_id: session.user.id,
+      user_id: currentUser.id,
       goal_id: goalId,
       status: 'not_started',
       progress_percentage: 0,
