@@ -19,7 +19,7 @@ export default function SecondaryTabs({ activeTab, setActiveTab, isAuthenticated
   ]
 
   return (
-    <div className="flex justify-around p-2 border-b border-gray-100">
+    <div className="flex justify-around p-0 border-b border-gray-100">
       {tabs.map((tab) => {
         const Icon = tab.icon
         const isActive = activeTab === tab.id

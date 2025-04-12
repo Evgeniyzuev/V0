@@ -30,7 +30,7 @@ export default function Home() {
 
   return (
     <main className="flex flex-col h-screen bg-white">
-      <div className="flex-1 overflow-y-auto pb-16">{renderActiveTab()}</div>
+      <div className="flex-1 overflow-y-auto pb-0">{renderActiveTab()}</div>
       <BottomTabs activeTab={activeTab} setActiveTab={setActiveTab} />
     </main>
   )
