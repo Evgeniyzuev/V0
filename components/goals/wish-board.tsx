@@ -8,16 +8,28 @@ import { Card, CardContent } from "@/components/ui/card"
 import { Avatar, AvatarFallback } from "@/components/ui/avatar"
 import { useUser } from "@/components/UserContext"
 
-// Example wishes data
-const wishes = [
+// Example goals data
+const goals = [
   {
     id: 1,
+    title: 'Get the First Level',
+    description: 'Advance through the first milestone in your personal development.',
+    imageUrl: 'https://images.unsplash.com/photo-1486312338219-ce68d2c6f44d?w=500&auto=format&fit=crop&q=60&ixlib=rb-4.0.3',
+    progress: 0,
+    targetDate: "",
+    estimatedCost: "Free",
+    difficulty_level: 0,
+    steps: ["Watch all tutorial videos", "Complete practice exercises", "Pass the level 1 assessment"],
+  },
+  {
+    id: 2,
     title: 'Travel to Japan',
     description: 'Visit Tokyo, Kyoto, and Mount Fuji during cherry blossom season.',
     imageUrl: 'https://images.unsplash.com/photo-1493976040374-85c8e12f0c0e?w=500&auto=format&fit=crop&q=60&ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxzZWFyY2h8Mnx8amFwYW58ZW58MHx8MHx8fDA%3D',
-    progress: 45,
+    progress: 0,
     targetDate: "Apr 2024",
     estimatedCost: "$5,000",
+    difficulty_level: 13,
     steps: [
       "Save $5,000 for the trip",
       "Research and book flights",
@@ -27,29 +39,14 @@ const wishes = [
     ],
   },
   {
-    id: 2,
-    title: 'Learn Piano',
-    description: 'Take piano lessons and learn to play my favorite songs.',
-    imageUrl: 'https://images.unsplash.com/photo-1520523839897-bd0b52f945a0?w=500&auto=format&fit=crop&q=60&ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxzZWFyY2h8M3x8cGlhbm98ZW58MHx8MHx8fDA%3D',
-    progress: 30,
-    targetDate: "Ongoing",
-    estimatedCost: "$1,200/year",
-    steps: [
-      "Find a piano teacher",
-      "Purchase or rent a keyboard",
-      "Practice 30 minutes daily",
-      "Learn to read sheet music",
-      "Master 5 songs by end of year",
-    ],
-  },
-  {
     id: 3,
     title: 'Start a Business',
     description: 'Launch my own startup focused on sustainable products.',
     imageUrl: 'https://images.unsplash.com/photo-1556761175-5973dc0f32e7?w=500&auto=format&fit=crop&q=60&ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxzZWFyY2h8M3x8YnVzaW5lc3N8ZW58MHx8MHx8fDA%3D',
-    progress: 15,
+    progress: 0,
     targetDate: "Jan 2024",
     estimatedCost: "$10,000",
+    difficulty_level: 13,
     steps: [
       "Develop business plan",
       "Secure initial funding",
@@ -63,9 +60,10 @@ const wishes = [
     title: 'Run a Marathon',
     description: 'Train for and complete a full marathon in under 4 hours.',
     imageUrl: 'https://images.unsplash.com/photo-1461897104016-0b3b00cc81ee?w=500&auto=format&fit=crop&q=60&ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxzZWFyY2h8NHx8bWFyYXRob258ZW58MHx8MHx8fDA%3D',
-    progress: 20,
+    progress: 0,
     targetDate: "Oct 2023",
     estimatedCost: "$300",
+    difficulty_level: 13,
     steps: [
       "Follow 16-week training plan",
       "Complete a half marathon",
@@ -79,9 +77,10 @@ const wishes = [
     title: 'Write a Book',
     description: 'Complete a novel of at least 50,000 words and publish it.',
     imageUrl: 'https://images.unsplash.com/photo-1519682577862-22b62b24e493?w=500&auto=format&fit=crop&q=60&ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxzZWFyY2h8M3x8Ym9va3xlbnwwfHwwfHx8MA%3D%3D',
-    progress: 60,
+    progress: 0,
     targetDate: "Dec 2023",
     estimatedCost: "$2,000",
+    difficulty_level: 15,
     steps: [
       "Finish first draft (60,000 words)",
       "Revise and edit manuscript",
@@ -95,9 +94,10 @@ const wishes = [
     title: 'Learn to Surf',
     description: 'Take surfing lessons and be able to ride waves confidently.',
     imageUrl: 'https://images.unsplash.com/photo-1502680390469-be75c86b636f?w=500&auto=format&fit=crop&q=60&ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxzZWFyY2h8Mnx8c3VyZnxlbnwwfHwwfHx8MA%3D%3D',
-    progress: 10,
+    progress: 0,
     targetDate: "Aug 2023",
     estimatedCost: "$800",
+    difficulty_level: 16,
     steps: [
       "Take beginner surfing lessons",
       "Purchase surfboard and wetsuit",
@@ -111,9 +111,10 @@ const wishes = [
     title: 'Build a Tiny House',
     description: 'Design and build a sustainable tiny house on wheels.',
     imageUrl: 'https://images.unsplash.com/photo-1518780664697-55e3ad937233?w=500&auto=format&fit=crop&q=60&ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxzZWFyY2h8Mnx8dGlueSUyMGhvdXNlfGVufDB8fDB8fHww',
-    progress: 25,
+    progress: 0,
     targetDate: "Jun 2025",
     estimatedCost: "$50,000",
+    difficulty_level: 18,
     steps: [
       "Design house plans",
       "Acquire building permits",
@@ -127,9 +128,10 @@ const wishes = [
     title: 'Adopt a Dog',
     description: 'Adopt a rescue dog and train them to be a therapy animal.',
     imageUrl: 'https://images.unsplash.com/photo-1543466835-00a7907e9de1?w=500&auto=format&fit=crop&q=60&ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxzZWFyY2h8NHx8ZG9nfGVufDB8fDB8fHww',
-    progress: 50,
+    progress: 0,
     targetDate: "Jul 2023",
     estimatedCost: "$1,000 initial + $100/month",
+    difficulty_level: 3,
     steps: [
       "Research dog breeds suitable for my lifestyle",
       "Dog-proof home and yard",
@@ -143,9 +145,10 @@ const wishes = [
     title: 'Star Gazing Trip',
     description: 'Visit a dark sky reserve and photograph the Milky Way.',
     imageUrl: 'https://images.unsplash.com/photo-1419242902214-272b3f66ee7a?w=500&auto=format&fit=crop&q=60&ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxzZWFyY2h8Mnx8c3RhcnN8ZW58MHx8MHx8fDA%3D',
-    progress: 15,
+    progress: 0,
     targetDate: "Sep 2023",
     estimatedCost: "$1,200",
+    difficulty_level: 2,
     steps: [
       "Research dark sky reserves",
       "Purchase telescope and astronomy guide",
@@ -154,52 +157,26 @@ const wishes = [
       "Plan observation schedule around moon phases",
     ],
   },
-];
-
-// Updated personal goals data with new image for "Complete 3 Tasks"
-const personalGoals = [
   {
-    id: 101,
-    title: 'Get First Level',
-    description: 'Complete the initial achievement to unlock your journey.',
-    imageUrl: 'https://images.unsplash.com/photo-1486312338219-ce68d2c6f44d?w=500&auto=format&fit=crop&q=60&ixlib=rb-4.0.3',
-    progress: 25,
-    targetDate: "Aug 2023",
-    estimatedCost: "Free",
-    steps: [
-      "Complete the beginner investment course",
-      "Set up a brokerage account",
-      "Make your first investment of $100",
-    ],
-  },
-  {
-    id: 102,
-    title: 'Get the First Level',
-    description: 'Advance through the first milestone in your personal development.',
-    imageUrl: 'https://images.unsplash.com/photo-1498050108023-c5249f4df085?w=500&auto=format&fit=crop&q=60&ixlib=rb-4.0.3',
-    progress: 40,
-    targetDate: "Jul 2023",
-    estimatedCost: "Free",
-    steps: ["Watch all tutorial videos", "Complete practice exercises", "Pass the level 1 assessment"],
-  },
-  {
-    id: 103,
+    id: 10,
     title: 'Confirm Humanity',
     description: 'Verify your identity and activate full platform features.',
     imageUrl: 'https://images.unsplash.com/photo-1581091226825-a6a2a5aee158?w=500&auto=format&fit=crop&q=60&ixlib=rb-4.0.3',
-    progress: 80,
+    progress: 0,
     targetDate: "Jun 2023",
     estimatedCost: "Free",
+    difficulty_level: 1,
     steps: ["Upload identification documents", "Complete verification questionnaire", "Pass the security check"],
   },
   {
-    id: 104,
+    id: 11,
     title: 'Plan Passive Income',
     description: 'Create a strategy for building sustainable passive income streams.',
     imageUrl: 'https://images.unsplash.com/photo-1461749280684-dccba630e2f6?w=500&auto=format&fit=crop&q=60&ixlib=rb-4.0.3',
-    progress: 15,
+    progress: 0,
     targetDate: "Dec 2023",
     estimatedCost: "Varies",
+    difficulty_level: 4,
     steps: [
       "Research passive income opportunities",
       "Select 3 viable income streams",
@@ -207,13 +184,14 @@ const personalGoals = [
     ],
   },
   {
-    id: 105,
+    id: 12,
     title: 'Complete 3 Tasks',
     description: 'Complete three tasks related to your selected goal to build momentum.',
     imageUrl: 'https://blush-keen-constrictor-906.mypinata.cloud/ipfs/bafkreig67kt5udbntrhd3cijejxrz57a4fsegwr6hspcxmokliq6yqtzpi',
-    progress: 66,
+    progress: 0,
     targetDate: "Jun 2023",
     estimatedCost: "Free",
+    difficulty_level: 1,
     steps: [
       "Complete task #1: Platform orientation",
       "Complete task #2: Goal setting",
@@ -221,18 +199,51 @@ const personalGoals = [
     ],
   },
   {
-    id: 106,
+    id: 13,
     title: 'Track Progress',
     description: 'Monitor your progress and celebrate small wins along the way.',
     imageUrl: 'https://images.unsplash.com/photo-1518770660439-4636190af475?w=500&auto=format&fit=crop&q=60&ixlib=rb-4.0.3',
-    progress: 50,
+    progress: 0,
     targetDate: "Ongoing",
     estimatedCost: "Free",
+    difficulty_level: 1,
     steps: [
       "Set up progress tracking dashboard",
       "Establish weekly review routine",
       "Create milestone celebration plan",
     ],
+  },
+  {
+    id: 14,
+    title: 'Learn Piano',
+    description: 'Take piano lessons and learn to play my favorite songs.',
+    imageUrl: 'https://images.unsplash.com/photo-1520523839897-bd0b52f945a0?w=500&auto=format&fit=crop&q=60&ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxzZWFyY2h8M3x8cGlhbm98ZW58MHx8MHx8fDA%3D',
+    progress: 30,
+    targetDate: "Ongoing",
+    estimatedCost: "$1,200/year",
+    difficulty_level: 11,
+    steps: [
+      "Find a piano teacher",
+      "Purchase or rent a keyboard",
+      "Practice 30 minutes daily",
+      "Learn to read sheet music",
+      "Master 5 songs by end of year",
+    ],
+  },
+];
+
+// Updated personal goals data with new image for "Complete 3 Tasks"
+const personalGoals = [
+  {
+    id: -1,
+    title: 'Get the First Level',
+    description: 'Advance through the first milestone in your personal development.',
+    imageUrl: 'https://images.unsplash.com/photo-1486312338219-ce68d2c6f44d?w=500&auto=format&fit=crop&q=60&ixlib=rb-4.0.3',
+    progress: 0,
+    targetDate: "",
+    estimatedCost: "Free",
+    difficulty_level: 0,
+    steps: ["Watch all tutorial videos", "Complete practice exercises", "Pass the level 1 assessment"],
   },
 ];
 
@@ -242,7 +253,7 @@ interface WishBoardProps {
 
 const WishBoard: React.FC<WishBoardProps> = () => {
   const { dbUser } = useUser()
-  const [selectedWish, setSelectedWish] = useState<typeof wishes[0] | null>(null);
+  const [selectedWish, setSelectedWish] = useState<typeof goals[0] | null>(null);
   const [isEditing, setIsEditing] = useState(false);
   const [editedTitle, setEditedTitle] = useState('');
   const [editedDescription, setEditedDescription] = useState('');
@@ -250,8 +261,9 @@ const WishBoard: React.FC<WishBoardProps> = () => {
   const [editedTargetDate, setEditedTargetDate] = useState('');
   const [editedEstimatedCost, setEditedEstimatedCost] = useState('');
   const [editedProgress, setEditedProgress] = useState(0);
+  const [editedDifficultyLevel, setEditedDifficultyLevel] = useState(0);
 
-  const handleWishClick = (wish: typeof wishes[0]) => {
+  const handleWishClick = (wish: typeof goals[0]) => {
     setSelectedWish(wish);
     setEditedTitle(wish.title);
     setEditedDescription(wish.description);
@@ -259,6 +271,7 @@ const WishBoard: React.FC<WishBoardProps> = () => {
     setEditedTargetDate(wish.targetDate || '');
     setEditedEstimatedCost(wish.estimatedCost || '');
     setEditedProgress(wish.progress || 0);
+    setEditedDifficultyLevel(wish.difficulty_level || 0);
     setIsEditing(false);
   };
 
@@ -275,7 +288,7 @@ const WishBoard: React.FC<WishBoardProps> = () => {
     setIsEditing(false);
     if (selectedWish) {
       // In a real app, you'd likely update this in your state management or backend
-      const wishToUpdate = [...personalGoals, ...wishes].find(w => w.id === selectedWish.id);
+      const wishToUpdate = [...personalGoals, ...goals].find(w => w.id === selectedWish.id);
       if (wishToUpdate) {
         wishToUpdate.title = editedTitle;
         wishToUpdate.description = editedDescription;
@@ -283,6 +296,7 @@ const WishBoard: React.FC<WishBoardProps> = () => {
         wishToUpdate.targetDate = editedTargetDate;
         wishToUpdate.estimatedCost = editedEstimatedCost;
         wishToUpdate.progress = editedProgress;
+        wishToUpdate.difficulty_level = editedDifficultyLevel;
         // Force re-render if needed, depending on state management
         setSelectedWish({ ...wishToUpdate }); // Update the selectedWish state to reflect changes
       }
@@ -376,7 +390,7 @@ const WishBoard: React.FC<WishBoardProps> = () => {
       <div>
         {/* Intentionally no title here, mirroring previous structure */}
         <div className="image-grid grid grid-cols-3 gap-1">
-          {wishes.map((wish) => (
+          {goals.map((wish) => (
             <div
               key={wish.id}
               className="image-item animate-fade-in rounded-lg overflow-hidden shadow-md aspect-square cursor-pointer" // Added cursor-pointer
@@ -457,7 +471,21 @@ const WishBoard: React.FC<WishBoardProps> = () => {
                       max="100"
                       value={editedProgress}
                       onChange={(e) => setEditedProgress(Number(e.target.value))}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-purple-500" // Changed focus ring color
+                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-purple-500"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      Difficulty Level (1-5)
+                    </label>
+                    <input
+                      type="number"
+                      min="1"
+                      max="5"
+                      value={editedDifficultyLevel}
+                      onChange={(e) => setEditedDifficultyLevel(Number(e.target.value))}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-purple-500"
                     />
                   </div>
 
@@ -566,7 +594,7 @@ const WishBoard: React.FC<WishBoardProps> = () => {
                   <div className="grid grid-cols-2 gap-2 text-sm text-gray-600">
                     {selectedWish.targetDate && (
                       <div className="flex items-center">
-                        <Calendar className="h-4 w-4 mr-2 text-purple-600" /> {/* Changed icon color */}
+                        <Calendar className="h-4 w-4 mr-2 text-purple-600" />
                         <span className="font-medium mr-1">Target:</span>
                         {selectedWish.targetDate}
                       </div>
@@ -574,11 +602,16 @@ const WishBoard: React.FC<WishBoardProps> = () => {
 
                     {selectedWish.estimatedCost && (
                       <div className="flex items-center">
-                        <DollarSign className="h-4 w-4 mr-2 text-purple-600" /> {/* Changed icon color */}
+                        <DollarSign className="h-4 w-4 mr-2 text-purple-600" />
                         <span className="font-medium mr-1">Cost:</span>
                         {selectedWish.estimatedCost}
                       </div>
                     )}
+
+                    <div className="flex items-center">
+                      <span className="font-medium mr-1">Difficulty:</span>
+                      {selectedWish.difficulty_level} / 5
+                    </div>
                   </div>
 
                   {selectedWish.steps && selectedWish.steps.length > 0 && (

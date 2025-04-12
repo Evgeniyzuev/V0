@@ -19,7 +19,7 @@ create table public.goals (
   image_url text null,
   estimated_cost text null, -- e.g., "$5,000", "10 hours"
   steps jsonb null, -- Array of strings stored as jsonb
-  difficulty_level smallint null check (difficulty_level is null or (difficulty_level >= 1 and difficulty_level <= 5))
+  difficulty_level smallint
 );
 
 -- Add comments to goals table columns
@@ -31,7 +31,7 @@ comment on column public.goals.description is 'Detailed description of the goal'
 comment on column public.goals.image_url is 'URL for an image representing the goal';
 comment on column public.goals.estimated_cost is 'Estimated cost or effort (e.g., "$5,000", "10 hours")';
 comment on column public.goals.steps is 'Array of steps or milestones for the goal, stored as JSONB';
-comment on column public.goals.difficulty_level is 'Difficulty level of the goal, e.g., on a scale of 1 (easy) to 5 (hard)';
+comment on column public.goals.difficulty_level is 'Difficulty level of the goal';
 
 -- Create the user_goals table (user instances of goals)
 create table public.user_goals (
@@ -48,7 +48,7 @@ create table public.user_goals (
   current_step_index integer null,
   progress_details jsonb null,
   notes text null,
-  difficulty_level smallint null check (difficulty_level is null or (difficulty_level >= 1 and difficulty_level <= 5))
+  difficulty_level smallint
 );
 
 -- Add comments to user_goals table columns
@@ -66,7 +66,7 @@ comment on column public.user_goals.progress_percentage is 'User-reported progre
 comment on column public.user_goals.current_step_index is 'Index of the current step the user is on';
 comment on column public.user_goals.progress_details is 'JSONB field for storing detailed progress';
 comment on column public.user_goals.notes is 'User notes specific to this goal instance';
-comment on column public.user_goals.difficulty_level is 'User-defined or inherited difficulty level (1-5)';
+comment on column public.user_goals.difficulty_level is 'User-defined or inherited difficulty level';
 
 -- Create indexes for frequently queried columns
 create index idx_user_goals_user_id on public.user_goals(user_id);
