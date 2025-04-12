@@ -8,6 +8,7 @@ import { createClientSupabaseClient } from "@/lib/supabase"
 // Удаляем неиспользуемый импорт
 // import type { User as TelegramUser, WebApp as TelegramWebApp } from '@grammyjs/web-app'
 import { addUserGoal } from '@/lib/api/goals' // Import the function to add goals
+import type { User as AuthUser, Session } from '@supabase/supabase-js'; // Import Supabase Auth types
 
 // Интерфейс для WebApp для TypeScript
 interface TelegramWebApp {
@@ -42,32 +43,29 @@ interface TelegramUser {
 
 interface DbUser {
   id: string;
-  user_id?: string;
   telegram_id: number;
   telegram_username?: string;
   first_name?: string;
   last_name?: string;
   avatar_url?: string;
   phone_number?: string;
-  created_at?: string;
-  // Добавляем поля, которые используются в компоненте профиля
   wallet_balance?: number;
   aicore_balance?: number;
   level?: number;
   core?: number;
   paid_referrals?: number;
   reinvest_setup?: number;
-  // Добавляем поле для реферальной системы
   referrer_id?: number;
-  // Добавьте другие поля из вашей таблицы users
+  created_at?: string;
+  updated_at?: string;
 }
 
 interface UserContextType {
-  telegramUser: TelegramUser | null;
+  authUser: AuthUser | null;
   dbUser: DbUser | null;
   isLoading: boolean;
   error: string | null;
-  refreshUserData: () => Promise<void>;
+  refreshDbUser: () => Promise<void>;
 }
 
 const UserContext = createContext<UserContextType | undefined>(undefined);
@@ -75,192 +73,111 @@ const UserContext = createContext<UserContextType | undefined>(undefined);
 // Убираем инициализацию Supabase с верхнего уровня
 
 export const UserProvider = ({ children }: { children: ReactNode }) => {
-  const [telegramUser, setTelegramUser] = useState<TelegramUser | null>(null);
+  const [authUser, setAuthUser] = useState<AuthUser | null>(null);
   const [dbUser, setDbUser] = useState<DbUser | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [webApp, setWebApp] = useState<TelegramWebApp | null>(null);
-  
-  // Флаги для предотвращения повторных запросов
-  const apiCalledRef = useRef(false);
-  const userLoadedRef = useRef(false);
-  
-  // Используем централизованный Supabase клиент
+  const profileLoadedRef = useRef(false); // Track if profile has been loaded for current authUser
+
   const supabase = useMemo(() => {
-    if (typeof window === 'undefined') return null; // На сервере не создаем клиента
-    return createClientSupabaseClient();
+      if (typeof window === 'undefined') return null;
+      return createClientSupabaseClient(); // Client-side Supabase client
   }, []);
 
-  // Функция для обновления данных пользователя из БД
-  const refreshUserData = async (force = false) => {
-    if (!telegramUser?.id || !supabase) return;
-    // Reset userLoadedRef if forcing refresh
-    if (force) userLoadedRef.current = false;
-
-    if (userLoadedRef.current) {
-      console.log("User data already loaded, skipping refresh");
-      return;
-    }
-    
+  // Function to load user profile from public.users
+  const loadUserProfile = async (userId: string) => {
+    if (!supabase) return;
+    console.log(`Loading profile for user ID: ${userId}`);
+    profileLoadedRef.current = false; // Reset loaded flag
+    setIsLoading(true);
+    setError(null);
     try {
-      console.log("Refreshing user data from DB for Telegram ID:", telegramUser.id);
       const { data, error: fetchError } = await supabase
-        .from('users')
+        .from('users') // Your public users table
         .select('*')
-        .eq('telegram_id', telegramUser.id)
+        .eq('id', userId) // Match the UUID
         .single();
 
-      if (fetchError && fetchError.code !== 'PGRST116') {  // PGRST116 = 'не найдено'
-        console.error('Error fetching user data:', fetchError);
-        setError('Ошибка при получении данных пользователя');
-      } else if (data) {
-        console.log("User data loaded from DB:", data);
-        setDbUser(data);
-        userLoadedRef.current = true;
-      }
-    } catch (err) {
-      console.error('Error refreshing user data:', err);
-      setError('Ошибка при обновлении данных пользователя');
-    }
-  };
-
-  // Функция для ручного обновления (публичная)
-  const manualRefresh = async () => {
-    await refreshUserData(true); // Принудительное обновление
-  };
-
-  // Загрузка Telegram SDK
-  useEffect(() => {
-    const initTelegramSdk = async () => {
-      if (typeof window !== 'undefined') {
-        try {
-          // Используем динамический импорт @twa-dev/sdk
-          const WebAppSdk = (await import('@twa-dev/sdk')).default;
-          if (WebAppSdk) {
-            WebAppSdk.ready();
-            WebAppSdk.expand();
-            setWebApp(WebAppSdk as unknown as TelegramWebApp); // Приводим тип, если нужно
-            setTelegramUser(WebAppSdk.initDataUnsafe.user || null);
-            console.log('Telegram WebApp SDK Initialized:', WebAppSdk);
-            console.log('Telegram User:', WebAppSdk.initDataUnsafe.user);
-          }
-        } catch (e) {
-          console.error('Failed to load or init Telegram WebApp SDK:', e);
-          setError("Не удалось инициализировать Telegram WebApp");
-          setIsLoading(false);
-        }
-      } else {
-        // Случай, когда код выполняется не в браузере (SSR/SSG)
-        setIsLoading(false);
-      }
-    };
-    initTelegramSdk();
-  }, []);
-
-  // Инициализация пользователя и отправка на API
-  useEffect(() => {
-    const initUser = async () => {
-      if (!webApp || !supabase) return;
-      
-      // Prevent API call if already done
-      if (apiCalledRef.current) {
-        console.log("API call already made, skipping initUser");
-        return; 
-      }
-      apiCalledRef.current = true; // Mark API call as attempted
-
-      setIsLoading(true);
-      setError(null);
-      userLoadedRef.current = false; // Reset loaded flag on new init attempt
-
-      try {
-        const initData = webApp.initData;
-        const user = webApp.initDataUnsafe?.user;
-        
-        if (!initData || !user) {
-          throw new Error("Не удалось получить данные инициализации или пользователя Telegram");
-        }
-
-        // Send data to your API endpoint
-        console.log("===== START SENDING TO API =====");
-        console.log("Telegram User Being Sent:", user);
-        console.log("InitData Being Sent:", initData);
-
-        let finalInitData = initData; // Start with the original initData
-        const urlParams = new URLSearchParams(initData);
-        if (!urlParams.has('startapp')) {
-          const currentParams = new URLSearchParams(window.location.search);
-          const startAppParam = currentParams.get('startapp');
-          if (startAppParam) {
-            finalInitData += `&startapp=${encodeURIComponent(startAppParam)}`;
-            console.log("Added startapp parameter to initData:", finalInitData);
-          }
-        }
-
-        // Используем локальный интерфейс TelegramUser
-        const userToSend: Partial<TelegramUser> = {
-          id: user.id,
-          first_name: user.first_name,
-          last_name: user.last_name,
-          username: user.username,
-          photo_url: user.photo_url,
-          // Добавляем поля, если они есть в user
-          language_code: user.language_code,
-          is_premium: user.is_premium,
-        };
-
-        console.log("Cleaned User Object Being Sent:", userToSend);
-        console.log("===== END SENDING TO API =====");
-        
-        const response = await fetch('/api/auth/telegram-user', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({
-            telegramUser: userToSend,
-            initData: finalInitData,
-          }),
-        });
-
-        const result = await response.json();
-        console.log("API response:", result);
-        
-        if (!response.ok) {
-          throw new Error(result.error || 'Ошибка при сохранении данных пользователя');
-        }
-        
-        if (result.user) {
-          console.log("User object from API:", result.user);
-          setDbUser(result.user);
-          userLoadedRef.current = true;
+      if (fetchError) {
+        if (fetchError.code === 'PGRST116') { // Not found
+            console.warn(`Profile not found for user ${userId}. Might be created shortly.`);
+            // Profile might not exist immediately after auth user creation, handle gracefully
+            setDbUser(null); // Explicitly set to null if not found
         } else {
-          // Try loading from DB if API didn't return a user
-          await refreshUserData();
+            console.error('Error fetching user profile:', fetchError);
+            setError('Ошибка при получении профиля пользователя');
+            setDbUser(null);
         }
-      } catch (apiError: any) {
-        console.error('API communication error:', apiError);
-        setError(`Ошибка API: ${apiError.message}`);
-        // Try loading data directly from the database as a fallback
-        if (supabase) {
-          await refreshUserData();
-        }
-      } finally {
-        setIsLoading(false);
+      } else if (data) {
+        console.log("User profile loaded:", data);
+        setDbUser(data as DbUser);
+        profileLoadedRef.current = true;
       }
-    };
-
-    if (webApp && supabase && !apiCalledRef.current) {
-      initUser(); 
+    } catch (err: any) {
+      console.error('Error in loadUserProfile:', err);
+      setError(err.message || 'Ошибка при загрузке профиля');
+      setDbUser(null);
+    } finally {
+      setIsLoading(false);
     }
-  }, [webApp, supabase]);
+  };
+
+  // Effect to listen for Supabase auth changes
+  useEffect(() => {
+    if (!supabase) return;
+
+    // Get initial session
+    supabase.auth.getSession().then(({ data: { session } }) => {
+        console.log("Initial session:", session);
+        setAuthUser(session?.user ?? null);
+        if (session?.user) {
+            loadUserProfile(session.user.id);
+        } else {
+            setIsLoading(false); // No user, stop loading
+        }
+    }).catch(err => {
+        console.error("Error getting initial session:", err);
+        setIsLoading(false);
+    });
+
+    // Listen for auth state changes
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
+        console.log('Auth state changed:', event, session);
+        const newAuthUser = session?.user ?? null;
+        setAuthUser(newAuthUser);
+
+        // Load profile only if the user ID changes or if it was null before
+        if (newAuthUser && newAuthUser.id !== authUser?.id) {
+            loadUserProfile(newAuthUser.id);
+        } else if (!newAuthUser) {
+            // User signed out
+            setDbUser(null);
+            profileLoadedRef.current = false;
+            setIsLoading(false);
+        }
+    });
+
+    // Cleanup subscription on unmount
+    return () => {
+      subscription?.unsubscribe();
+    };
+  }, [supabase]); // Depend only on supabase client instance
+
+  // Function to manually refresh profile data
+  const refreshDbUser = async () => {
+    if (authUser?.id) {
+      await loadUserProfile(authUser.id);
+    } else {
+      console.warn("Cannot refresh profile, no authenticated user.");
+    }
+  };
 
   const value = {
-    telegramUser,
+    authUser,
     dbUser,
     isLoading,
     error,
-    refreshUserData: manualRefresh, // Используем функцию-обертку для публичного API
+    refreshDbUser,
   };
 
   return <UserContext.Provider value={value}>{children}</UserContext.Provider>;
