@@ -13,6 +13,7 @@ interface TelegramUser {
 
 // Определяем интерфейс для нового пользователя
 interface NewUser {
+  id: string; // UUID из auth.users
   telegram_id: number;
   telegram_username?: string;
   first_name?: string;
@@ -36,6 +37,11 @@ function verifyTelegramData(initData: string, botToken: string): boolean {
     console.error('Error verifying Telegram data:', e);
     return false;
   }
+}
+
+// Генерация случайного пароля для Auth пользователя
+function generateRandomPassword(length = 16) {
+  return crypto.randomBytes(length).toString('hex');
 }
 
 export async function POST(request: Request) {
@@ -137,11 +143,38 @@ export async function POST(request: Request) {
     // Если пользователя нет, создаем его
     console.log(`User not found with Telegram ID: ${telegramId}, creating new user`);
     
-    // 1. Создаем запись в auth.users (необязательно в simple-auth случае, но нужно в полной интеграции)
-    // 2. Создаем запись в публичной таблице users
+    // 1. Создаем запись в auth.users с помощью Admin API
+    const email = `telegram_${telegramId}@example.com`; // Временный email
+    const password = generateRandomPassword(); // Генерируем случайный пароль
     
-    // Для упрощенного примера опустим создание auth.users и сразу создадим запись в публичной таблице
+    console.log(`Creating auth user with email: ${email}`);
+    
+    // Используем Admin API для создания пользователя
+    const { data: authUser, error: authError } = await supabase.auth.admin.createUser({
+      email,
+      password,
+      email_confirm: true, // Автоматически подтверждаем email
+      user_metadata: {
+        telegram_id: telegramId,
+        first_name: telegramUser.first_name,
+        last_name: telegramUser.last_name,
+        username: telegramUser.username
+      }
+    });
+    
+    if (authError) {
+      console.error('Error creating auth user:', authError);
+      return NextResponse.json(
+        { error: 'Failed to create authentication user' },
+        { status: 500 }
+      );
+    }
+    
+    console.log(`Auth user created with ID: ${authUser.user.id}`);
+    
+    // 2. Создаем запись в публичной таблице users с id из auth.users
     const newUser: NewUser = {
+      id: authUser.user.id, // Используем UUID из auth.users
       telegram_id: telegramId,
       telegram_username: telegramUser.username || null,
       first_name: telegramUser.first_name || null,
@@ -244,53 +277,38 @@ export async function POST(request: Request) {
     let wasUserCreated = false; // Флаг для отслеживания создания
     let finalUserData = null;
 
-    const { data: upsertedUser, error: upsertError } = await supabase
+    const { data: insertedUser, error: insertError } = await supabase
       .from('users')
-      .upsert(newUser, { 
-        onConflict: 'telegram_id', // Используем upsert на случай гонки запросов
-        ignoreDuplicates: false, // Чтобы вернуть существующую запись, если конфликт
-      })
+      .insert(newUser)
       .select()
       .single();
 
-    if (upsertError) {
-      console.error('Error upserting user:', upsertError);
-      // Если ошибка не связана с дубликатом (которого не должно быть из-за upsert)
+    if (insertError) {
+      console.error('Error inserting user:', insertError);
+      // Удаляем созданного auth пользователя, чтобы не оставлять "мусор"
+      await supabase.auth.admin.deleteUser(authUser.user.id);
       return NextResponse.json(
-        { error: 'Database error while creating/updating user' },
+        { error: 'Database error while creating user' },
         { status: 500 }
       );
     }
 
-    finalUserData = upsertedUser;
-
-    // Проверяем, был ли пользователь действительно создан (сравниваем время создания)
-    // Это не самый надежный способ, но может сработать для upsert
-    if (finalUserData && finalUserData.created_at) {
-      const createdAt = new Date(finalUserData.created_at);
-      const now = new Date();
-      // Считаем созданным, если запись появилась менее 5 секунд назад
-      if (now.getTime() - createdAt.getTime() < 5000) { 
-        wasUserCreated = true;
-        console.log(`User ${finalUserData.id} was likely created now.`);
-      }
-    }
+    finalUserData = insertedUser;
+    wasUserCreated = true;
 
     // Если пользователь был создан, добавляем ему цель №1
     if (finalUserData && wasUserCreated) {
       console.log(`Adding default goal 1 for newly created user ${finalUserData.id}`);
       try {
         const newUserGoalData = {
-          user_id: finalUserData.id, // Используем ID из таблицы users
+          user_id: finalUserData.id, // Используем UUID из auth.users
           goal_id: 1,
           status: 'not_started',
-          // Можно добавить difficulty_level, если нужно, запросив его у goals
-          // difficulty_level: (await supabase.from('goals').select('difficulty_level').eq('id', 1).single()).data?.difficulty_level ?? null
         };
 
         const { error: goalError } = await supabase
           .from('user_goals')
-          .insert(newUserGoalData); // Просто insert, т.к. пользователь точно новый
+          .insert(newUserGoalData);
 
         if (goalError) {
           // Логируем ошибку, но не прерываем ответ пользователю
