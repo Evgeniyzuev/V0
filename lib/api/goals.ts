@@ -71,48 +71,4 @@ export const fetchUserGoals = async () => {
     status: userGoal.status,
     notes: userGoal.notes
   }))
-}
-
-export async function addUserGoal(goalId: number) {
-  const supabase = createClientSupabaseClient()
-  
-  // Get the current user session
-  const { data: { session }, error: sessionError } = await supabase.auth.getSession()
-  
-  if (sessionError || !session?.user?.id) {
-    console.error('Error getting current user:', sessionError)
-    throw new Error('User not authenticated')
-  }
-  
-  const { data, error } = await supabase
-    .from('user_goals')
-    .upsert({
-      user_id: session.user.id,
-      goal_id: goalId,
-      status: 'not_started',
-      progress_percentage: 0,
-      current_step_index: 0,
-      progress_details: { initialized: true }
-    }, {
-      onConflict: 'user_id,goal_id',
-      ignoreDuplicates: true
-    })
-    .select(`
-      *,
-      goal:goals(*)
-    `)
-    .single()
-
-  if (error) {
-    console.error('Error adding user goal:', error)
-    throw error
-  }
-
-  // Transform the data to match the Goal type
-  return {
-    ...data.goal,
-    progress_percentage: data.progress_percentage,
-    status: data.status,
-    notes: data.notes
-  }
 } 

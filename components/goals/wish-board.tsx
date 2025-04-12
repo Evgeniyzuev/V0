@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
 import { Avatar, AvatarFallback } from "@/components/ui/avatar"
 import { useUser } from "@/components/UserContext"
-import { fetchGoals, fetchUserGoals, updateGoal, addUserGoal } from '@/lib/api/goals'
+import { fetchGoals, fetchUserGoals, updateGoal } from '@/lib/api/goals'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import type { Goal } from '@/types/supabase'
 import { toast } from 'sonner'
@@ -311,33 +311,6 @@ const WishBoard: React.FC<WishBoardProps> = () => {
     }
   })
 
-  // Add user goal mutation
-  const addUserGoalMutation = useMutation({
-    mutationFn: (goalId: number) => {
-      console.log('Adding goal with ID:', goalId)
-      return addUserGoal(goalId)
-    },
-    onSuccess: (data) => {
-      console.log('Successfully added goal:', data)
-      queryClient.invalidateQueries({ queryKey: ['user-goals'] })
-      toast.success('Goal added to your list')
-      closeModal()
-    },
-    onError: (error: Error) => {
-      console.error('Error adding goal:', error)
-      if (error.message === 'User not authenticated') {
-        toast.error('Please log in to add goals to your list')
-        // Optionally trigger login here
-        const socialButton = document.querySelector('button[aria-label="Social"]');
-        if (socialButton instanceof HTMLElement) {
-          socialButton.click();
-        }
-      } else {
-        toast.error('Failed to add goal')
-      }
-    }
-  })
-
   const handleWishClick = (wish: Goal) => {
     setSelectedWish(wish);
     setEditedTitle(wish.title);
@@ -615,16 +588,12 @@ const WishBoard: React.FC<WishBoardProps> = () => {
                 <div className="space-y-4">
                   <div className="flex items-center justify-between mb-2">
                     <h3 className="text-xl font-semibold">{selectedWish.title}</h3>
-                    {dbUser?.id && (
-                      <div className="flex items-center gap-2">
-                        <button
-                          onClick={handleEdit}
-                          className="p-2 text-gray-500 hover:text-purple-600 transition-colors"
-                        >
-                          <Edit size={18} />
-                        </button>
-                      </div>
-                    )}
+                    <button
+                      onClick={handleEdit}
+                      className="p-2 text-gray-500 hover:text-purple-600 transition-colors"
+                    >
+                      <Edit size={18} />
+                    </button>
                   </div>
 
                   <p className="text-gray-600">{selectedWish.description}</p>
@@ -655,30 +624,6 @@ const WishBoard: React.FC<WishBoardProps> = () => {
                           <li key={index} className="text-gray-600 text-sm">{step}</li>
                         ))}
                       </ul>
-                    </div>
-                  )}
-
-                  {dbUser?.id && (
-                    <div className="mt-6">
-                      {userGoals.some(userGoal => userGoal.id === selectedWish.id) ? (
-                        <Button
-                          disabled
-                          className="w-full bg-gray-400 text-white cursor-not-allowed"
-                        >
-                          Goal Already Selected
-                        </Button>
-                      ) : (
-                        <Button
-                          onClick={() => {
-                            console.log('Selected wish:', selectedWish)
-                            addUserGoalMutation.mutate(selectedWish.id)
-                          }}
-                          disabled={addUserGoalMutation.isPending}
-                          className="w-full bg-purple-600 hover:bg-purple-700 text-white"
-                        >
-                          {addUserGoalMutation.isPending ? 'Adding...' : 'Select Goal'}
-                        </Button>
-                      )}
                     </div>
                   )}
                 </div>
