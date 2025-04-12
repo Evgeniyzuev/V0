@@ -154,20 +154,7 @@ export interface UserGoal {
   progress_details: Record<string, any> | null; // JSONB, e.g., { step_0_completed: true, saved_amount: 1200 }
   notes: string | null; // Text
   difficulty_level: number | null; // Added: Copied from goal or user-defined
-  image_url: string | null; // URL to the goal's image
-  description: string | null; // Description of the user's goal
 
   // Optional: Include related data when fetching with joins
   // goal?: Goal;
-}
-
-/**
- * Represents a transformed user goal that combines properties from both Goal and UserGoal
- */
-export interface TransformedUserGoal extends Omit<Goal, 'id'> {
-  id: number; // Using goal.id
-  user_goal_id: number; // Original UserGoal.id
-  status: GoalStatus;
-  progress_percentage: number | null;
-  notes: string | null;
 } 
