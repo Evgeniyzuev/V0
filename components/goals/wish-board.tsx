@@ -236,19 +236,34 @@ import { toast } from 'sonner'
 //   },
 // ];
 
-// Updated personal goals data with new image for "Complete 3 Tasks"
-const personalGoals = [
+// Personal goals data
+const personalGoals: Goal[] = [
   {
-    id: -1,
+    id: 1,
+    created_at: new Date().toISOString(),
     title: 'Get the First Level',
     description: 'Advance through the first milestone in your personal development.',
-    imageUrl: 'https://images.unsplash.com/photo-1486312338219-ce68d2c6f44d?w=500&auto=format&fit=crop&q=60&ixlib=rb-4.0.3',
-    progress: 0,
-    targetDate: "",
-    estimatedCost: "Free",
+    image_url: 'https://images.unsplash.com/photo-1486312338219-ce68d2c6f44d?w=500&auto=format&fit=crop&q=60&ixlib=rb-4.0.3',
+    estimated_cost: "Free",
     difficulty_level: 0,
-    steps: ["Watch all tutorial videos", "Complete practice exercises", "Pass the level 1 assessment"],
+    steps: ["Watch all tutorial videos", "Complete practice exercises", "Pass the level 1 assessment"]
   },
+  {
+    id: 2,
+    created_at: new Date().toISOString(),
+    title: 'Travel to Japan',
+    description: 'Visit Tokyo, Kyoto, and Mount Fuji during cherry blossom season.',
+    image_url: 'https://images.unsplash.com/photo-1493976040374-85c8e12f0c0e?w=500&auto=format&fit=crop&q=60&ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxzZWFyY2h8Mnx8amFwYW58ZW58MHx8MHx8fDA%3D',
+    estimated_cost: "$5,000",
+    difficulty_level: 13,
+    steps: [
+      "Save $5,000 for the trip",
+      "Research and book flights",
+      "Plan itinerary for Tokyo, Kyoto, and Osaka",
+      "Learn basic Japanese phrases",
+      "Apply for Japan visa"
+    ]
+  }
 ];
 
 interface WishBoardProps {
@@ -383,7 +398,41 @@ const WishBoard: React.FC<WishBoardProps> = () => {
             </CardContent>
           </Card>
         </div>
-      ) : null}
+      ) : (
+        // Personal Goals Section for authenticated users
+        <div className="mb-6">
+          <h2 className="text-2xl font-bold mb-4">Your Personal Goals</h2>
+          <div className="grid grid-cols-3 gap-1">
+            {personalGoals.map((goal) => (
+              <div
+                key={goal.id}
+                className="image-item animate-fade-in rounded-lg overflow-hidden shadow-md aspect-square cursor-pointer"
+                onClick={() => handleWishClick(goal)}
+              >
+                <div className="relative w-full h-full">
+                  <img
+                    src={goal.image_url || ''}
+                    alt={goal.title}
+                    className="w-full h-full object-cover"
+                    loading="lazy"
+                  />
+                  <div className="absolute inset-0 bg-gradient-to-t from-black/50 to-transparent opacity-0 hover:opacity-100 transition-opacity duration-300 flex items-end">
+                    <div className="p-3 text-white text-sm font-medium">
+                      {goal.title}
+                    </div>
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* Separator */}
+      <div className="my-8">
+        <h2 className="text-2xl font-bold mb-4">Available Goals</h2>
+        <Separator className="my-4" />
+      </div>
 
       {/* Goals Grid */}
       <div className="image-grid grid grid-cols-3 gap-1">
