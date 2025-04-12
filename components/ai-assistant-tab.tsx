@@ -77,7 +77,7 @@ export default function AIAssistantTab() {
       </div>
 
       {/* Message input */}
-      <div className="p-3 bg-white border-t">
+      <div className="p-3 bg-white border-t pb-16">
         <form onSubmit={handleSendMessage} className="flex items-center gap-2">
           <Input
             placeholder="Ask about your goals..."
