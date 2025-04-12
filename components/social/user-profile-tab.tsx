@@ -180,23 +180,15 @@ const TelegramLoginButton = () => {
     script.async = true;
     
     script.onload = () => {
-      // Функция будет доступна после загрузки скрипта
-      window.onTelegramAuth = (user: any) => {
-        fetch('/api/auth/telegram', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify(user)
-        })
-        .then(response => response.json())
-        .then(data => {
-          window.location.reload();
-        })
-        .catch(error => {
-          console.error('Error:', error);
-        });
-      };
+      console.log('Telegram widget script loaded');
+      // Проверяем доступность Telegram Login
+      if (window.Telegram?.Login) {
+        console.log('Telegram Login is available');
+      }
+    };
+
+    script.onerror = (error) => {
+      console.error('Error loading Telegram widget script:', error);
     };
 
     document.body.appendChild(script);
@@ -209,9 +201,6 @@ const TelegramLoginButton = () => {
 
   const handleTelegramLogin = () => {
     console.log('Telegram login button clicked');
-    console.log('Telegram object available:', !!window.Telegram);
-    console.log('Login object available:', !!window.Telegram?.Login);
-    console.log('Auth function available:', !!window.Telegram?.Login?.auth);
     
     // Получаем ID бота из переменной окружения
     const botId = process.env.NEXT_PUBLIC_TELEGRAM_BOT_ID;
@@ -220,24 +209,62 @@ const TelegramLoginButton = () => {
       console.error('NEXT_PUBLIC_TELEGRAM_BOT_ID is not set');
       return;
     }
-    
-    if (window.Telegram?.Login?.auth) {
-      console.log('Calling Telegram.Login.auth');
+
+    // Проверяем, что скрипт загружен и функция доступна
+    if (!window.Telegram?.Login?.auth) {
+      console.error('Telegram Login is not available');
+      // Пробуем перезагрузить скрипт
+      const script = document.createElement('script');
+      script.src = 'https://telegram.org/js/telegram-widget.js?22';
+      script.async = true;
+      document.body.appendChild(script);
+      return;
+    }
+
+    try {
+      console.log('Starting Telegram auth with bot_id:', botId);
       window.Telegram.Login.auth(
         {
           bot_id: botId,
           request_access: 'write',
-          lang: 'en',
+          lang: 'ru',
           callback: (user: any) => {
-            console.log('Received user data:', user);
-            if (window.onTelegramAuth) {
-              window.onTelegramAuth(user);
+            console.log('Auth callback received:', user);
+            if (user && user.id) {
+              console.log('User authenticated:', user.id);
+              fetch('/api/auth/telegram', {
+                method: 'POST',
+                headers: {
+                  'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                  ...user,
+                  origin: window.location.origin,
+                })
+              })
+              .then(async response => {
+                const data = await response.json();
+                console.log('API response:', data);
+                if (data.success) {
+                  window.location.reload();
+                } else {
+                  throw new Error(data.error || 'Authentication failed');
+                }
+              })
+              .catch(error => {
+                console.error('API error:', error);
+                alert('Ошибка при авторизации. Пожалуйста, попробуйте еще раз.');
+              });
+            } else {
+              console.error('Invalid user data received:', user);
+              alert('Не удалось получить данные пользователя.');
             }
           },
         },
       );
-    } else {
-      console.error('Telegram Login is not available');
+    } catch (error) {
+      console.error('Telegram.Login.auth error:', error);
+      alert('Ошибка при запуске авторизации Telegram.');
     }
   };
 
