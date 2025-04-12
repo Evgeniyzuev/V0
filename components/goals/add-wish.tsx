@@ -7,20 +7,102 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Textarea } from "@/components/ui/textarea"
 import { Camera } from "lucide-react"
+import { createClientSupabaseClient } from "@/lib/supabase"
+import { useUser } from "@/components/UserContext"
+import { useQueryClient } from "@tanstack/react-query"
+import { toast } from "sonner"
+import type { Goal } from "@/types/supabase"
 
 export default function AddWish() {
+  const { dbUser } = useUser()
+  const queryClient = useQueryClient()
   const [title, setTitle] = useState("")
   const [description, setDescription] = useState("")
-  const [imageUrl, setImageUrl] = useState<string | null>(null)
+  const [imageUrl, setImageUrl] = useState<string>("")
+  const [isPreviewLoading, setIsPreviewLoading] = useState(false)
+  const [estimatedCost, setEstimatedCost] = useState("")
+  const [difficultyLevel, setDifficultyLevel] = useState(1)
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
-    // Handle form submission
-    console.log({ title, description, imageUrl })
-    // Reset form
-    setTitle("")
-    setDescription("")
-    setImageUrl(null)
+
+    if (!dbUser?.id) {
+      toast.error("Please log in to add a wish")
+      return
+    }
+
+    if (!title.trim()) {
+      toast.error("Please enter a wish title")
+      return
+    }
+
+    if (!imageUrl.trim()) {
+      toast.error("Please enter an image URL")
+      return
+    }
+
+    try {
+      const supabase = createClientSupabaseClient()
+
+      // First, create a new goal
+      const { data: newGoal, error: goalError } = await supabase
+        .from("goals")
+        .insert([
+          {
+            title,
+            description,
+            image_url: imageUrl,
+            estimated_cost: estimatedCost,
+            difficulty_level: difficultyLevel,
+            steps: []
+          }
+        ])
+        .select()
+        .single()
+
+      if (goalError) {
+        throw new Error(goalError.message)
+      }
+
+      // Then create a user_goal entry
+      const { error: userGoalError } = await supabase
+        .from("user_goals")
+        .insert([
+          {
+            user_id: dbUser.id,
+            goal_id: newGoal.id,
+            status: "not_started",
+            progress_percentage: 0,
+            difficulty_level: difficultyLevel
+          }
+        ])
+
+      if (userGoalError) {
+        throw new Error(userGoalError.message)
+      }
+
+      // Invalidate queries to refresh the goals list
+      await queryClient.invalidateQueries({ queryKey: ["goals"] })
+      await queryClient.invalidateQueries({ queryKey: ["user-goals"] })
+
+      toast.success("Wish added successfully!")
+
+      // Reset form
+      setTitle("")
+      setDescription("")
+      setImageUrl("")
+      setEstimatedCost("")
+      setDifficultyLevel(1)
+    } catch (error) {
+      console.error("Error adding wish:", error)
+      toast.error(`Failed to add wish: ${error instanceof Error ? error.message : "Unknown error"}`)
+    }
+  }
+
+  const handleImageUrlChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const url = e.target.value
+    setImageUrl(url)
+    setIsPreviewLoading(true)
   }
 
   return (
@@ -30,22 +112,34 @@ export default function AddWish() {
 
       <form onSubmit={handleSubmit} className="space-y-6">
         <div className="space-y-2">
-          <label className="text-gray-700 font-medium">Wish Image</label>
-          <div
-            className="border-2 border-dashed border-gray-300 rounded-lg p-8 flex flex-col items-center justify-center cursor-pointer"
-            onClick={() => {
-              /* Open file picker */
-            }}
-          >
+          <label className="text-gray-700 font-medium">Wish Image URL</label>
+          <Input
+            type="url"
+            placeholder="Enter image URL"
+            value={imageUrl}
+            onChange={handleImageUrlChange}
+            className="w-full"
+          />
+          <div className="border-2 border-dashed border-gray-300 rounded-lg p-8 flex flex-col items-center justify-center">
             {imageUrl ? (
-              <img src={imageUrl || "/placeholder.svg"} alt="Wish preview" className="max-h-40 object-contain mb-2" />
+              <img
+                src={imageUrl}
+                alt="Wish preview"
+                className="max-h-40 object-contain mb-2"
+                onLoad={() => setIsPreviewLoading(false)}
+                onError={() => {
+                  setIsPreviewLoading(false)
+                  toast.error("Failed to load image preview")
+                }}
+              />
             ) : (
               <>
                 <Camera className="h-12 w-12 text-gray-400 mb-2" />
-                <p className="text-gray-500 text-center">Click to upload an image</p>
-                <p className="text-gray-400 text-sm text-center mt-1">PNG, JPG up to 10MB</p>
+                <p className="text-gray-500 text-center">Enter an image URL above</p>
+                <p className="text-gray-400 text-sm text-center mt-1">The image will be previewed here</p>
               </>
             )}
+            {isPreviewLoading && <p className="text-gray-500 mt-2">Loading preview...</p>}
           </div>
         </div>
 
@@ -72,6 +166,34 @@ export default function AddWish() {
             value={description}
             onChange={(e) => setDescription(e.target.value)}
             rows={5}
+            className="w-full"
+          />
+        </div>
+
+        <div className="space-y-2">
+          <label htmlFor="estimatedCost" className="text-gray-700 font-medium">
+            Estimated Cost
+          </label>
+          <Input
+            id="estimatedCost"
+            placeholder="e.g., $100, Free, etc."
+            value={estimatedCost}
+            onChange={(e) => setEstimatedCost(e.target.value)}
+            className="w-full"
+          />
+        </div>
+
+        <div className="space-y-2">
+          <label htmlFor="difficultyLevel" className="text-gray-700 font-medium">
+            Difficulty Level (1-20)
+          </label>
+          <Input
+            id="difficultyLevel"
+            type="number"
+            min={1}
+            max={20}
+            value={difficultyLevel}
+            onChange={(e) => setDifficultyLevel(Number(e.target.value))}
             className="w-full"
           />
         </div>
