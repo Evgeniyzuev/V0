@@ -8,6 +8,7 @@ import { createClientSupabaseClient } from "@/lib/supabase"
 // Удаляем неиспользуемый импорт
 // import type { User as TelegramUser, WebApp as TelegramWebApp } from '@grammyjs/web-app'
 import { addUserGoal } from '@/lib/api/goals' // Import the function to add goals
+import { User, Session } from "@supabase/supabase-js";
 
 // Интерфейс для WebApp для TypeScript
 interface TelegramWebApp {
@@ -64,6 +65,7 @@ interface DbUser {
 
 interface UserContextType {
   telegramUser: TelegramUser | null;
+  authUser: User | null;
   dbUser: DbUser | null;
   isLoading: boolean;
   error: string | null;
@@ -76,10 +78,12 @@ const UserContext = createContext<UserContextType | undefined>(undefined);
 
 export const UserProvider = ({ children }: { children: ReactNode }) => {
   const [telegramUser, setTelegramUser] = useState<TelegramUser | null>(null);
+  const [authUser, setAuthUser] = useState<User | null>(null);
   const [dbUser, setDbUser] = useState<DbUser | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [webApp, setWebApp] = useState<TelegramWebApp | null>(null);
+  const [session, setSession] = useState<Session | null>(null);
   
   // Флаги для предотвращения повторных запросов
   const apiCalledRef = useRef(false);
@@ -93,7 +97,8 @@ export const UserProvider = ({ children }: { children: ReactNode }) => {
 
   // Функция для обновления данных пользователя из БД
   const refreshUserData = async (force = false) => {
-    if (!telegramUser?.id || !supabase) return;
+    if (!supabase) return;
+    
     // Reset userLoadedRef if forcing refresh
     if (force) userLoadedRef.current = false;
 
@@ -103,20 +108,43 @@ export const UserProvider = ({ children }: { children: ReactNode }) => {
     }
     
     try {
-      console.log("Refreshing user data from DB for Telegram ID:", telegramUser.id);
-      const { data, error: fetchError } = await supabase
-        .from('users')
-        .select('*')
-        .eq('telegram_id', telegramUser.id)
-        .single();
+      // Если у нас есть authUser (пользователь из Supabase Auth), загружаем данные по UUID
+      if (authUser) {
+        console.log("Refreshing user data from DB for auth user ID:", authUser.id);
+        const { data, error: fetchError } = await supabase
+          .from('users')
+          .select('*')
+          .eq('id', authUser.id)
+          .single();
 
-      if (fetchError && fetchError.code !== 'PGRST116') {  // PGRST116 = 'не найдено'
-        console.error('Error fetching user data:', fetchError);
-        setError('Ошибка при получении данных пользователя');
-      } else if (data) {
-        console.log("User data loaded from DB:", data);
-        setDbUser(data);
-        userLoadedRef.current = true;
+        if (fetchError && fetchError.code !== 'PGRST116') {
+          console.error('Error fetching user data by auth ID:', fetchError);
+          setError('Ошибка при получении данных пользователя');
+        } else if (data) {
+          console.log("User data loaded from DB by auth ID:", data);
+          setDbUser(data);
+          userLoadedRef.current = true;
+          return;
+        }
+      }
+      
+      // Запасной вариант: если у нас есть telegram_id, загружаем по нему
+      if (telegramUser?.id) {
+        console.log("Refreshing user data from DB for Telegram ID:", telegramUser.id);
+        const { data, error: fetchError } = await supabase
+          .from('users')
+          .select('*')
+          .eq('telegram_id', telegramUser.id)
+          .single();
+
+        if (fetchError && fetchError.code !== 'PGRST116') {
+          console.error('Error fetching user data by Telegram ID:', fetchError);
+          setError('Ошибка при получении данных пользователя');
+        } else if (data) {
+          console.log("User data loaded from DB by Telegram ID:", data);
+          setDbUser(data);
+          userLoadedRef.current = true;
+        }
       }
     } catch (err) {
       console.error('Error refreshing user data:', err);
@@ -129,6 +157,47 @@ export const UserProvider = ({ children }: { children: ReactNode }) => {
     await refreshUserData(true); // Принудительное обновление
   };
 
+  // Получение и отслеживание сессии Supabase
+  useEffect(() => {
+    if (!supabase) return;
+
+    // Получаем начальную сессию
+    supabase.auth.getSession().then(({ data: { session: initialSession } }) => {
+      setSession(initialSession);
+      if (initialSession?.user) {
+        setAuthUser(initialSession.user);
+        console.log("Auth user loaded from session:", initialSession.user);
+      }
+    });
+
+    // Подписываемся на изменения состояния аутентификации
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(
+      (_event, newSession) => {
+        setSession(newSession);
+        setAuthUser(newSession?.user || null);
+        if (newSession?.user) {
+          console.log("Auth state changed, new user:", newSession.user);
+        } else {
+          console.log("Auth state changed: user signed out");
+        }
+        // Сбрасываем флаг загрузки пользователя при изменении сессии
+        userLoadedRef.current = false;
+      }
+    );
+
+    // Отписываемся при размонтировании
+    return () => {
+      subscription.unsubscribe();
+    };
+  }, [supabase]);
+
+  // Загружаем данные пользователя из БД, когда у нас есть authUser
+  useEffect(() => {
+    if (authUser && !userLoadedRef.current) {
+      refreshUserData();
+    }
+  }, [authUser]);
+
   // Загрузка Telegram SDK
   useEffect(() => {
     const initTelegramSdk = async () => {
@@ -139,7 +208,7 @@ export const UserProvider = ({ children }: { children: ReactNode }) => {
           if (WebAppSdk) {
             WebAppSdk.ready();
             WebAppSdk.expand();
-            setWebApp(WebAppSdk as unknown as TelegramWebApp); // Приводим тип, если нужно
+            setWebApp(WebAppSdk as unknown as TelegramWebApp);
             setTelegramUser(WebAppSdk.initDataUnsafe.user || null);
             console.log('Telegram WebApp SDK Initialized:', WebAppSdk);
             console.log('Telegram User:', WebAppSdk.initDataUnsafe.user);
@@ -157,14 +226,14 @@ export const UserProvider = ({ children }: { children: ReactNode }) => {
     initTelegramSdk();
   }, []);
 
-  // Инициализация пользователя и отправка на API
+  // Инициализация пользователя через Telegram и отправка на API
   useEffect(() => {
     const initUser = async () => {
       if (!webApp || !supabase) return;
       
-      // Prevent API call if already done
-      if (apiCalledRef.current) {
-        console.log("API call already made, skipping initUser");
+      // Prevent API call if already done or если у нас уже есть authUser
+      if (apiCalledRef.current || authUser) {
+        console.log("API call already made or auth user exists, skipping initUser");
         return; 
       }
       apiCalledRef.current = true; // Mark API call as attempted
@@ -204,7 +273,6 @@ export const UserProvider = ({ children }: { children: ReactNode }) => {
           last_name: user.last_name,
           username: user.username,
           photo_url: user.photo_url,
-          // Добавляем поля, если они есть в user
           language_code: user.language_code,
           is_premium: user.is_premium,
         };
@@ -234,6 +302,31 @@ export const UserProvider = ({ children }: { children: ReactNode }) => {
           console.log("User object from API:", result.user);
           setDbUser(result.user);
           userLoadedRef.current = true;
+          
+          // После успешного создания пользователя через API, логинимся в Supabase
+          // Используем email и пароль, которые были созданы на сервере
+          const email = `telegram_${user.id}@example.com`;
+          const password = result.password || ""; // Если сервер не вернул пароль, используем пустую строку
+          
+          if (result.auth_user_id) {
+            // Если сервер вернул auth_user_id, пытаемся получить сессию для этого пользователя
+            console.log("Signing in with created auth user");
+            try {
+              const { data: signInData, error: signInError } = await supabase.auth.signInWithPassword({
+                email: email,
+                password: password,
+              });
+              
+              if (signInError) {
+                console.error("Error signing in after user creation:", signInError);
+              } else if (signInData?.user) {
+                console.log("Successfully signed in with Supabase Auth:", signInData.user);
+                setAuthUser(signInData.user);
+              }
+            } catch (signInErr) {
+              console.error("Exception during sign in:", signInErr);
+            }
+          }
         } else {
           // Try loading from DB if API didn't return a user
           await refreshUserData();
@@ -250,20 +343,31 @@ export const UserProvider = ({ children }: { children: ReactNode }) => {
       }
     };
 
-    if (webApp && supabase && !apiCalledRef.current) {
-      initUser(); 
-    }
-  }, [webApp, supabase]);
+    initUser();
+  }, [webApp, supabase, authUser]);
 
-  const value = {
+  // Обеспечиваем загрузку данных пользователя, как только у нас появился telegramUser
+  useEffect(() => {
+    if (telegramUser && !authUser && !userLoadedRef.current) {
+      refreshUserData();
+    }
+  }, [telegramUser, authUser]);
+
+  // Формируем значение контекста
+  const contextValue = useMemo(() => ({
     telegramUser,
+    authUser,
     dbUser,
     isLoading,
     error,
-    refreshUserData: manualRefresh, // Используем функцию-обертку для публичного API
-  };
+    refreshUserData: manualRefresh,
+  }), [telegramUser, authUser, dbUser, isLoading, error, manualRefresh]);
 
-  return <UserContext.Provider value={value}>{children}</UserContext.Provider>;
+  return (
+    <UserContext.Provider value={contextValue}>
+      {children}
+    </UserContext.Provider>
+  );
 };
 
 // Hook для использования контекста в компонентах

@@ -137,7 +137,51 @@ export async function POST(request: Request) {
         console.log(`No updates needed for Telegram ID: ${telegramId}`);
       }
       
-      return NextResponse.json({ success: true, user: existingUser });
+      // Проверяем, есть ли связанный auth.user для этого пользователя
+      const email = `telegram_${telegramId}@example.com`;
+      const { data: existingAuthUser } = await supabase.auth.admin.getUserById(existingUser.id);
+      
+      if (existingAuthUser?.user) {
+        console.log(`Found existing auth user with ID: ${existingUser.id}`);
+        // Возвращаем данные с auth_user_id для клиента, чтобы он мог войти
+        return NextResponse.json({ 
+          success: true, 
+          user: existingUser,
+          auth_user_id: existingUser.id
+        });
+      } else {
+        console.log(`No auth user found for UUID: ${existingUser.id}, creating one`);
+        // Создаем auth.user для существующего пользователя
+        const password = generateRandomPassword();
+        
+        const { data: newAuthUser, error: authError } = await supabase.auth.admin.createUser({
+          email,
+          password,
+          email_confirm: true,
+          user_metadata: {
+            telegram_id: telegramId,
+            first_name: telegramUser.first_name,
+            last_name: telegramUser.last_name,
+            username: telegramUser.username
+          },
+          // Важно указать id, чтобы привязать к существующему public.users
+          id: existingUser.id
+        });
+        
+        if (authError) {
+          console.error('Error creating auth user for existing DB user:', authError);
+          // Возвращаем пользователя без auth данных
+          return NextResponse.json({ success: true, user: existingUser });
+        }
+        
+        // Возвращаем данные с auth_user_id и паролем для клиента
+        return NextResponse.json({ 
+          success: true, 
+          user: existingUser,
+          auth_user_id: newAuthUser.user.id,
+          password: password
+        });
+      }
     }
     
     // Если пользователя нет, создаем его
@@ -322,7 +366,13 @@ export async function POST(request: Request) {
     }
     
     console.log("Returning user data:", finalUserData);
-    return NextResponse.json({ success: true, user: finalUserData });
+    // Возвращаем данные пользователя вместе с auth_user_id и паролем для клиента
+    return NextResponse.json({ 
+      success: true, 
+      user: finalUserData,
+      auth_user_id: authUser.user.id,
+      password: password 
+    });
     
   } catch (error: any) {
     console.error('Unhandled error in POST /api/auth/telegram-user:', error);
