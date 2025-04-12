@@ -9,6 +9,7 @@ import { useUser } from "@/components/UserContext"
 import { createClientSupabaseClient } from "@/lib/supabase"
 import { useToast } from "@/components/ui/use-toast"
 import { Loader2 } from "lucide-react"
+import { useQueryClient } from "@tanstack/react-query"
 
 export default function AddWish() {
   const { dbUser } = useUser()
@@ -19,6 +20,7 @@ export default function AddWish() {
   const [isLoading, setIsLoading] = useState(false)
   const [isValidUrl, setIsValidUrl] = useState(true)
   const { toast } = useToast()
+  const queryClient = useQueryClient()
 
   // Проверка валидности URL
   const validateUrl = (url: string) => {
@@ -65,7 +67,7 @@ export default function AddWish() {
   }
 
   const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault()
+    e.preventDefault();
     
     if (!title) {
       toast({
@@ -73,7 +75,7 @@ export default function AddWish() {
         description: "Название цели обязательно для заполнения",
         variant: "destructive"
       })
-      return
+      return;
     }
 
     if (imageUrl && !validateUrl(imageUrl)) {
@@ -82,7 +84,7 @@ export default function AddWish() {
         description: "Пожалуйста, проверьте ссылку на изображение",
         variant: "destructive"
       })
-      return
+      return;
     }
 
     if (!dbUser || !dbUser.id) {
@@ -91,55 +93,76 @@ export default function AddWish() {
         description: "Пожалуйста, войдите в систему",
         variant: "destructive"
       })
-      return
+      return;
     }
 
-    setIsLoading(true)
+    setIsLoading(true);
 
     try {
-      const supabase = createClientSupabaseClient()
+      const supabase = createClientSupabaseClient();
       
-      // Создаем пользовательскую цель напрямую в user_goals
-      // Не создаем запись в goals, оставляем goal_id как NULL
-      const { data: userGoalData, error: userGoalError } = await supabase
+      console.log("Создаем пользовательскую цель:", {
+        user_id: dbUser.id,
+        title,
+        description,
+        image_url: imageUrl || null
+      });
+      
+      // Создаем пользовательскую запись с полями по аналогии с GoalUpdater.tsx
+      const newUserGoal = {
+        user_id: dbUser.id,
+        status: 'not_started',
+        started_at: null,
+        target_date: null,
+        completed_at: null,
+        progress_percentage: 0,
+        current_step_index: null,
+        progress_details: null,
+        notes: title, // Сохраняем заголовок в поле notes
+        difficulty_level: 1,
+        // Эти поля могут не существовать в таблице user_goals
+        // Если это так, то Supabase их проигнорирует
+        title,
+        description,
+        image_url: imageUrl || null
+      };
+      
+      const { data, error: insertError } = await supabase
         .from('user_goals')
-        .insert({
-          user_id: dbUser.id,
-          status: 'not_started',
-          // goal_id не указываем, чтобы он был NULL
-          // Сохраняем данные цели прямо в user_goals
-          title: title, 
-          description: description,
-          image_url: imageUrl || null,
-        })
-        .select()
-        .single()
-
-      if (userGoalError) {
-        throw new Error(`Ошибка создания цели: ${userGoalError.message}`)
+        .insert(newUserGoal)
+        .select();
+      
+      if (insertError) {
+        console.error('Детали ошибки:', insertError);
+        throw new Error(`Ошибка создания цели: ${insertError.message} - ${insertError.details}`);
       }
+      
+      console.log('Цель успешно добавлена:', data);
+
+      // Обновляем кэш запросов React Query
+      await queryClient.invalidateQueries({ queryKey: ['user-goals'] });
 
       // Успешное создание
       toast({
         title: "Цель создана",
         description: "Ваша цель успешно добавлена",
-      })
+      });
 
       // Сбрасываем форму
-      setTitle("")
-      setDescription("")
-      setImageUrl("")
-      setPreviewUrl(null)
+      setTitle("");
+      setDescription("");
+      setImageUrl("");
+      setPreviewUrl(null);
 
     } catch (error: any) {
-      console.error("Error creating goal:", error)
+      console.error("Error creating goal:", error);
       toast({
         title: "Ошибка",
         description: error.message || "Не удалось создать цель",
         variant: "destructive"
-      })
+      });
     } finally {
-      setIsLoading(false)
+      setIsLoading(false);
     }
   }
 
