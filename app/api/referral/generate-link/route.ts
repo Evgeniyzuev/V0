@@ -3,6 +3,7 @@ import { cookies } from 'next/headers';
 import { createServerSupabaseClient } from "@/lib/supabase"
 
 export async function GET(request: Request) {
+  const supabase = createServerSupabaseClient();
   // Получаем URL параметры
   const url = new URL(request.url);
   const userId = url.searchParams.get('userId') || '';
@@ -37,16 +38,15 @@ export async function GET(request: Request) {
 
 // Опционально: обработчик POST для сохранения реферала
 export async function POST(request: Request) {
-  // Инициализируем Supabase клиент для доступа к базе данных
   const supabase = createServerSupabaseClient();
-
+  
   try {
     const body = await request.json();
     const { newUserId, referrerId } = body;
     
     if (!newUserId || !referrerId) {
       return NextResponse.json(
-        { error: 'Missing user IDs' },
+        { error: 'Missing required parameters' },
         { status: 400 }
       );
     }
@@ -56,25 +56,22 @@ export async function POST(request: Request) {
       .from('users')
       .update({ referrer_id: referrerId })
       .eq('id', newUserId)
-      .select();
-      
+      .select()
+      .single();
+
     if (error) {
-      console.error('Error saving referral:', error);
+      console.error('Error updating user:', error);
       return NextResponse.json(
-        { error: 'Failed to save referral information' },
+        { error: 'Failed to update user' },
         { status: 500 }
       );
     }
-    
-    return NextResponse.json({ 
-      success: true,
-      message: 'Referral saved successfully',
-      data
-    });
-  } catch (e: any) {
-    console.error('Error in referral API:', e);
+
+    return NextResponse.json({ success: true, data });
+  } catch (error) {
+    console.error('Error processing request:', error);
     return NextResponse.json(
-      { error: e.message || 'Server error' },
+      { error: 'Internal server error' },
       { status: 500 }
     );
   }

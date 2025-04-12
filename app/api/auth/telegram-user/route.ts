@@ -55,9 +55,9 @@ export async function POST(request: Request) {
   }
 
   if (!process.env.SUPABASE_SERVICE_ROLE_KEY) {
-    console.error('Missing Supabase Key');
+    console.error('Missing Supabase Service Role Key');
     return NextResponse.json(
-      { error: 'Server configuration error: Missing Supabase Key' },
+      { error: 'Server configuration error: Missing Supabase Service Role Key' },
       { status: 500 }
     );
   }
