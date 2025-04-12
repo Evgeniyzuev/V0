@@ -372,10 +372,10 @@ const WishBoard: React.FC<WishBoardProps> = () => {
   }
 
   return (
-    <div className="p-4 space-y-6">
+    <div className="p-4 space-y-2">
       {!dbUser?.id ? (
         // Auth UI for unauthenticated users
-        <div className="mb-6">
+        <div className="mb-2">
           <Card>
             <CardContent className="pt-6">
               <div className="text-center flex flex-col items-center gap-4">
@@ -407,8 +407,8 @@ const WishBoard: React.FC<WishBoardProps> = () => {
         </div>
       ) : (
         // Personal Goals Section for authenticated users
-        <div className="mb-6">
-          <h2 className="text-2xl font-bold mb-4">Your Personal Goals</h2>
+        <div className="mb-4">
+          <h3 className="text-lg font-semibold mb-2">Your Personal Goals</h3>
           <div className="grid grid-cols-3 gap-1">
             {userGoals.map((goal) => (
               <div
@@ -441,35 +441,31 @@ const WishBoard: React.FC<WishBoardProps> = () => {
         </div>
       )}
 
-      {/* Separator */}
-      <div className="my-8">
-        <h2 className="text-2xl font-bold mb-4">Available Goals</h2>
-        <Separator className="my-4" />
-      </div>
-
-      {/* Goals Grid */}
-      <div className="image-grid grid grid-cols-3 gap-1">
-        {goals.map((goal: Goal) => (
-          <div
-            key={goal.id}
-            className="image-item animate-fade-in rounded-lg overflow-hidden shadow-md aspect-square cursor-pointer"
-            onClick={() => handleWishClick(goal)}
-          >
-            <div className="relative w-full h-full">
-              <img
-                src={goal.image_url || ''}
-                alt={goal.title}
-                className="w-full h-full object-cover"
-                loading="lazy"
-              />
-              <div className="absolute inset-0 bg-gradient-to-t from-black/50 to-transparent opacity-0 hover:opacity-100 transition-opacity duration-300 flex items-end">
-                <div className="p-3 text-white text-sm font-medium">
-                  {goal.title}
+      <div>
+        <h3 className="text-lg font-semibold mb-2">Available Goals</h3>
+        <div className="grid grid-cols-3 gap-1">
+          {goals.map((goal) => (
+            <div
+              key={goal.id}
+              className="image-item animate-fade-in rounded-lg overflow-hidden shadow-md aspect-square cursor-pointer"
+              onClick={() => handleWishClick(goal)}
+            >
+              <div className="relative w-full h-full">
+                <img
+                  src={goal.image_url || ''}
+                  alt={goal.title}
+                  className="w-full h-full object-cover"
+                  loading="lazy"
+                />
+                <div className="absolute inset-0 bg-gradient-to-t from-black/50 to-transparent opacity-0 hover:opacity-100 transition-opacity duration-300 flex items-end">
+                  <div className="p-3 text-white text-sm font-medium">
+                    {goal.title}
+                  </div>
                 </div>
               </div>
             </div>
-          </div>
-        ))}
+          ))}
+        </div>
       </div>
 
       {/* Goal Detail Modal */}
