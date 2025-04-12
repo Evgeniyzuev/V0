@@ -3,6 +3,7 @@ import type { Goal, UserGoal } from '@/types/supabase'
 import { useUser } from '@/components/UserContext'
 import { useQueryClient } from '@tanstack/react-query'
 import { forwardRef, useImperativeHandle } from 'react'
+import { toast } from 'sonner'
 
 interface GoalUpdaterProps {
   goals: Goal[]
@@ -18,7 +19,11 @@ const GoalUpdater = forwardRef<GoalUpdaterRef, GoalUpdaterProps>(({ goals }, ref
   const supabase = createClientSupabaseClient()
 
   const addGoalToUserGoals = async (goal: Goal) => {
-    if (!dbUser?.id) return
+    console.log('Adding goal to user goals:', { goal, userId: dbUser?.id })
+    if (!dbUser?.id) {
+      toast.error('No user ID found. Please log in.')
+      return
+    }
 
     const newUserGoal: Omit<UserGoal, 'id' | 'created_at' | 'updated_at'> = {
       user_id: dbUser.id,
@@ -34,7 +39,9 @@ const GoalUpdater = forwardRef<GoalUpdaterRef, GoalUpdaterProps>(({ goals }, ref
       difficulty_level: goal.difficulty_level
     }
 
-    const { error: upsertError } = await supabase
+    toast.loading('Adding goal to your personal goals...')
+    
+    const { data, error: upsertError } = await supabase
       .from("user_goals")
       .upsert([newUserGoal], {
         onConflict: 'user_id, goal_id',
@@ -43,11 +50,13 @@ const GoalUpdater = forwardRef<GoalUpdaterRef, GoalUpdaterProps>(({ goals }, ref
 
     if (upsertError) {
       console.error('Error adding goal:', upsertError)
+      toast.error('Failed to add goal: ' + upsertError.message)
       return
     }
 
     // Invalidate and refetch user goals
     await queryClient.invalidateQueries({ queryKey: ['user-goals'] })
+    toast.success('Goal successfully added to your personal goals!')
   }
 
   useImperativeHandle(ref, () => ({

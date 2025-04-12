@@ -373,9 +373,22 @@ const WishBoard: React.FC<WishBoardProps> = () => {
   };
 
   const handleAddToPersonalGoals = async (goal: Goal) => {
-    if (!dbUser?.id || !goalUpdaterRef.current) return;
-    await goalUpdaterRef.current.addGoalToUserGoals(goal);
-    closeModal();
+    if (!dbUser?.id) {
+      toast.error('Please log in to add goals')
+      return
+    }
+    if (!goalUpdaterRef.current) {
+      toast.error('Goal updater not initialized')
+      return
+    }
+    
+    try {
+      await goalUpdaterRef.current.addGoalToUserGoals(goal);
+      closeModal();
+    } catch (error) {
+      console.error('Error adding goal:', error)
+      toast.error('Failed to add goal: ' + (error as Error).message)
+    }
   };
 
   if (isLoadingGoals || isLoadingUserGoals) {
