@@ -256,12 +256,22 @@ export default function UserProfileTab() {
               
               <div className="grid grid-cols-2 gap-3 w-full max-w-md">
                 {/* Telegram Login Button */}
-                <div 
-                  id="telegram-login-v0_aiassist_bot"
-                  className="flex justify-center w-full"
-                  data-onauth="onTelegramAuth(user)"
-                  data-request-access="write"
-                ></div>
+                <div className="relative">
+                  <Button 
+                    className="bg-[#0088cc] hover:bg-[#0077b5] text-white flex items-center gap-2 w-full"
+                  >
+                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="white" className="h-5 w-5">
+                      <path d="M12 0C5.373 0 0 5.373 0 12s5.373 12 12 12 12-5.373 12-12S18.627 0 12 0zm5.562 8.248l-1.97 9.296c-.146.658-.537.818-1.084.51l-3-2.21-1.447 1.394c-.16.16-.295.295-.605.295l.213-3.054 5.56-5.022c.242-.213-.054-.334-.373-.121l-6.871 4.326-2.962-.924c-.643-.204-.658-.643.136-.953l11.59-4.463c.538-.196 1.006.128.813.946z" />
+                    </svg>
+                    Telegram
+                  </Button>
+                  <div 
+                    className="absolute top-0 left-0 w-full h-full opacity-0"
+                    id="telegram-login-v0_aiassist_bot"
+                    data-onauth="onTelegramAuth(user)"
+                    data-request-access="write"
+                  ></div>
+                </div>
 
                 {/* Script for Telegram Login Widget */}
                 <script
@@ -278,7 +288,6 @@ export default function UserProfileTab() {
                   dangerouslySetInnerHTML={{
                     __html: `
                       function onTelegramAuth(user) {
-                        // Send auth data to your backend
                         fetch('/api/auth/telegram', {
                           method: 'POST',
                           headers: {
@@ -288,7 +297,6 @@ export default function UserProfileTab() {
                         })
                         .then(response => response.json())
                         .then(data => {
-                          // Handle successful authentication
                           window.location.reload();
                         })
                         .catch(error => {
