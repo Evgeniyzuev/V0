@@ -323,9 +323,18 @@ const WishBoard: React.FC<WishBoardProps> = () => {
       toast.success('Goal added to your list')
       closeModal()
     },
-    onError: (error) => {
+    onError: (error: Error) => {
       console.error('Error adding goal:', error)
-      toast.error('Failed to add goal')
+      if (error.message === 'User not authenticated') {
+        toast.error('Please log in to add goals to your list')
+        // Optionally trigger login here
+        const socialButton = document.querySelector('button[aria-label="Social"]');
+        if (socialButton instanceof HTMLElement) {
+          socialButton.click();
+        }
+      } else {
+        toast.error('Failed to add goal')
+      }
     }
   })
 
