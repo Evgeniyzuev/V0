@@ -1,10 +1,13 @@
 "use client";
 
-import React, { createContext, useContext, useEffect, useState, useRef, ReactNode } from "react";
+import React, { createContext, useContext, useEffect, useState, useRef, ReactNode, useMemo } from "react";
 // Удаляем прямой импорт
 // import WebApp from '@twa-dev/sdk';
 import { createClient } from '@supabase/supabase-js';
 import { createClientSupabaseClient } from "@/lib/supabase"
+// Удаляем неиспользуемый импорт
+// import type { User as TelegramUser, WebApp as TelegramWebApp } from '@grammyjs/web-app'
+import { addUserGoal } from '@/lib/api/goals' // Import the function to add goals
 
 // Интерфейс для WebApp для TypeScript
 interface TelegramWebApp {
@@ -17,9 +20,13 @@ interface TelegramWebApp {
       last_name?: string;
       username?: string;
       photo_url?: string;
+      // Добавим недостающие поля, если они ожидаются SDK
+      language_code?: string;
+      is_premium?: boolean;
     };
     [key: string]: any;
   };
+  expand: () => void; // Добавим метод expand
 }
 
 // Типы данных
@@ -29,6 +36,8 @@ interface TelegramUser {
   last_name?: string;
   username?: string;
   photo_url?: string;
+  language_code?: string; // Добавим поле
+  is_premium?: boolean; // Добавим поле
 }
 
 interface DbUser {
@@ -75,9 +84,10 @@ export const UserProvider = ({ children }: { children: ReactNode }) => {
   // Флаги для предотвращения повторных запросов
   const apiCalledRef = useRef(false);
   const userLoadedRef = useRef(false);
+  const initialGoalAddedRef = useRef(false); // Ref to track if goal 1 was added
   
   // Используем централизованный Supabase клиент
-  const supabase = React.useMemo(() => {
+  const supabase = useMemo(() => {
     if (typeof window === 'undefined') return null; // На сервере не создаем клиента
     return createClientSupabaseClient();
   }, []);
@@ -85,7 +95,10 @@ export const UserProvider = ({ children }: { children: ReactNode }) => {
   // Функция для обновления данных пользователя из БД
   const refreshUserData = async (force = false) => {
     if (!telegramUser?.id || !supabase) return;
-    if (userLoadedRef.current && !force) {
+    // Reset userLoadedRef if forcing refresh
+    if (force) userLoadedRef.current = false;
+
+    if (userLoadedRef.current) {
       console.log("User data already loaded, skipping refresh");
       return;
     }
@@ -117,167 +130,153 @@ export const UserProvider = ({ children }: { children: ReactNode }) => {
     await refreshUserData(true); // Принудительное обновление
   };
 
+  // Загрузка Telegram SDK
   useEffect(() => {
-    // Функция для загрузки Telegram WebApp SDK на клиенте
-    const loadTelegramWebApp = async () => {
-      // Проверка, что код выполняется в браузере
+    const initTelegramSdk = async () => {
       if (typeof window !== 'undefined') {
         try {
-          // Динамический импорт SDK только на клиенте
-          const TelegramWebApp = (await import('@twa-dev/sdk')).default;
-          setWebApp(TelegramWebApp);
+          // Используем динамический импорт @twa-dev/sdk
+          const WebAppSdk = (await import('@twa-dev/sdk')).default;
+          if (WebAppSdk) {
+            WebAppSdk.ready();
+            WebAppSdk.expand();
+            setWebApp(WebAppSdk as unknown as TelegramWebApp); // Приводим тип, если нужно
+            setTelegramUser(WebAppSdk.initDataUnsafe.user || null);
+            console.log('Telegram WebApp SDK Initialized:', WebAppSdk);
+            console.log('Telegram User:', WebAppSdk.initDataUnsafe.user);
+          }
         } catch (e) {
-          console.error('Failed to load Telegram WebApp SDK:', e);
+          console.error('Failed to load or init Telegram WebApp SDK:', e);
+          setError("Не удалось инициализировать Telegram WebApp");
+          setIsLoading(false);
         }
+      } else {
+        // Случай, когда код выполняется не в браузере (SSR/SSG)
+        setIsLoading(false);
       }
     };
-
-    loadTelegramWebApp();
+    initTelegramSdk();
   }, []);
 
+  // Инициализация пользователя и отправка на API
   useEffect(() => {
-    // Функция для инициализации данных пользователя из Telegram и проверки/создания в БД
     const initUser = async () => {
-      if (!webApp) return; // Выходим, если SDK еще не загружен
-      if (apiCalledRef.current) {
-        console.log("API already called, skipping initialization");
-        return;
-      }
+      if (!webApp || !supabase) return;
       
+      // Prevent API call if already done
+      if (apiCalledRef.current) {
+        console.log("API call already made, skipping initUser");
+        return; 
+      }
+      apiCalledRef.current = true; // Mark API call as attempted
+
       setIsLoading(true);
       setError(null);
-      
+      userLoadedRef.current = false; // Reset loaded flag on new init attempt
+
       try {
-        // Проверяем, запущены ли мы в Telegram
-        let isTelegram = false;
-        let userData: TelegramUser | null = null;
-        let extraInitData = '';
+        const initData = webApp.initData;
+        const user = webApp.initDataUnsafe?.user;
         
-        // Проверяем параметры URL для поиска startapp
-        if (typeof window !== 'undefined') {
-          try {
-            const urlParams = new URLSearchParams(window.location.search);
-            const startAppParam = urlParams.get('startapp') || urlParams.get('tgWebAppStartParam');
-            if (startAppParam) {
-              console.log("Found startapp parameter in URL:", startAppParam);
-              extraInitData = `startapp=${startAppParam}`;
-            }
-          } catch (urlError) {
-            console.error("Error parsing URL params:", urlError);
-          }
-        }
-        
-        try {
-          webApp.ready();
-          const initData = webApp.initDataUnsafe;
-          
-          if (initData?.user) {
-            isTelegram = true;
-            userData = initData.user;
-            console.log('===== TELEGRAM USER DATA =====');
-            console.log('Telegram user data:', userData);
-            console.log('Telegram user JSON:', JSON.stringify(userData));
-            console.log('First name type:', typeof userData.first_name);
-            console.log('Last name type:', typeof userData.last_name);
-            console.log('Username type:', typeof userData.username);
-            // Проверяем типы и значения всех полей
-            Object.entries(userData).forEach(([key, value]) => {
-              console.log(`Field ${key}:`, value, `(type: ${typeof value})`);
-            });
-            console.log('===== END TELEGRAM USER DATA =====');
-            setTelegramUser(userData);
-          }
-        } catch (e) {
-          console.log('Not running inside Telegram or WebApp not available');
+        if (!initData || !user) {
+          throw new Error("Не удалось получить данные инициализации или пользователя Telegram");
         }
 
-        // Если мы получили данные пользователя из Telegram
-        if (isTelegram && userData?.id) {
-          try {
-            // Помечаем, что мы уже вызвали API
-            apiCalledRef.current = true;
-            
-            // Отправляем данные на API для верификации и сохранения
-            console.log("===== SENDING TO API =====");
-            console.log("Telegram user object:", JSON.stringify(userData));
-            
-            // Создаем копию объекта для отправки, чтобы убедиться что все поля корректны
-            const userToSend = {
-              id: userData.id,
-              first_name: userData.first_name || null,
-              last_name: userData.last_name || null,
-              username: userData.username || null,
-              photo_url: userData.photo_url || null
-            };
-            
-            console.log("Clean user object to send:", JSON.stringify(userToSend));
-            
-            // Формируем итоговые данные для отправки, добавляя startapp параметр если он найден
-            const finalInitData = webApp.initData + (extraInitData ? `&${extraInitData}` : '');
-            
-            // Логируем данные initData для отладки
-            if (typeof finalInitData === 'string') {
-              console.log("Final initData:", finalInitData);
-              console.log("initData contains startapp?", finalInitData.includes('startapp='));
-              console.log("initData contains start_param?", finalInitData.includes('start_param='));
-              
-              // Пробуем найти параметр startapp
-              const startappMatch = finalInitData.match(/startapp=([^&]+)/);
-              if (startappMatch) {
-                console.log("Found startapp parameter:", startappMatch[1]);
-              }
-            }
-            console.log("===== END SENDING TO API =====");
-            
-            const response = await fetch('/api/auth/telegram-user', {
-              method: 'POST',
-              headers: {
-                'Content-Type': 'application/json',
-              },
-              body: JSON.stringify({
-                telegramUser: userToSend, // Используем очищенный объект
-                initData: finalInitData,  // Для верификации на сервере с добавленным startapp
-              }),
-            });
+        // Send data to your API endpoint
+        console.log("===== START SENDING TO API =====");
+        console.log("Telegram User Being Sent:", user);
+        console.log("InitData Being Sent:", initData);
 
-            const result = await response.json();
-            console.log("API response:", result);
-            
-            if (!response.ok) {
-              throw new Error(result.error || 'Ошибка при сохранении данных пользователя');
-            }
-            
-            if (result.user) {
-              console.log("User object from API:", result.user);
-              console.log("Available fields:", Object.keys(result.user));
-              setDbUser(result.user);
-              userLoadedRef.current = true;
-            } else {
-              // Пробуем загрузить из БД если API не вернул пользователя
-              await refreshUserData();
-            }
-          } catch (apiError: any) {
-            console.error('API communication error:', apiError);
-            setError(`Ошибка API: ${apiError.message}`);
-            
-            // Пробуем загрузить данные напрямую из базы как запасной вариант
-            if (supabase) {
-              await refreshUserData();
-            }
+        let finalInitData = initData; // Start with the original initData
+        const urlParams = new URLSearchParams(initData);
+        if (!urlParams.has('startapp')) {
+          const currentParams = new URLSearchParams(window.location.search);
+          const startAppParam = currentParams.get('startapp');
+          if (startAppParam) {
+            finalInitData += `&startapp=${encodeURIComponent(startAppParam)}`;
+            console.log("Added startapp parameter to initData:", finalInitData);
           }
         }
-      } catch (e: any) {
-        console.error('Error initializing user:', e);
-        setError(e.message || 'Ошибка при инициализации пользователя');
+
+        // Используем локальный интерфейс TelegramUser
+        const userToSend: Partial<TelegramUser> = {
+          id: user.id,
+          first_name: user.first_name,
+          last_name: user.last_name,
+          username: user.username,
+          photo_url: user.photo_url,
+          // Добавляем поля, если они есть в user
+          language_code: user.language_code,
+          is_premium: user.is_premium,
+        };
+
+        console.log("Cleaned User Object Being Sent:", userToSend);
+        console.log("===== END SENDING TO API =====");
+        
+        const response = await fetch('/api/auth/telegram-user', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            telegramUser: userToSend,
+            initData: finalInitData,
+          }),
+        });
+
+        const result = await response.json();
+        console.log("API response:", result);
+        
+        if (!response.ok) {
+          throw new Error(result.error || 'Ошибка при сохранении данных пользователя');
+        }
+        
+        if (result.user) {
+          console.log("User object from API:", result.user);
+          setDbUser(result.user);
+          userLoadedRef.current = true;
+        } else {
+          // Try loading from DB if API didn't return a user
+          await refreshUserData();
+        }
+      } catch (apiError: any) {
+        console.error('API communication error:', apiError);
+        setError(`Ошибка API: ${apiError.message}`);
+        // Try loading data directly from the database as a fallback
+        if (supabase) {
+          await refreshUserData();
+        }
       } finally {
         setIsLoading(false);
       }
     };
 
-    if (webApp) {
-      initUser(); // Вызываем инициализацию только после загрузки SDK
+    if (webApp && supabase && !apiCalledRef.current) {
+      initUser(); 
     }
-  }, [webApp, supabase]); // Убираем refreshUserData из зависимостей
+  }, [webApp, supabase]);
+
+  // Effect to add default goal once user data is loaded
+  useEffect(() => {
+    if (dbUser && !initialGoalAddedRef.current) {
+      console.log("User data loaded, checking and adding goal 1 if needed.");
+      initialGoalAddedRef.current = true; // Mark as attempted
+      addUserGoal(dbUser.id, 1)
+        .then(addedGoal => {
+          if (addedGoal) {
+            console.log("Successfully ensured user has goal 1:", addedGoal);
+            // Optionally invalidate user goals query if needed immediately
+            // queryClient.invalidateQueries({ queryKey: ['user-goals'] })
+          } else {
+            console.log("User already had goal 1 or failed to add it (check previous logs).");
+          }
+        })
+        .catch(error => {
+          console.error("Error trying to add default goal:", error);
+          // Potentially reset initialGoalAddedRef.current = false; to retry later?
+        });
+    }
+  }, [dbUser]); // Run when dbUser changes
 
   const value = {
     telegramUser,

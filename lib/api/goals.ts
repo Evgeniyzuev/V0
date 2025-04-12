@@ -1,5 +1,5 @@
 import { createClientSupabaseClient } from '@/lib/supabase'
-import type { Goal } from '@/types/supabase'
+import type { Goal, UserGoal } from '@/types/supabase'
 import { toast } from 'sonner'
 
 const supabase = createClientSupabaseClient();
@@ -82,4 +82,61 @@ export const fetchUserGoals = async () => {
 
   console.log('Transformed goals:', transformedGoals)
   return transformedGoals
+}
+
+/**
+ * Adds a specific goal to a user's personal goals list.
+ * Uses upsert to avoid duplicates based on the unique constraint (user_id, goal_id).
+ */
+export const addUserGoal = async (userId: string, goalId: number): Promise<UserGoal | null> => {
+  const supabase = createClientSupabaseClient()
+
+  // Optionally, fetch the goal details to get difficulty or other defaults
+  const { data: goalTemplate, error: fetchError } = await supabase
+    .from('goals')
+    .select('difficulty_level')
+    .eq('id', goalId)
+    .single()
+
+  if (fetchError) {
+    console.error('Error fetching goal template details:', fetchError)
+    toast.error('Could not fetch goal details: ' + fetchError.message)
+    // Decide if you want to proceed without defaults or throw error
+  }
+
+  const newUserGoalData: Omit<UserGoal, 'id' | 'created_at' | 'updated_at'> = {
+    user_id: userId,
+    goal_id: goalId,
+    status: 'not_started',
+    started_at: null,
+    target_date: null,
+    completed_at: null,
+    progress_percentage: 0,
+    current_step_index: null,
+    progress_details: null,
+    notes: null,
+    difficulty_level: goalTemplate?.difficulty_level ?? null // Use fetched difficulty or null
+  }
+
+  const { data, error: upsertError } = await supabase
+    .from('user_goals')
+    .upsert([newUserGoalData], { // Pass data as an array
+      onConflict: 'user_id, goal_id', // Assumes unique constraint exists
+      ignoreDuplicates: false // Set to false to ensure it attempts update/select on conflict
+    })
+    .select() // Select the data after upsert
+    .single() // Expecting one row back
+
+  if (upsertError) {
+    console.error('Error adding/upserting user goal:', upsertError)
+    // Don't show toast error if it's just a duplicate conflict (code 23505 - unique_violation)
+    if (upsertError.code !== '23505') {
+        toast.error('Failed to add goal: ' + upsertError.message)
+    }
+    return null
+  }
+
+  console.log('Successfully added/found user goal:', data)
+  // No toast success here, let the caller decide based on context
+  return data
 } 
