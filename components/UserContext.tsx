@@ -247,7 +247,9 @@ export const UserProvider = ({ children }: { children: ReactNode }) => {
         const user = webApp.initDataUnsafe?.user;
         
         if (!initData || !user) {
-          throw new Error("Не удалось получить данные инициализации или пользователя Telegram");
+          setError("Не удалось получить данные инициализации или пользователя Telegram");
+          setIsLoading(false);
+          return;
         }
 
         // Send data to your API endpoint

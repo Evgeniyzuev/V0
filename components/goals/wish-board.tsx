@@ -268,10 +268,10 @@ const personalGoals: Goal[] = [
 ];
 
 interface WishBoardProps {
-  // No props needed now
+  showOnlyRecommendations: boolean;
 }
 
-const WishBoard: React.FC<WishBoardProps> = () => {
+const WishBoard: React.FC<WishBoardProps> = ({ showOnlyRecommendations }) => {
   const { dbUser } = useUser()
   const queryClient = useQueryClient()
   
