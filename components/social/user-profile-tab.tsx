@@ -227,24 +227,6 @@ export default function UserProfileTab() {
       <div className="p-4">
         <Card>
           <CardContent className="pt-6">
-            <div className="text-center text-red-500">
-              <p>{error}</p>
-              <Button variant="outline" className="mt-4" onClick={handleRefresh}>
-                Try Again
-              </Button>
-            </div>
-          </CardContent>
-        </Card>
-      </div>
-    )
-  }
-
-  // Показываем специальное сообщение если пользователь не из Telegram
-  if (!telegramUser && !dbUser) {
-    return (
-      <div className="p-4">
-        <Card>
-          <CardContent className="pt-6">
             <div className="text-center flex flex-col items-center gap-4">
               <h3 className="text-lg font-medium">Profile Login</h3>
               <p className="text-gray-500 mb-4">Choose login method</p>
