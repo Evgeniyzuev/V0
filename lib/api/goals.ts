@@ -82,11 +82,16 @@ export async function addUserGoal(goalId: number) {
   
   const { data, error } = await supabase
     .from('user_goals')
-    .insert({
+    .upsert({
       user_id: user.id,
       goal_id: goalId,
       status: 'not_started',
-      progress_percentage: 0
+      progress_percentage: 0,
+      current_step_index: 0,
+      progress_details: { initialized: true }
+    }, {
+      onConflict: 'user_id,goal_id',
+      ignoreDuplicates: true
     })
     .select(`
       *,
