@@ -31,23 +31,14 @@ function initUtils(): TelegramUtils {
   };
 }
 
-// Добавляем типы для Telegram WebApp
+// Обновляем типы для Telegram WebApp
 declare global {
   interface Window {
     Telegram?: {
       WebApp?: {
         openTelegramLink: (url: string) => void;
-      };
-      Login?: {
-        auth: (options: {
-          bot_id: string;
-          request_access?: string;
-          lang?: string;
-          callback: (data: any) => void;
-        }) => void;
-      };
-    };
-    onTelegramAuth?: (user: any) => void;
+      }
+    }
   }
 }
 
@@ -181,10 +172,6 @@ const TelegramLoginButton = () => {
     
     script.onload = () => {
       console.log('Telegram widget script loaded');
-      // Проверяем доступность Telegram Login
-      if (window.Telegram?.Login) {
-        console.log('Telegram Login is available');
-      }
     };
 
     script.onerror = (error) => {
@@ -195,76 +182,35 @@ const TelegramLoginButton = () => {
 
     return () => {
       document.body.removeChild(script);
-      delete window.onTelegramAuth;
     };
   }, []);
 
   const handleTelegramLogin = () => {
     console.log('Telegram login button clicked');
     
-    // Получаем ID бота из переменной окружения
-    const botId = process.env.NEXT_PUBLIC_TELEGRAM_BOT_ID;
+    // Формируем URL для авторизации через Telegram
+    const botUsername = 'V0_aiassist_bot'; // Имя вашего бота
+    const currentUrl = encodeURIComponent(window.location.origin);
     
-    if (!botId) {
-      console.error('NEXT_PUBLIC_TELEGRAM_BOT_ID is not set');
-      return;
-    }
-
-    // Проверяем, что скрипт загружен и функция доступна
-    if (!window.Telegram?.Login?.auth) {
-      console.error('Telegram Login is not available');
-      // Пробуем перезагрузить скрипт
-      const script = document.createElement('script');
-      script.src = 'https://telegram.org/js/telegram-widget.js?22';
-      script.async = true;
-      document.body.appendChild(script);
-      return;
-    }
-
+    // Создаем URL для открытия в приложении и в браузере
+    const telegramAppUrl = `tg://resolve?domain=${botUsername}&start=auth_${btoa(currentUrl)}`;
+    const telegramWebUrl = `https://t.me/${botUsername}?start=auth_${btoa(currentUrl)}`;
+    
+    // Пробуем открыть приложение Telegram
     try {
-      console.log('Starting Telegram auth with bot_id:', botId);
-      window.Telegram.Login.auth(
-        {
-          bot_id: botId,
-          request_access: 'write',
-          lang: 'ru',
-          callback: (user: any) => {
-            console.log('Auth callback received:', user);
-            if (user && user.id) {
-              console.log('User authenticated:', user.id);
-              fetch('/api/auth/telegram', {
-                method: 'POST',
-                headers: {
-                  'Content-Type': 'application/json',
-                },
-                body: JSON.stringify({
-                  ...user,
-                  origin: window.location.origin,
-                })
-              })
-              .then(async response => {
-                const data = await response.json();
-                console.log('API response:', data);
-                if (data.success) {
-                  window.location.reload();
-                } else {
-                  throw new Error(data.error || 'Authentication failed');
-                }
-              })
-              .catch(error => {
-                console.error('API error:', error);
-                alert('Ошибка при авторизации. Пожалуйста, попробуйте еще раз.');
-              });
-            } else {
-              console.error('Invalid user data received:', user);
-              alert('Не удалось получить данные пользователя.');
-            }
-          },
-        },
-      );
+      window.location.href = telegramAppUrl;
+      
+      // Если через 1 секунду все еще на той же странице, 
+      // значит приложение не открылось - открываем веб-версию
+      setTimeout(() => {
+        if (document.hidden || document.visibilityState === 'hidden') {
+          return; // Уже ушли со страницы, ничего не делаем
+        }
+        window.location.href = telegramWebUrl;
+      }, 1000);
     } catch (error) {
-      console.error('Telegram.Login.auth error:', error);
-      alert('Ошибка при запуске авторизации Telegram.');
+      console.error('Failed to open Telegram app:', error);
+      window.location.href = telegramWebUrl;
     }
   };
 
@@ -272,11 +218,12 @@ const TelegramLoginButton = () => {
     <Button 
       className="bg-[#0088cc] hover:bg-[#0077b5] text-white flex items-center gap-2 w-full"
       onClick={handleTelegramLogin}
+      aria-label="Войти через Telegram"
     >
-      <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="white" className="h-5 w-5">
+      <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="white" className="h-5 w-5" aria-hidden="true" role="img">
         <path d="M12 0C5.373 0 0 5.373 0 12s5.373 12 12 12 12-5.373 12-12S18.627 0 12 0zm5.562 8.248l-1.97 9.296c-.146.658-.537.818-1.084.51l-3-2.21-1.447 1.394c-.16.16-.295.295-.605.295l.213-3.054 5.56-5.022c.242-.213-.054-.334-.373-.121l-6.871 4.326-2.962-.924c-.643-.204-.658-.643.136-.953l11.59-4.463c.538-.196 1.006.128.813.946z" />
       </svg>
-      Telegram
+      <span>Telegram</span>
     </Button>
   );
 };
