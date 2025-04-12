@@ -9,7 +9,7 @@ import { Avatar, AvatarFallback } from "@/components/ui/avatar"
 import { useUser } from "@/components/UserContext"
 import { fetchGoals, fetchUserGoals, updateGoal } from '@/lib/api/goals'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
-import type { Goal } from '@/types/supabase'
+import type { Goal, TransformedUserGoal } from '@/types/supabase'
 import { toast } from 'sonner'
 import GoalUpdater, { GoalUpdaterRef } from './GoalUpdater';
 
@@ -268,10 +268,10 @@ const personalGoals: Goal[] = [
 ];
 
 interface WishBoardProps {
-  // No props needed now
+  showOnlyRecommendations?: boolean;
 }
 
-const WishBoard: React.FC<WishBoardProps> = () => {
+const WishBoard: React.FC<WishBoardProps> = ({ showOnlyRecommendations = false }) => {
   const { dbUser } = useUser()
   const queryClient = useQueryClient()
   
@@ -282,13 +282,10 @@ const WishBoard: React.FC<WishBoardProps> = () => {
   })
 
   // Fetch user goals from the database, passing the user ID
-  const { data: userGoals = [], isLoading: isLoadingUserGoals, error: userGoalsError } = useQuery({
-    // Query key теперь включает userId, чтобы запрос перезагружался при смене пользователя
-    queryKey: ['user-goals', dbUser?.id], 
-    // Передаем userId в функцию запроса
-    queryFn: () => fetchUserGoals(dbUser?.id), 
-    // Запрос активен только если есть dbUser.id
-    enabled: !!dbUser?.id 
+  const { data: userGoals = [], isLoading: isLoadingUserGoals, error: userGoalsError } = useQuery<TransformedUserGoal[]>({
+    queryKey: ['user-goals', dbUser?.id],
+    queryFn: () => fetchUserGoals(dbUser?.id),
+    enabled: !!dbUser?.id && !showOnlyRecommendations
   })
 
   const goalUpdaterRef = useRef<GoalUpdaterRef>(null);
@@ -299,7 +296,7 @@ const WishBoard: React.FC<WishBoardProps> = () => {
     />
   ) : null;
 
-  const [selectedWish, setSelectedWish] = useState<Goal | null>(null);
+  const [selectedWish, setSelectedWish] = useState<Goal | TransformedUserGoal | null>(null);
   const [isEditing, setIsEditing] = useState(false);
   const [editedTitle, setEditedTitle] = useState('');
   const [editedDescription, setEditedDescription] = useState('');
@@ -323,7 +320,7 @@ const WishBoard: React.FC<WishBoardProps> = () => {
     }
   })
 
-  const handleWishClick = (wish: Goal) => {
+  const handleWishClick = (wish: Goal | TransformedUserGoal) => {
     setSelectedWish(wish);
     setEditedTitle(wish.title);
     setEditedDescription(wish.description || '');
@@ -394,11 +391,11 @@ const WishBoard: React.FC<WishBoardProps> = () => {
     }
   };
 
-  if (isLoadingGoals || isLoadingUserGoals) {
+  if (isLoadingGoals || (!showOnlyRecommendations && isLoadingUserGoals)) {
     return <div className="p-4">Loading goals...</div>;
   }
 
-  if (goalsError || userGoalsError) {
+  if (goalsError || (!showOnlyRecommendations && userGoalsError)) {
     return <div className="p-4 text-red-500">Error loading goals: {(goalsError || userGoalsError)?.message}</div>;
   }
 
@@ -437,14 +434,14 @@ const WishBoard: React.FC<WishBoardProps> = () => {
             </CardContent>
           </Card>
         </div>
-      ) : (
+      ) : !showOnlyRecommendations && (
         // Personal Goals Section for authenticated users
         <div className="mb-4">
           <h3 className="text-lg font-semibold mb-2">Your Personal Goals</h3>
           <div className="grid grid-cols-3 gap-1">
             {userGoals.map((goal) => (
               <div
-                key={goal.id}
+                key={goal.user_goal_id}
                 className="image-item animate-fade-in rounded-lg overflow-hidden shadow-md aspect-square cursor-pointer"
                 onClick={() => handleWishClick(goal)}
               >
@@ -632,11 +629,11 @@ const WishBoard: React.FC<WishBoardProps> = () => {
                         <p className="text-gray-600">{selectedWish.description}</p>
                       </div>
                       <div className="flex gap-2">
-                        {dbUser?.id && (
+                        {dbUser?.id && !('user_goal_id' in selectedWish) && (
                           <button
                             onClick={(e) => {
                               e.stopPropagation();
-                              handleAddToPersonalGoals(selectedWish);
+                              handleAddToPersonalGoals(selectedWish as Goal);
                             }}
                             className="px-4 py-2 bg-purple-600 text-white rounded hover:bg-purple-700 transition-colors"
                           >
@@ -668,6 +665,20 @@ const WishBoard: React.FC<WishBoardProps> = () => {
                         <span className="font-medium mr-1">Difficulty:</span>
                         {selectedWish.difficulty_level}
                       </div>
+
+                      {'status' in selectedWish && (
+                        <div className="flex items-center">
+                          <span className="font-medium mr-1">Status:</span>
+                          {selectedWish.status}
+                        </div>
+                      )}
+
+                      {'progress_percentage' in selectedWish && selectedWish.progress_percentage !== null && (
+                        <div className="flex items-center">
+                          <span className="font-medium mr-1">Progress:</span>
+                          {selectedWish.progress_percentage}%
+                        </div>
+                      )}
                     </div>
 
                     {selectedWish.steps && selectedWish.steps.length > 0 && (

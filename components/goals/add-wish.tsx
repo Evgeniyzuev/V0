@@ -10,6 +10,7 @@ import { createClientSupabaseClient } from "@/lib/supabase"
 import { useToast } from "@/components/ui/use-toast"
 import { Loader2 } from "lucide-react"
 import { useQueryClient } from "@tanstack/react-query"
+import type { UserGoal } from "@/types/supabase"
 
 export default function AddWish() {
   const { dbUser } = useUser()
@@ -73,7 +74,8 @@ export default function AddWish() {
       toast({
         title: "Введите название",
         description: "Название цели обязательно для заполнения",
-        variant: "destructive"
+        variant: "destructive",
+        duration: 5000 // Увеличиваем длительность показа
       })
       return;
     }
@@ -82,7 +84,8 @@ export default function AddWish() {
       toast({
         title: "Некорректный URL изображения",
         description: "Пожалуйста, проверьте ссылку на изображение",
-        variant: "destructive"
+        variant: "destructive",
+        duration: 5000
       })
       return;
     }
@@ -91,7 +94,8 @@ export default function AddWish() {
       toast({
         title: "Ошибка аутентификации",
         description: "Пожалуйста, войдите в систему",
-        variant: "destructive"
+        variant: "destructive",
+        duration: 5000
       })
       return;
     }
@@ -101,14 +105,10 @@ export default function AddWish() {
     try {
       const supabase = createClientSupabaseClient();
       
-      toast({
-        title: "Создаем цель...",
-        description: `Цель: ${title}`,
-      });
-      
-      // Создаем пользовательскую запись с полями по аналогии с GoalUpdater.tsx
-      const newUserGoal = {
+      // Создаем пользовательскую запись с правильной типизацией
+      const newUserGoal: Omit<UserGoal, 'id' | 'created_at' | 'updated_at'> = {
         user_id: dbUser.id,
+        goal_id: 0, // Используем 0 вместо null
         status: 'not_started',
         started_at: null,
         target_date: null,
@@ -116,13 +116,10 @@ export default function AddWish() {
         progress_percentage: 0,
         current_step_index: null,
         progress_details: null,
-        notes: title, // Сохраняем заголовок в поле notes
+        notes: title, // Сохраняем заголовок в notes
         difficulty_level: 1,
-        // Эти поля могут не существовать в таблице user_goals
-        // Если это так, то Supabase их проигнорирует
-        title,
-        description,
-        image_url: imageUrl || null
+        image_url: imageUrl || null,
+        description: description || null
       };
       
       const { data, error: insertError } = await supabase
@@ -131,31 +128,24 @@ export default function AddWish() {
         .select();
       
       if (insertError) {
-        console.error('Детали ошибки:', insertError);
-        
         toast({
           title: "Ошибка создания цели",
           description: `${insertError.message}${insertError.details ? ` - ${insertError.details}` : ''}`,
-          variant: "destructive"
+          variant: "destructive",
+          duration: 10000 // Увеличиваем время для ошибок
         });
-        
-        return; // Прерываем выполнение, чтобы не показывать успешное сообщение
+        return;
       }
       
+      // Показываем успех
       toast({
-        title: "Цель успешно добавлена!",
-        description: `ID: ${data?.[0]?.id || 'Неизвестно'}`,
+        title: "✨ Цель успешно добавлена!",
+        description: "Ваша цель появится в списке желаний",
+        duration: 5000
       });
 
       // Обновляем кэш запросов React Query
       await queryClient.invalidateQueries({ queryKey: ['user-goals'] });
-
-      // Успешное создание
-      toast({
-        title: "Цель создана",
-        description: "Ваша цель успешно добавлена в список желаний",
-        variant: "default"
-      });
 
       // Сбрасываем форму
       setTitle("");
@@ -164,11 +154,11 @@ export default function AddWish() {
       setPreviewUrl(null);
 
     } catch (error: any) {
-      console.error("Error creating goal:", error);
       toast({
         title: "Непредвиденная ошибка",
         description: error.message || "Не удалось создать цель",
-        variant: "destructive"
+        variant: "destructive",
+        duration: 10000
       });
     } finally {
       setIsLoading(false);
