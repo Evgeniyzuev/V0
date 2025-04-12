@@ -484,15 +484,20 @@ const WishBoard: React.FC<WishBoardProps> = ({ showOnlyRecommendations }) => {
             >
               <div className="relative w-full h-full">
                 <img
-                  src={goal.image_url || ''}
-                  alt={goal.title}
+                  src={goal.image_url || (goal.goal?.image_url || '')}
+                  alt={goal.title || (goal.goal?.title || '')}
                   className="w-full h-full object-cover"
                   loading="lazy"
                 />
                 <div className="absolute inset-0 bg-gradient-to-t from-black/50 to-transparent opacity-0 hover:opacity-100 transition-opacity duration-300 flex items-end">
                   <div className="p-3 text-white">
-                    <div className="text-sm font-medium">{goal.title}</div>
-                    <div className="text-xs mt-1">Difficulty: {goal.difficulty_level}</div>
+                    <div className="text-sm font-medium">{goal.title || goal.goal?.title}</div>
+                    {goal.status && (
+                      <div className="text-xs mt-1">Status: {goal.status}</div>
+                    )}
+                    {goal.progress_percentage !== null && (
+                      <div className="text-xs">Progress: {goal.progress_percentage}%</div>
+                    )}
                   </div>
                 </div>
               </div>

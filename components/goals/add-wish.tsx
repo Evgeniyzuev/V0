@@ -44,50 +44,28 @@ export default function AddWish() {
     try {
       const supabase = createClientSupabaseClient()
 
-      // First, create a new goal without specifying the id
-      const { data: newGoal, error: goalError } = await supabase
-        .from("goals")
-        .insert([
-          {
-            title,
-            description,
-            image_url: imageUrl,
-            estimated_cost: estimatedCost,
-            difficulty_level: difficultyLevel,
-            steps: []
-          }
-        ])
-        .select()
-        .single()
-
-      if (goalError) {
-        throw new Error(goalError.message)
-      }
-
-      // Then create a user_goal entry
+      // Create a user_goal entry directly
       const { error: userGoalError } = await supabase
         .from("user_goals")
         .insert([
           {
             user_id: dbUser.id,
-            goal_id: newGoal.id,
+            title,
+            description,
+            image_url: imageUrl,
+            estimated_cost: estimatedCost,
+            difficulty_level: difficultyLevel,
             status: "not_started",
             progress_percentage: 0,
-            difficulty_level: difficultyLevel
+            steps: []
           }
         ])
 
       if (userGoalError) {
-        // If user_goal creation fails, we should clean up the created goal
-        await supabase
-          .from("goals")
-          .delete()
-          .eq("id", newGoal.id)
         throw new Error(userGoalError.message)
       }
 
       // Invalidate queries to refresh the goals list
-      await queryClient.invalidateQueries({ queryKey: ["goals"] })
       await queryClient.invalidateQueries({ queryKey: ["user-goals"] })
 
       toast.success("Wish added successfully!")

@@ -142,9 +142,12 @@ export type GoalStatus = 'not_started' | 'in_progress' | 'completed' | 'paused' 
 export interface UserGoal {
   id: number; // Primary Key
   user_id: string; // Foreign key to auth.users.id, not null
-  goal_id: number; // Foreign key to goals.id, not null
-  image_url: string | null; // Text, stores URL
-  description: string | null; // Text
+  goal_id: number | null; // Foreign key to goals.id, nullable for custom goals
+  title: string | null; // Title for custom goals
+  description: string | null; // Description for custom goals
+  image_url: string | null; // Image URL for custom goals
+  estimated_cost: string | null; // Estimated cost for custom goals
+  steps: string[] | null; // Steps for custom goals
   created_at: string; // timestamp with time zone default now()
   updated_at: string; // timestamp with time zone default now()
   status: GoalStatus; // Text, using the GoalStatus type, not null, default 'not_started'
@@ -158,5 +161,5 @@ export interface UserGoal {
   difficulty_level: number | null; // Added: Copied from goal or user-defined
 
   // Optional: Include related data when fetching with joins
-  // goal?: Goal;
+  goal?: Goal;
 } 
