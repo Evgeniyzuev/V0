@@ -38,8 +38,6 @@ const GoalUpdater = forwardRef<GoalUpdaterRef, GoalUpdaterProps>(({ goals }, ref
       notes: null,
       difficulty_level: goal.difficulty_level
     }
-
-    toast.loading('Adding goal to your personal goals...')
     
     const { data, error: upsertError } = await supabase
       .from("user_goals")
@@ -56,7 +54,6 @@ const GoalUpdater = forwardRef<GoalUpdaterRef, GoalUpdaterProps>(({ goals }, ref
 
     // Invalidate and refetch user goals
     await queryClient.invalidateQueries({ queryKey: ['user-goals'] })
-    toast.success('Goal successfully added to your personal goals!')
   }
 
   useImperativeHandle(ref, () => ({
