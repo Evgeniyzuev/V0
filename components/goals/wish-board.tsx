@@ -390,7 +390,7 @@ const WishBoard: React.FC<WishBoardProps> = () => {
       closeModal();
     } catch (error) {
       console.error('Error adding goal:', error)
-      toast.error(`Failed to add goal: ${error instanceof Error ? error.message : 'Unknown error'}`)
+      toast.error('Failed to add goal: ' + (error as Error).message)
     }
   };
 
