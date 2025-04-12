@@ -143,6 +143,8 @@ export interface UserGoal {
   id: number; // Primary Key
   user_id: string; // Foreign key to auth.users.id, not null
   goal_id: number; // Foreign key to goals.id, not null
+  image_url: string | null; // Text, stores URL
+  description: string | null; // Text
   created_at: string; // timestamp with time zone default now()
   updated_at: string; // timestamp with time zone default now()
   status: GoalStatus; // Text, using the GoalStatus type, not null, default 'not_started'

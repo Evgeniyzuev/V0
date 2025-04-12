@@ -28,6 +28,8 @@ const GoalUpdater = forwardRef<GoalUpdaterRef, GoalUpdaterProps>(({ goals }, ref
     const newUserGoal: Omit<UserGoal, 'id' | 'created_at' | 'updated_at'> = {
       user_id: dbUser.id,
       goal_id: goal.id,
+      image_url: goal.image_url,
+      description: goal.description,
       status: 'not_started',
       started_at: null,
       target_date: null,
