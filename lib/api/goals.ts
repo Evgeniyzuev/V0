@@ -1,5 +1,7 @@
-import { supabase } from '@/lib/supabaseClient'
+import { createClientSupabaseClient } from '@/lib/supabase'
 import type { Goal } from '@/types/supabase'
+
+const supabase = createClientSupabaseClient();
 
 export async function fetchGoals() {
   const { data, error } = await supabase

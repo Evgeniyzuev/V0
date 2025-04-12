@@ -4,6 +4,7 @@ import React, { createContext, useContext, useEffect, useState, useRef, ReactNod
 // Удаляем прямой импорт
 // import WebApp from '@twa-dev/sdk';
 import { createClient } from '@supabase/supabase-js';
+import { createClientSupabaseClient } from "@/lib/supabase"
 
 // Интерфейс для WebApp для TypeScript
 interface TelegramWebApp {
@@ -75,19 +76,10 @@ export const UserProvider = ({ children }: { children: ReactNode }) => {
   const apiCalledRef = useRef(false);
   const userLoadedRef = useRef(false);
   
-  // Инициализируем Supabase клиент внутри компонента
+  // Используем централизованный Supabase клиент
   const supabase = React.useMemo(() => {
     if (typeof window === 'undefined') return null; // На сервере не создаем клиента
-    
-    const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
-    const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
-    
-    if (!supabaseUrl || !supabaseAnonKey) {
-      console.error('Missing Supabase environment variables');
-      return null;
-    }
-    
-    return createClient(supabaseUrl, supabaseAnonKey);
+    return createClientSupabaseClient();
   }, []);
 
   // Функция для обновления данных пользователя из БД
@@ -305,4 +297,8 @@ export const useUser = () => {
     throw new Error('useUser must be used within a UserProvider');
   }
   return context;
-}; 
+};
+
+const createSupabaseClient = () => {
+  return createClientSupabaseClient();
+} 

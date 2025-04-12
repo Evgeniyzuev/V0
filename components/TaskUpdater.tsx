@@ -1,16 +1,13 @@
 "use client"
 
 import { useState, useEffect, useRef } from "react"
-import { createClient } from "@supabase/supabase-js"
+import { createClientSupabaseClient } from "@/lib/supabase"
 import { useUser } from "@/components/UserContext"
 import { Button } from "@/components/ui/button"
 import { RefreshCw } from "lucide-react"
 
 // Initialize Supabase client
-const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-)
+const supabase = createClientSupabaseClient();
 
 /**
  * TaskUpdater Component

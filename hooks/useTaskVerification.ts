@@ -1,15 +1,12 @@
 import { useState } from 'react';
-import { createClient } from '@supabase/supabase-js';
+import { createClientSupabaseClient } from "@/lib/supabase"
 // Remove the explicit import for User if it's causing an error
 // import { User } from '@/lib/types'; 
 // Import the hook itself to infer the type (adjust path if needed)
 import { useUser } from '@/components/UserContext'; 
 
 // Initialize Supabase client
-const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-)
+const supabase = createClientSupabaseClient();
 
 type StatusMessage = { type: 'success' | 'error'; text: string } | null;
 

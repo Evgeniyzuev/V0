@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react"
 import { Calendar, Tag, ChevronDown, ChevronUp, Check, User, Trophy } from "lucide-react"
-import { createClient } from "@supabase/supabase-js"
+import { createClientSupabaseClient } from "@/lib/supabase"
 import { useUser } from "@/components/UserContext"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
@@ -41,10 +41,7 @@ const calculateLevel = (core: number): number => {
 };
 
 // Initialize Supabase client
-const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-)
+const supabase = createClientSupabaseClient();
 
 type Task = {
   number: number

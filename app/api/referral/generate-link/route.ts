@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
 import { cookies } from 'next/headers';
-import { createClient } from '@supabase/supabase-js';
+import { createServerSupabaseClient } from "@/lib/supabase"
 
 export async function GET(request: Request) {
   // Получаем URL параметры
@@ -38,18 +38,9 @@ export async function GET(request: Request) {
 // Опционально: обработчик POST для сохранения реферала
 export async function POST(request: Request) {
   // Инициализируем Supabase клиент для доступа к базе данных
-  const supabaseUrl = process.env.SUPABASE_URL || process.env.NEXT_PUBLIC_SUPABASE_URL;
-  const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.SUPABASE_ANON_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
-
-  if (!supabaseUrl || !supabaseServiceKey) {
-    return NextResponse.json(
-      { error: 'Server configuration error: Missing Supabase credentials' },
-      { status: 500 }
-    );
-  }
+  const supabase = createServerSupabaseClient();
 
   try {
-    const supabaseAdmin = createClient(supabaseUrl, supabaseServiceKey);
     const body = await request.json();
     const { newUserId, referrerId } = body;
     
@@ -61,7 +52,7 @@ export async function POST(request: Request) {
     }
     
     // Обновляем запись пользователя, добавляя ID реферера
-    const { data, error } = await supabaseAdmin
+    const { data, error } = await supabase
       .from('users')
       .update({ referrer_id: referrerId })
       .eq('id', newUserId)

@@ -1,7 +1,7 @@
 "use client"
 
 import { useState, useEffect } from "react"
-import { createClient } from "@supabase/supabase-js" // Assuming direct client creation here, adjust if you have a central client setup in lib/supabase
+import { createClientSupabaseClient } from "@/lib/supabase"
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card"
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar"
 
@@ -17,10 +17,7 @@ type User = {
 
 // Initialize Supabase client - Replace with your actual credentials or central client instance
 // It's better practice to use the environment variables as done in posts-tab.tsx
-const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-)
+const supabase = createClientSupabaseClient();
 
 export default function UsersTab() {
   const [users, setUsers] = useState<User[]>([])

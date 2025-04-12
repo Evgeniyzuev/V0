@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { createClient } from '@supabase/supabase-js';
+import { createServerSupabaseClient } from "@/lib/supabase"
 import crypto from 'crypto';
 
 // Типы данных
@@ -39,18 +39,14 @@ function verifyTelegramData(initData: string, botToken: string): boolean {
 }
 
 export async function POST(request: Request) {
-  // Инициализируем Supabase Admin клиент для доступа к базе данных только в обработчике запроса
-  const supabaseUrl = process.env.SUPABASE_URL || process.env.NEXT_PUBLIC_SUPABASE_URL;
-  const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.SUPABASE_ANON_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
-
+  const supabase = createServerSupabaseClient();
   console.log("API Route ENV Check:", { 
-    hasUrl: !!supabaseUrl, 
     hasServiceKey: !!process.env.SUPABASE_SERVICE_ROLE_KEY,
     hasAnonKey: !!process.env.SUPABASE_ANON_KEY,
     hasClientKey: !!process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
   });
 
-  if (!supabaseUrl) {
+  if (!process.env.NEXT_PUBLIC_SUPABASE_URL) {
     console.error('Missing Supabase URL');
     return NextResponse.json(
       { error: 'Server configuration error: Missing Supabase URL' },
@@ -58,7 +54,7 @@ export async function POST(request: Request) {
     );
   }
 
-  if (!supabaseServiceKey) {
+  if (!process.env.SUPABASE_SERVICE_ROLE_KEY) {
     console.error('Missing Supabase Key');
     return NextResponse.json(
       { error: 'Server configuration error: Missing Supabase Key' },
@@ -67,10 +63,6 @@ export async function POST(request: Request) {
   }
 
   try {
-    // Создаем клиент с доступными учетными данными
-    const supabaseAdmin = createClient(supabaseUrl, supabaseServiceKey);
-    console.log("Supabase client created successfully");
-    
     const body = await request.json();
     const { telegramUser, initData } = body;
     
@@ -95,7 +87,7 @@ export async function POST(request: Request) {
     console.log(`Processing user with Telegram ID: ${telegramId}`);
     
     // Ищем пользователя в базе по telegram_id
-    const { data: existingUser, error: findError } = await supabaseAdmin
+    const { data: existingUser, error: findError } = await supabase
       .from('users')
       .select('*')
       .eq('telegram_id', telegramId)
@@ -123,7 +115,7 @@ export async function POST(request: Request) {
       if (needsUpdate) {
         console.log(`Updating user data for Telegram ID: ${telegramId}`);
         // Опционально, обновляем некоторые поля из telegram
-        const { error: updateError } = await supabaseAdmin
+        const { error: updateError } = await supabase
           .from('users')
           .update({
             telegram_username: telegramUser.username,
@@ -249,7 +241,7 @@ export async function POST(request: Request) {
     // Получаем структуру таблицы, чтобы проверить доступные колонки
     console.log("Creating new user with fields:", newUser);
     
-    const { data: insertedUser, error: insertError } = await supabaseAdmin
+    const { data: insertedUser, error: insertError } = await supabase
       .from('users')
       .insert(newUser)
       .select()
@@ -270,7 +262,7 @@ export async function POST(request: Request) {
       
       console.log("Retrying with minimal but complete fields:", minimalUser);
       
-      const { data: minimalInsertedUser, error: minimalInsertError } = await supabaseAdmin
+      const { data: minimalInsertedUser, error: minimalInsertError } = await supabase
         .from('users')
         .insert(minimalUser)
         .select()
@@ -286,7 +278,7 @@ export async function POST(request: Request) {
           telegram_id: telegramId
         };
         
-        const { data: basicUser, error: basicError } = await supabaseAdmin
+        const { data: basicUser, error: basicError } = await supabase
           .from('users')
           .insert(requiredUserOnly)
           .select()
@@ -318,7 +310,7 @@ export async function POST(request: Request) {
             console.log("Update fields:", updateFields);
             
             if (Object.keys(updateFields).length > 0) {
-              const { error: updateError } = await supabaseAdmin
+              const { error: updateError } = await supabase
                 .from('users')
                 .update(updateFields)
                 .eq('id', basicUser.id);
@@ -329,7 +321,7 @@ export async function POST(request: Request) {
                 console.log("Successfully updated additional fields");
                 
                 // Получаем обновленные данные пользователя
-                const { data: updatedUser } = await supabaseAdmin
+                const { data: updatedUser } = await supabase
                   .from('users')
                   .select('*')
                   .eq('id', basicUser.id)
