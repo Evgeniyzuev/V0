@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useRef } from 'react';
 import { Dialog } from '@/components/ui/dialog';
 import { Edit, X, Calendar, DollarSign, CheckSquare, User } from 'lucide-react';
 import { cn } from '@/lib/utils';
@@ -11,6 +11,7 @@ import { fetchGoals, fetchUserGoals, updateGoal } from '@/lib/api/goals'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import type { Goal } from '@/types/supabase'
 import { toast } from 'sonner'
+import GoalUpdater, { GoalUpdaterRef } from './GoalUpdater';
 
 // Example goals data
 // const goals = [
@@ -287,6 +288,14 @@ const WishBoard: React.FC<WishBoardProps> = () => {
     enabled: !!dbUser?.id // Only fetch if user is authenticated
   })
 
+  const goalUpdaterRef = useRef<GoalUpdaterRef>(null);
+  const goalUpdater = dbUser?.id ? (
+    <GoalUpdater 
+      ref={goalUpdaterRef} 
+      goals={goals} 
+    />
+  ) : null;
+
   const [selectedWish, setSelectedWish] = useState<Goal | null>(null);
   const [isEditing, setIsEditing] = useState(false);
   const [editedTitle, setEditedTitle] = useState('');
@@ -363,6 +372,12 @@ const WishBoard: React.FC<WishBoardProps> = () => {
     setEditedSteps(newSteps);
   };
 
+  const handleAddToPersonalGoals = async (goal: Goal) => {
+    if (!dbUser?.id || !goalUpdaterRef.current) return;
+    await goalUpdaterRef.current.addGoalToUserGoals(goal);
+    closeModal();
+  };
+
   if (isLoadingGoals || isLoadingUserGoals) {
     return <div className="p-4">Loading goals...</div>;
   }
@@ -373,6 +388,7 @@ const WishBoard: React.FC<WishBoardProps> = () => {
 
   return (
     <div className="p-4 space-y-2">
+      {goalUpdater}
       {!dbUser?.id ? (
         // Auth UI for unauthenticated users
         <div className="mb-2">
@@ -458,8 +474,9 @@ const WishBoard: React.FC<WishBoardProps> = () => {
                   loading="lazy"
                 />
                 <div className="absolute inset-0 bg-gradient-to-t from-black/50 to-transparent opacity-0 hover:opacity-100 transition-opacity duration-300 flex items-end">
-                  <div className="p-3 text-white text-sm font-medium">
-                    {goal.title}
+                  <div className="p-3 text-white">
+                    <div className="text-sm font-medium">{goal.title}</div>
+                    <div className="text-xs mt-1">Difficulty: {goal.difficulty_level}</div>
                   </div>
                 </div>
               </div>
@@ -470,167 +487,192 @@ const WishBoard: React.FC<WishBoardProps> = () => {
 
       {/* Goal Detail Modal */}
       {selectedWish && (
-        <div className="modal-overlay fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4" onClick={closeModal}>
-          <div className="modal-content bg-white rounded-lg shadow-xl max-w-md w-full overflow-hidden" onClick={(e) => e.stopPropagation()}>
-            <div className="relative">
-              <img
-                src={selectedWish.image_url || ''}
-                alt={selectedWish.title}
-                className="w-full h-56 object-cover"
-              />
-              <button
-                className="absolute top-3 right-3 p-1 rounded-full bg-black/30 text-white hover:bg-black/50 transition-colors"
-                onClick={closeModal}
-              >
-                <X size={20} />
-              </button>
-            </div>
+        <Dialog open={!!selectedWish} onOpenChange={() => closeModal()}>
+          <div className="fixed inset-0 z-50 flex items-center justify-center">
+            <div className="bg-white rounded-lg shadow-xl max-w-3xl w-full mx-4 max-h-[90vh] overflow-y-auto">
+              <div className="relative">
+                <img
+                  src={selectedWish.image_url || ''}
+                  alt={selectedWish.title}
+                  className="w-full h-48 object-cover"
+                />
+                <button
+                  onClick={closeModal}
+                  className="absolute top-2 right-2 p-2 bg-black/50 rounded-full text-white hover:bg-black/70 transition-colors"
+                >
+                  <X className="h-5 w-5" />
+                </button>
+              </div>
 
-            <div className="p-5">
-              {isEditing ? (
-                <div className="space-y-4">
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">
-                      Title
-                    </label>
-                    <input
-                      type="text"
-                      value={editedTitle}
-                      onChange={(e) => setEditedTitle(e.target.value)}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-purple-500"
-                    />
-                  </div>
+              <div className="p-6">
+                {isEditing ? (
+                  <div className="space-y-4">
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">
+                        Title
+                      </label>
+                      <input
+                        type="text"
+                        value={editedTitle}
+                        onChange={(e) => setEditedTitle(e.target.value)}
+                        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-purple-500"
+                      />
+                    </div>
 
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">
-                      Description
-                    </label>
-                    <textarea
-                      value={editedDescription}
-                      onChange={(e) => setEditedDescription(e.target.value)}
-                      rows={3}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-purple-500"
-                    />
-                  </div>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">
+                        Description
+                      </label>
+                      <textarea
+                        value={editedDescription}
+                        onChange={(e) => setEditedDescription(e.target.value)}
+                        rows={3}
+                        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-purple-500"
+                      />
+                    </div>
 
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">
-                      Difficulty Level
-                    </label>
-                    <input
-                      type="number"
-                      value={editedDifficultyLevel}
-                      onChange={(e) => setEditedDifficultyLevel(Number(e.target.value))}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-purple-500"
-                    />
-                  </div>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">
+                        Difficulty Level
+                      </label>
+                      <input
+                        type="number"
+                        value={editedDifficultyLevel}
+                        onChange={(e) => setEditedDifficultyLevel(Number(e.target.value))}
+                        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-purple-500"
+                      />
+                    </div>
 
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">
-                      Estimated Cost
-                    </label>
-                    <input
-                      type="text"
-                      value={editedEstimatedCost}
-                      onChange={(e) => setEditedEstimatedCost(e.target.value)}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-purple-500"
-                      placeholder="e.g. $5,000"
-                    />
-                  </div>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">
+                        Estimated Cost
+                      </label>
+                      <input
+                        type="text"
+                        value={editedEstimatedCost}
+                        onChange={(e) => setEditedEstimatedCost(e.target.value)}
+                        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-purple-500"
+                        placeholder="e.g. $5,000"
+                      />
+                    </div>
 
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Steps to Achieve
-                    </label>
-                    <div className="space-y-2">
-                      {editedSteps.map((step, index) => (
-                        <div key={index} className="flex items-center">
-                          <input
-                            type="text"
-                            value={step}
-                            onChange={(e) => handleStepChange(index, e.target.value)}
-                            className="flex-grow px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-purple-500"
-                          />
-                          <button
-                            onClick={() => removeStep(index)}
-                            className="ml-2 p-1 text-red-500 hover:text-red-700"
-                          >
-                            <X size={16} />
-                          </button>
-                        </div>
-                      ))}
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">
+                        Steps to Achieve
+                      </label>
+                      <div className="space-y-2">
+                        {editedSteps.map((step, index) => (
+                          <div key={index} className="flex items-center">
+                            <input
+                              type="text"
+                              value={step}
+                              onChange={(e) => handleStepChange(index, e.target.value)}
+                              className="flex-grow px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-purple-500"
+                            />
+                            <button
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                removeStep(index);
+                              }}
+                              className="ml-2 p-1 text-red-500 hover:text-red-700"
+                            >
+                              <X size={16} />
+                            </button>
+                          </div>
+                        ))}
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            addStep();
+                          }}
+                          className="text-sm text-purple-600 hover:text-purple-800 font-medium"
+                        >
+                          + Add Step
+                        </button>
+                      </div>
+                    </div>
+
+                    <div className="flex justify-end space-x-2">
                       <button
-                        onClick={addStep}
-                        className="text-sm text-purple-600 hover:text-purple-800 font-medium"
+                        onClick={() => setIsEditing(false)}
+                        className="px-4 py-2 text-sm font-medium text-gray-700 bg-gray-100 rounded-md hover:bg-gray-200 transition-colors"
                       >
-                        + Add Step
+                        Cancel
+                      </button>
+                      <button
+                        onClick={handleSave}
+                        className="px-4 py-2 text-sm font-medium text-white bg-purple-600 rounded-md hover:bg-purple-700 transition-colors"
+                        disabled={updateGoalMutation.isPending}
+                      >
+                        {updateGoalMutation.isPending ? 'Saving...' : 'Save'}
                       </button>
                     </div>
                   </div>
+                ) : (
+                  <>
+                    <div className="flex justify-between items-start mb-4">
+                      <div>
+                        <h2 className="text-2xl font-bold mb-2">{selectedWish.title}</h2>
+                        <p className="text-gray-600">{selectedWish.description}</p>
+                      </div>
+                      <div className="flex gap-2">
+                        {dbUser?.id && (
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleAddToPersonalGoals(selectedWish);
+                            }}
+                            className="px-4 py-2 bg-purple-600 text-white rounded hover:bg-purple-700 transition-colors"
+                          >
+                            Add to Personal Goals
+                          </button>
+                        )}
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleEdit();
+                          }}
+                          className="p-2 text-gray-500 hover:text-gray-700 transition-colors"
+                        >
+                          <Edit className="h-5 w-5" />
+                        </button>
+                      </div>
+                    </div>
 
-                  <div className="flex justify-end space-x-2">
-                    <button
-                      onClick={() => setIsEditing(false)}
-                      className="px-4 py-2 text-sm font-medium text-gray-700 bg-gray-100 rounded-md hover:bg-gray-200 transition-colors"
-                    >
-                      Cancel
-                    </button>
-                    <button
-                      onClick={handleSave}
-                      className="px-4 py-2 text-sm font-medium text-white bg-purple-600 rounded-md hover:bg-purple-700 transition-colors"
-                      disabled={updateGoalMutation.isPending}
-                    >
-                      {updateGoalMutation.isPending ? 'Saving...' : 'Save'}
-                    </button>
-                  </div>
-                </div>
-              ) : (
-                <div className="space-y-4">
-                  <div className="flex items-center justify-between mb-2">
-                    <h3 className="text-xl font-semibold">{selectedWish.title}</h3>
-                    <button
-                      onClick={handleEdit}
-                      className="p-2 text-gray-500 hover:text-purple-600 transition-colors"
-                    >
-                      <Edit size={18} />
-                    </button>
-                  </div>
+                    <div className="grid grid-cols-2 gap-2 text-sm text-gray-600">
+                      {selectedWish.estimated_cost && (
+                        <div className="flex items-center">
+                          <DollarSign className="h-4 w-4 mr-2 text-purple-600" />
+                          <span className="font-medium mr-1">Cost:</span>
+                          {selectedWish.estimated_cost}
+                        </div>
+                      )}
 
-                  <p className="text-gray-600">{selectedWish.description}</p>
-
-                  <div className="grid grid-cols-2 gap-2 text-sm text-gray-600">
-                    {selectedWish.estimated_cost && (
                       <div className="flex items-center">
-                        <DollarSign className="h-4 w-4 mr-2 text-purple-600" />
-                        <span className="font-medium mr-1">Cost:</span>
-                        {selectedWish.estimated_cost}
+                        <span className="font-medium mr-1">Difficulty:</span>
+                        {selectedWish.difficulty_level}
+                      </div>
+                    </div>
+
+                    {selectedWish.steps && selectedWish.steps.length > 0 && (
+                      <div>
+                        <h4 className="font-medium mb-2 flex items-center">
+                          <CheckSquare className="h-4 w-4 mr-2 text-purple-600" />
+                          Steps to achieve:
+                        </h4>
+                        <ul className="list-disc pl-5 space-y-1">
+                          {selectedWish.steps.map((step, index) => (
+                            <li key={index} className="text-gray-600 text-sm">{step}</li>
+                          ))}
+                        </ul>
                       </div>
                     )}
-
-                    <div className="flex items-center">
-                      <span className="font-medium mr-1">Difficulty:</span>
-                      {selectedWish.difficulty_level}
-                    </div>
-                  </div>
-
-                  {selectedWish.steps && selectedWish.steps.length > 0 && (
-                    <div>
-                      <h4 className="font-medium mb-2 flex items-center">
-                        <CheckSquare className="h-4 w-4 mr-2 text-purple-600" />
-                        Steps to achieve:
-                      </h4>
-                      <ul className="list-disc pl-5 space-y-1">
-                        {selectedWish.steps.map((step, index) => (
-                          <li key={index} className="text-gray-600 text-sm">{step}</li>
-                        ))}
-                      </ul>
-                    </div>
-                  )}
-                </div>
-              )}
+                  </>
+                )}
+              </div>
             </div>
           </div>
-        </div>
+        </Dialog>
       )}
     </div>
   );
