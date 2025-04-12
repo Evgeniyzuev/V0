@@ -71,4 +71,39 @@ export const fetchUserGoals = async () => {
     status: userGoal.status,
     notes: userGoal.notes
   }))
+}
+
+export async function addUserGoal(goalId: number) {
+  const supabase = createClientSupabaseClient()
+  
+  // Get the current user's ID
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) throw new Error('User not authenticated')
+  
+  const { data, error } = await supabase
+    .from('user_goals')
+    .insert({
+      user_id: user.id,
+      goal_id: goalId,
+      status: 'not_started',
+      progress_percentage: 0
+    })
+    .select(`
+      *,
+      goal:goals(*)
+    `)
+    .single()
+
+  if (error) {
+    console.error('Error adding user goal:', error)
+    throw error
+  }
+
+  // Transform the data to match the Goal type
+  return {
+    ...data.goal,
+    progress_percentage: data.progress_percentage,
+    status: data.status,
+    notes: data.notes
+  }
 } 

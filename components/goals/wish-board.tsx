@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
 import { Avatar, AvatarFallback } from "@/components/ui/avatar"
 import { useUser } from "@/components/UserContext"
-import { fetchGoals, fetchUserGoals, updateGoal } from '@/lib/api/goals'
+import { fetchGoals, fetchUserGoals, updateGoal, addUserGoal } from '@/lib/api/goals'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import type { Goal } from '@/types/supabase'
 import { toast } from 'sonner'
@@ -311,6 +311,20 @@ const WishBoard: React.FC<WishBoardProps> = () => {
     }
   })
 
+  // Add user goal mutation
+  const addUserGoalMutation = useMutation({
+    mutationFn: (goalId: number) => addUserGoal(goalId),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['user-goals'] })
+      toast.success('Goal added to your list')
+      closeModal()
+    },
+    onError: (error) => {
+      console.error('Error adding goal:', error)
+      toast.error('Failed to add goal')
+    }
+  })
+
   const handleWishClick = (wish: Goal) => {
     setSelectedWish(wish);
     setEditedTitle(wish.title);
@@ -588,12 +602,16 @@ const WishBoard: React.FC<WishBoardProps> = () => {
                 <div className="space-y-4">
                   <div className="flex items-center justify-between mb-2">
                     <h3 className="text-xl font-semibold">{selectedWish.title}</h3>
-                    <button
-                      onClick={handleEdit}
-                      className="p-2 text-gray-500 hover:text-purple-600 transition-colors"
-                    >
-                      <Edit size={18} />
-                    </button>
+                    {dbUser?.id && (
+                      <div className="flex items-center gap-2">
+                        <button
+                          onClick={handleEdit}
+                          className="p-2 text-gray-500 hover:text-purple-600 transition-colors"
+                        >
+                          <Edit size={18} />
+                        </button>
+                      </div>
+                    )}
                   </div>
 
                   <p className="text-gray-600">{selectedWish.description}</p>
@@ -624,6 +642,18 @@ const WishBoard: React.FC<WishBoardProps> = () => {
                           <li key={index} className="text-gray-600 text-sm">{step}</li>
                         ))}
                       </ul>
+                    </div>
+                  )}
+
+                  {dbUser?.id && !userGoals.some(g => g.id === selectedWish.id) && (
+                    <div className="mt-6">
+                      <Button
+                        onClick={() => addUserGoalMutation.mutate(selectedWish.id)}
+                        disabled={addUserGoalMutation.isPending}
+                        className="w-full bg-purple-600 hover:bg-purple-700 text-white"
+                      >
+                        {addUserGoalMutation.isPending ? 'Adding...' : 'Select Goal'}
+                      </Button>
                     </div>
                   )}
                 </div>
