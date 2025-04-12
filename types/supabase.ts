@@ -51,7 +51,7 @@ export interface User {
 /**
  * Valid task status values
  */
-export type TaskStatus = 'assigned' | 'in_progress' | 'completed' | 'failed' | 'pending_review' | 'archived';
+export type TaskStatus = 'pending' | 'in_progress' | 'completed' | 'failed';
 
 /**
  * Represents the structure of the public.user_tasks table.
@@ -67,8 +67,8 @@ export interface UserTask {
   notes: string | null;
 
   // Optional: Include related data when fetching with joins
-  task?: Task;
-  user?: User;
+  // task?: Task;
+  // user?: User;
 }
 
 /**
@@ -97,6 +97,64 @@ export interface Database {
         Insert: Omit<UserTask, 'id'>;
         Update: Partial<UserTask>;
       };
+      goals: {
+        Row: Goal;
+        Insert: Omit<Goal, 'id' | 'created_at'>;
+        Update: Partial<Omit<Goal, 'id' | 'created_at'>>;
+      };
+      user_goals: {
+        Row: UserGoal;
+        Insert: Omit<UserGoal, 'id' | 'created_at' | 'updated_at'>;
+        Update: Partial<Omit<UserGoal, 'id' | 'user_id' | 'goal_id' | 'created_at' | 'updated_at'>>;
+      };
+    };
+    Enums: {
+      goal_status: GoalStatus;
+      task_status: TaskStatus;
+    };
+    Functions: {
+      // Add any DB functions you want typed here
     };
   };
+}
+
+/**
+ * Represents a predefined goal template.
+ */
+export interface Goal {
+  id: number; // Primary Key
+  created_at: string; // timestamp with time zone default now()
+  title: string; // Text, not null
+  description: string | null; // Text
+  image_url: string | null; // Text, stores URL
+  estimated_cost: string | null; // Text, e.g., "$5,000", "10 hours"
+  steps: string[] | null; // Array of strings, stored as jsonb
+  difficulty_level: number | null; // Added: e.g., 1 (easy) to 5 (hard)
+  // Potential future additions:
+  // category: string | null;
+}
+
+/**
+ * Represents a specific user's instance of a goal.
+ */
+export type GoalStatus = 'not_started' | 'in_progress' | 'completed' | 'paused' | 'abandoned';
+
+export interface UserGoal {
+  id: number; // Primary Key
+  user_id: string; // Foreign key to auth.users.id, not null
+  goal_id: number; // Foreign key to goals.id, not null
+  created_at: string; // timestamp with time zone default now()
+  updated_at: string; // timestamp with time zone default now()
+  status: GoalStatus; // Text, using the GoalStatus type, not null, default 'not_started'
+  started_at: string | null; // timestamp with time zone
+  target_date: string | null; // date type might be better if time is not relevant
+  completed_at: string | null; // timestamp with time zone
+  progress_percentage: number | null; // Smallint (0-100)
+  current_step_index: number | null; // Integer
+  progress_details: Record<string, any> | null; // JSONB, e.g., { step_0_completed: true, saved_amount: 1200 }
+  notes: string | null; // Text
+  difficulty_level: number | null; // Added: Copied from goal or user-defined
+
+  // Optional: Include related data when fetching with joins
+  // goal?: Goal;
 } 
