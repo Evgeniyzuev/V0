@@ -342,12 +342,6 @@ export default function TasksTab() {
               <p className="text-gray-600">
                 You've reached Level <span className="font-bold text-purple-600">{levelUpModal?.newLevel}</span>!
               </p>
-              {/* Optional: Show level transition */}
-              {levelUpModal?.oldLevel !== null && levelUpModal?.oldLevel !== undefined && (
-                 <p className="text-sm text-gray-500">
-                   (From Level {levelUpModal.oldLevel})
-                 </p>
-              )}
               <div className="bg-purple-50 p-4 rounded-lg">
                  <p className="text-sm text-purple-700 mb-2">Keep growing your Core!</p>
                  {/* You could add the next level's requirement here */}
