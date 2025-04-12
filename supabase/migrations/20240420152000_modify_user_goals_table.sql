@@ -1,11 +1,6 @@
 -- Make goal_id nullable and add title, description, image_url fields
 ALTER TABLE public.user_goals
-  ALTER COLUMN goal_id DROP NOT NULL,
-  ADD COLUMN title text,
-  ADD COLUMN description text,
-  ADD COLUMN image_url text,
-  ADD COLUMN estimated_cost text,
-  ADD COLUMN steps jsonb;
+  ALTER COLUMN goal_id DROP NOT NULL;
 
 -- Add check constraint to ensure either goal_id is set or title is not null
 ALTER TABLE public.user_goals
