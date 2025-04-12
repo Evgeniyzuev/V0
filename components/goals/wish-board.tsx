@@ -313,8 +313,12 @@ const WishBoard: React.FC<WishBoardProps> = () => {
 
   // Add user goal mutation
   const addUserGoalMutation = useMutation({
-    mutationFn: (goalId: number) => addUserGoal(goalId),
-    onSuccess: () => {
+    mutationFn: (goalId: number) => {
+      console.log('Adding goal with ID:', goalId)
+      return addUserGoal(goalId)
+    },
+    onSuccess: (data) => {
+      console.log('Successfully added goal:', data)
       queryClient.invalidateQueries({ queryKey: ['user-goals'] })
       toast.success('Goal added to your list')
       closeModal()
@@ -645,15 +649,27 @@ const WishBoard: React.FC<WishBoardProps> = () => {
                     </div>
                   )}
 
-                  {dbUser?.id && !userGoals.some(g => g.id === selectedWish.id) && (
+                  {dbUser?.id && (
                     <div className="mt-6">
-                      <Button
-                        onClick={() => addUserGoalMutation.mutate(selectedWish.id)}
-                        disabled={addUserGoalMutation.isPending}
-                        className="w-full bg-purple-600 hover:bg-purple-700 text-white"
-                      >
-                        {addUserGoalMutation.isPending ? 'Adding...' : 'Select Goal'}
-                      </Button>
+                      {userGoals.some(userGoal => userGoal.id === selectedWish.id) ? (
+                        <Button
+                          disabled
+                          className="w-full bg-gray-400 text-white cursor-not-allowed"
+                        >
+                          Goal Already Selected
+                        </Button>
+                      ) : (
+                        <Button
+                          onClick={() => {
+                            console.log('Selected wish:', selectedWish)
+                            addUserGoalMutation.mutate(selectedWish.id)
+                          }}
+                          disabled={addUserGoalMutation.isPending}
+                          className="w-full bg-purple-600 hover:bg-purple-700 text-white"
+                        >
+                          {addUserGoalMutation.isPending ? 'Adding...' : 'Select Goal'}
+                        </Button>
+                      )}
                     </div>
                   )}
                 </div>
