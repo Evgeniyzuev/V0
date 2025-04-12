@@ -177,55 +177,80 @@ const TelegramLoginButton = () => {
     // Создаем и добавляем скрипт
     const script = document.createElement('script');
     script.src = 'https://telegram.org/js/telegram-widget.js?22';
-    script.setAttribute('data-telegram-login', 'v0_aiassist_bot');
-    script.setAttribute('data-size', 'large');
-    script.setAttribute('data-radius', '8');
-    script.setAttribute('data-request-access', 'write');
     script.async = true;
-
-    // Добавляем функцию обратного вызова в window
-    window.onTelegramAuth = (user: any) => {
-      fetch('/api/auth/telegram', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(user)
-      })
-      .then(response => response.json())
-      .then(data => {
-        window.location.reload();
-      })
-      .catch(error => {
-        console.error('Error:', error);
-      });
+    
+    script.onload = () => {
+      // Функция будет доступна после загрузки скрипта
+      window.onTelegramAuth = (user: any) => {
+        fetch('/api/auth/telegram', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify(user)
+        })
+        .then(response => response.json())
+        .then(data => {
+          window.location.reload();
+        })
+        .catch(error => {
+          console.error('Error:', error);
+        });
+      };
     };
 
-    // Добавляем скрипт на страницу
     document.body.appendChild(script);
 
-    // Очистка при размонтировании
     return () => {
       document.body.removeChild(script);
       delete window.onTelegramAuth;
     };
   }, []);
 
+  const handleTelegramLogin = () => {
+    console.log('Telegram login button clicked');
+    console.log('Telegram object available:', !!window.Telegram);
+    console.log('Login object available:', !!window.Telegram?.Login);
+    console.log('Auth function available:', !!window.Telegram?.Login?.auth);
+    
+    // Получаем ID бота из переменной окружения
+    const botId = process.env.NEXT_PUBLIC_TELEGRAM_BOT_ID;
+    
+    if (!botId) {
+      console.error('NEXT_PUBLIC_TELEGRAM_BOT_ID is not set');
+      return;
+    }
+    
+    if (window.Telegram?.Login?.auth) {
+      console.log('Calling Telegram.Login.auth');
+      window.Telegram.Login.auth(
+        {
+          bot_id: botId,
+          request_access: 'write',
+          lang: 'en',
+          callback: (user: any) => {
+            console.log('Received user data:', user);
+            if (window.onTelegramAuth) {
+              window.onTelegramAuth(user);
+            }
+          },
+        },
+      );
+    } else {
+      console.error('Telegram Login is not available');
+    }
+  };
+
   return (
-    <div className="relative">
-      <Button 
-        className="bg-[#0088cc] hover:bg-[#0077b5] text-white flex items-center gap-2 w-full"
-      >
-        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="white" className="h-5 w-5">
-          <path d="M12 0C5.373 0 0 5.373 0 12s5.373 12 12 12 12-5.373 12-12S18.627 0 12 0zm5.562 8.248l-1.97 9.296c-.146.658-.537.818-1.084.51l-3-2.21-1.447 1.394c-.16.16-.295.295-.605.295l.213-3.054 5.56-5.022c.242-.213-.054-.334-.373-.121l-6.871 4.326-2.962-.924c-.643-.204-.658-.643.136-.953l11.59-4.463c.538-.196 1.006.128.813.946z" />
-        </svg>
-        Telegram
-      </Button>
-      <div 
-        id="telegram-login-v0_aiassist_bot"
-        className="absolute top-0 left-0 w-full h-full opacity-0"
-      />
-    </div>
+    <Button 
+      className="bg-[#0088cc] hover:bg-[#0077b5] text-white flex items-center gap-2 w-full"
+      onClick={handleTelegramLogin}
+    >
+      <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="white" className="h-5 w-5">
+        <path d="M12 0C5.373 0 0 5.373 0 12s5.373 12 12 12 12-5.373 12-12S18.627 0 12 0zm5.562 8.248l-1.97 9.296c-.146.658-.537.818-1.084.51l-3-2.21-1.447 1.394c-.16.16-.295.295-.605.295l.213-3.054 5.56-5.022c.242-.213-.054-.334-.373-.121l-6.871 4.326-2.962-.924c-.643-.204-.658-.643.136-.953l11.59-4.463c.538-.196 1.006.128.813.946z" />
+      </svg>
+      Telegram
+    </Button>
   );
 };
 
