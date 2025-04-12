@@ -31,7 +31,7 @@ function initUtils(): TelegramUtils {
   };
 }
 
-// Обновляем типы для Telegram WebApp
+// Добавляем типы для Telegram WebApp
 declare global {
   interface Window {
     Telegram?: {
@@ -162,72 +162,6 @@ function ReferralLinkSection({ userId, telegramId }: { userId?: string, telegram
   )
 }
 
-// Добавим компонент TelegramLoginButton
-const TelegramLoginButton = () => {
-  useEffect(() => {
-    // Создаем и добавляем скрипт
-    const script = document.createElement('script');
-    script.src = 'https://telegram.org/js/telegram-widget.js?22';
-    script.async = true;
-    
-    script.onload = () => {
-      console.log('Telegram widget script loaded');
-    };
-
-    script.onerror = (error) => {
-      console.error('Error loading Telegram widget script:', error);
-    };
-
-    document.body.appendChild(script);
-
-    return () => {
-      document.body.removeChild(script);
-    };
-  }, []);
-
-  const handleTelegramLogin = () => {
-    console.log('Telegram login button clicked');
-    
-    // Формируем URL для авторизации через Telegram
-    const botUsername = 'V0_aiassist_bot'; // Имя вашего бота
-    const currentUrl = encodeURIComponent(window.location.origin);
-    
-    // Создаем URL для открытия в приложении и в браузере
-    const telegramAppUrl = `tg://resolve?domain=${botUsername}&start=auth_${btoa(currentUrl)}`;
-    const telegramWebUrl = `https://t.me/${botUsername}?start=auth_${btoa(currentUrl)}`;
-    
-    // Пробуем открыть приложение Telegram
-    try {
-      window.location.href = telegramAppUrl;
-      
-      // Если через 1 секунду все еще на той же странице, 
-      // значит приложение не открылось - открываем веб-версию
-      setTimeout(() => {
-        if (document.hidden || document.visibilityState === 'hidden') {
-          return; // Уже ушли со страницы, ничего не делаем
-        }
-        window.location.href = telegramWebUrl;
-      }, 1000);
-    } catch (error) {
-      console.error('Failed to open Telegram app:', error);
-      window.location.href = telegramWebUrl;
-    }
-  };
-
-  return (
-    <Button 
-      className="bg-[#0088cc] hover:bg-[#0077b5] text-white flex items-center gap-2 w-full"
-      onClick={handleTelegramLogin}
-      aria-label="Войти через Telegram"
-    >
-      <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="white" className="h-5 w-5" aria-hidden="true" role="img">
-        <path d="M12 0C5.373 0 0 5.373 0 12s5.373 12 12 12 12-5.373 12-12S18.627 0 12 0zm5.562 8.248l-1.97 9.296c-.146.658-.537.818-1.084.51l-3-2.21-1.447 1.394c-.16.16-.295.295-.605.295l.213-3.054 5.56-5.022c.242-.213-.054-.334-.373-.121l-6.871 4.326-2.962-.924c-.643-.204-.658-.643.136-.953l11.59-4.463c.538-.196 1.006.128.813.946z" />
-      </svg>
-      <span>Telegram</span>
-    </Button>
-  );
-};
-
 export default function UserProfileTab() {
   const { telegramUser, dbUser, isLoading, error, refreshUserData } = useUser()
   const [isRefreshing, setIsRefreshing] = useState(false)
@@ -322,7 +256,15 @@ export default function UserProfileTab() {
               
               <div className="grid grid-cols-2 gap-3 w-full max-w-md">
                 {/* Telegram Login Button */}
-                <TelegramLoginButton />
+                <Button 
+                  className="bg-[#0088cc] hover:bg-[#0077b5] text-white flex items-center gap-2"
+                  onClick={() => window.open('https://t.me/V0_aiassist_bot/V0app', '_blank')}
+                >
+                  <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="white" className="h-5 w-5">
+                    <path d="M12 0C5.373 0 0 5.373 0 12s5.373 12 12 12 12-5.373 12-12S18.627 0 12 0zm5.562 8.248l-1.97 9.296c-.146.658-.537.818-1.084.51l-3-2.21-1.447 1.394c-.16.16-.295.295-.605.295l.213-3.054 5.56-5.022c.242-.213-.054-.334-.373-.121l-6.871 4.326-2.962-.924c-.643-.204-.658-.643.136-.953l11.59-4.463c.538-.196 1.006.128.813.946z" />
+                  </svg>
+                  Telegram
+                </Button>
 
                 {/* Google Login Button */}
                 <Button 
