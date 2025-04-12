@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
 import { Avatar, AvatarFallback } from "@/components/ui/avatar"
 import { useUser } from "@/components/UserContext"
-import { fetchGoals, updateGoal } from '@/lib/api/goals'
+import { fetchGoals, fetchUserGoals, updateGoal } from '@/lib/api/goals'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import type { Goal } from '@/types/supabase'
 import { toast } from 'sonner'
@@ -275,9 +275,16 @@ const WishBoard: React.FC<WishBoardProps> = () => {
   const queryClient = useQueryClient()
   
   // Fetch goals from the database
-  const { data: goals = [], isLoading, error } = useQuery({
+  const { data: goals = [], isLoading: isLoadingGoals, error: goalsError } = useQuery({
     queryKey: ['goals'],
     queryFn: fetchGoals
+  })
+
+  // Fetch user goals from the database
+  const { data: userGoals = [], isLoading: isLoadingUserGoals, error: userGoalsError } = useQuery({
+    queryKey: ['user-goals'],
+    queryFn: fetchUserGoals,
+    enabled: !!dbUser?.id // Only fetch if user is authenticated
   })
 
   const [selectedWish, setSelectedWish] = useState<Goal | null>(null);
@@ -356,12 +363,12 @@ const WishBoard: React.FC<WishBoardProps> = () => {
     setEditedSteps(newSteps);
   };
 
-  if (isLoading) {
+  if (isLoadingGoals || isLoadingUserGoals) {
     return <div className="p-4">Loading goals...</div>;
   }
 
-  if (error) {
-    return <div className="p-4 text-red-500">Error loading goals: {error.message}</div>;
+  if (goalsError || userGoalsError) {
+    return <div className="p-4 text-red-500">Error loading goals: {(goalsError || userGoalsError)?.message}</div>;
   }
 
   return (
@@ -403,7 +410,7 @@ const WishBoard: React.FC<WishBoardProps> = () => {
         <div className="mb-6">
           <h2 className="text-2xl font-bold mb-4">Your Personal Goals</h2>
           <div className="grid grid-cols-3 gap-1">
-            {personalGoals.map((goal) => (
+            {userGoals.map((goal) => (
               <div
                 key={goal.id}
                 className="image-item animate-fade-in rounded-lg overflow-hidden shadow-md aspect-square cursor-pointer"
@@ -417,8 +424,14 @@ const WishBoard: React.FC<WishBoardProps> = () => {
                     loading="lazy"
                   />
                   <div className="absolute inset-0 bg-gradient-to-t from-black/50 to-transparent opacity-0 hover:opacity-100 transition-opacity duration-300 flex items-end">
-                    <div className="p-3 text-white text-sm font-medium">
-                      {goal.title}
+                    <div className="p-3 text-white">
+                      <div className="text-sm font-medium">{goal.title}</div>
+                      {goal.status && (
+                        <div className="text-xs mt-1">Status: {goal.status}</div>
+                      )}
+                      {goal.progress_percentage !== null && (
+                        <div className="text-xs">Progress: {goal.progress_percentage}%</div>
+                      )}
                     </div>
                   </div>
                 </div>

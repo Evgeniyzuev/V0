@@ -46,4 +46,29 @@ export async function updateGoal(id: number, updates: Partial<Goal>) {
   }
 
   return data
+}
+
+export const fetchUserGoals = async () => {
+  const supabase = createClientSupabaseClient()
+  
+  const { data: userGoals, error } = await supabase
+    .from('user_goals')
+    .select(`
+      *,
+      goal:goals(*)
+    `)
+    .order('created_at', { ascending: false })
+
+  if (error) {
+    console.error('Error fetching user goals:', error)
+    throw error
+  }
+
+  // Transform the data to match the Goal type
+  return userGoals.map(userGoal => ({
+    ...userGoal.goal,
+    progress_percentage: userGoal.progress_percentage,
+    status: userGoal.status,
+    notes: userGoal.notes
+  }))
 } 
