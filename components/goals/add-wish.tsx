@@ -101,11 +101,9 @@ export default function AddWish() {
     try {
       const supabase = createClientSupabaseClient();
       
-      console.log("Создаем пользовательскую цель:", {
-        user_id: dbUser.id,
-        title,
-        description,
-        image_url: imageUrl || null
+      toast({
+        title: "Создаем цель...",
+        description: `Цель: ${title}`,
       });
       
       // Создаем пользовательскую запись с полями по аналогии с GoalUpdater.tsx
@@ -134,10 +132,20 @@ export default function AddWish() {
       
       if (insertError) {
         console.error('Детали ошибки:', insertError);
-        throw new Error(`Ошибка создания цели: ${insertError.message} - ${insertError.details}`);
+        
+        toast({
+          title: "Ошибка создания цели",
+          description: `${insertError.message}${insertError.details ? ` - ${insertError.details}` : ''}`,
+          variant: "destructive"
+        });
+        
+        return; // Прерываем выполнение, чтобы не показывать успешное сообщение
       }
       
-      console.log('Цель успешно добавлена:', data);
+      toast({
+        title: "Цель успешно добавлена!",
+        description: `ID: ${data?.[0]?.id || 'Неизвестно'}`,
+      });
 
       // Обновляем кэш запросов React Query
       await queryClient.invalidateQueries({ queryKey: ['user-goals'] });
@@ -145,7 +153,8 @@ export default function AddWish() {
       // Успешное создание
       toast({
         title: "Цель создана",
-        description: "Ваша цель успешно добавлена",
+        description: "Ваша цель успешно добавлена в список желаний",
+        variant: "default"
       });
 
       // Сбрасываем форму
@@ -157,7 +166,7 @@ export default function AddWish() {
     } catch (error: any) {
       console.error("Error creating goal:", error);
       toast({
-        title: "Ошибка",
+        title: "Непредвиденная ошибка",
         description: error.message || "Не удалось создать цель",
         variant: "destructive"
       });
