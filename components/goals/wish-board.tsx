@@ -1,6 +1,6 @@
 import React, { useState, useRef } from 'react';
 import { Dialog } from '@/components/ui/dialog';
-import { Edit, X, Calendar, DollarSign, CheckSquare, User } from 'lucide-react';
+import { Edit, X, Calendar, DollarSign, CheckSquare, User, PlusSquare } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Separator } from '@/components/ui/separator';
 import { Button } from "@/components/ui/button"
@@ -384,12 +384,26 @@ const WishBoard: React.FC<WishBoardProps> = ({ showOnlyRecommendations = false }
     
     try {
       await goalUpdaterRef.current.addGoalToUserGoals(goal);
-      closeModal();
+      // Don't close modal here, success toast comes from GoalUpdater
+      // closeModal(); 
     } catch (error) {
       console.error('Error adding goal:', error)
-      toast.error(`Failed to add goal: ${error instanceof Error ? error.message : 'Unknown error'}`)
+      // Error toast is handled in GoalUpdater, no need to repeat unless specific context needed here
+      // toast.error(`Failed to add goal: ${error instanceof Error ? error.message : 'Unknown error'}`)
     }
   };
+
+  // --- Function to add a test goal ---
+  const handleAddTestGoal = async () => {
+    if (!goals || goals.length === 0) {
+      toast.info("No goals available to add as a test.");
+      return;
+    }
+    // Pick the first available goal as a test
+    const testGoal = goals[0]; 
+    await handleAddToPersonalGoals(testGoal);
+  };
+  // --- End of test goal function ---
 
   if (isLoadingGoals || (!showOnlyRecommendations && isLoadingUserGoals)) {
     return <div className="p-4">Loading goals...</div>;
@@ -438,6 +452,9 @@ const WishBoard: React.FC<WishBoardProps> = ({ showOnlyRecommendations = false }
         // Personal Goals Section for authenticated users
         <div className="mb-4">
           <h3 className="text-lg font-semibold mb-2">Your Personal Goals</h3>
+          {userGoals.length === 0 && (
+            <p className="text-sm text-gray-500 italic mb-2">You haven't added any personal goals yet.</p>
+          )}
           <div className="grid grid-cols-3 gap-1">
             {userGoals.map((goal) => (
               <div
@@ -471,7 +488,17 @@ const WishBoard: React.FC<WishBoardProps> = ({ showOnlyRecommendations = false }
       )}
 
       <div>
-        <h3 className="text-lg font-semibold mb-2">Available Goals</h3>
+        <div className="flex justify-between items-center mb-2">
+          <h3 className="text-lg font-semibold">Available Goals</h3>
+          {/* --- Test Button --- */} 
+          {dbUser?.id && goals.length > 0 && (
+            <Button variant="outline" size="sm" onClick={handleAddTestGoal} className="flex items-center gap-1">
+              <PlusSquare size={14} />
+              Add Test Goal (First)
+            </Button>
+          )}
+          {/* --- End Test Button --- */} 
+        </div>
         <div className="grid grid-cols-3 gap-1">
           {goals.map((goal) => (
             <div
@@ -640,6 +667,7 @@ const WishBoard: React.FC<WishBoardProps> = ({ showOnlyRecommendations = false }
                             Add to Personal Goals
                           </button>
                         )}
+                        {/* Always allow editing for now, could be restricted later */}
                         <button
                           onClick={(e) => {
                             e.stopPropagation();
@@ -682,7 +710,7 @@ const WishBoard: React.FC<WishBoardProps> = ({ showOnlyRecommendations = false }
                     </div>
 
                     {selectedWish.steps && selectedWish.steps.length > 0 && (
-                      <div>
+                      <div className="mt-4">
                         <h4 className="font-medium mb-2 flex items-center">
                           <CheckSquare className="h-4 w-4 mr-2 text-purple-600" />
                           Steps to achieve:
@@ -693,6 +721,13 @@ const WishBoard: React.FC<WishBoardProps> = ({ showOnlyRecommendations = false }
                           ))}
                         </ul>
                       </div>
+                    )}
+
+                    {'notes' in selectedWish && selectedWish.notes && (
+                       <div className="mt-4">
+                         <h4 className="font-medium mb-2">Notes:</h4>
+                         <p className="text-sm text-gray-600 bg-gray-50 p-3 rounded">{selectedWish.notes}</p>
+                       </div>
                     )}
                   </>
                 )}
