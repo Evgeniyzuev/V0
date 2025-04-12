@@ -25,6 +25,11 @@ const GoalUpdater = forwardRef<GoalUpdaterRef, GoalUpdaterProps>(({ goals }, ref
       return
     }
 
+    if (!goal) {
+      toast.error('Invalid goal data')
+      return
+    }
+
     const newUserGoal: Omit<UserGoal, 'id' | 'created_at' | 'updated_at'> = {
       user_id: dbUser.id,
       goal_id: goal.id,

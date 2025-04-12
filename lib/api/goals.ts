@@ -80,20 +80,19 @@ export const fetchUserGoals = async (userId: string | undefined) => {
 
   // Transform the data to match the Goal type
   const transformedGoals = userGoals.map(userGoal => ({
-    // Добавляем user_goal.id и status для отображения в личных целях
-    id: userGoal.goal.id, // Используем id из связанной таблицы goals
-    user_goal_id: userGoal.id, // Сохраняем id самой записи user_goals
+    id: userGoal.goal?.id || userGoal.id,
+    user_goal_id: userGoal.id,
     status: userGoal.status,
     progress_percentage: userGoal.progress_percentage,
     notes: userGoal.notes,
-    // Копируем остальные поля из goal
-    created_at: userGoal.goal.created_at,
-    title: userGoal.goal.title,
-    description: userGoal.goal.description,
-    image_url: userGoal.goal.image_url,
-    estimated_cost: userGoal.goal.estimated_cost,
-    steps: userGoal.goal.steps,
-    difficulty_level: userGoal.goal.difficulty_level
+    created_at: userGoal.goal?.created_at || userGoal.created_at,
+    title: userGoal.title || userGoal.goal?.title,
+    description: userGoal.description || userGoal.goal?.description,
+    image_url: userGoal.image_url || userGoal.goal?.image_url,
+    estimated_cost: userGoal.estimated_cost || userGoal.goal?.estimated_cost,
+    steps: userGoal.steps || userGoal.goal?.steps,
+    difficulty_level: userGoal.difficulty_level || userGoal.goal?.difficulty_level,
+    goal: userGoal.goal // Include the original goal data
   }))
 
   console.log('Transformed goals:', transformedGoals)
