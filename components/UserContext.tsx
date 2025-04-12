@@ -84,7 +84,6 @@ export const UserProvider = ({ children }: { children: ReactNode }) => {
   // Флаги для предотвращения повторных запросов
   const apiCalledRef = useRef(false);
   const userLoadedRef = useRef(false);
-  const initialGoalAddedRef = useRef(false); // Ref to track if goal 1 was added
   
   // Используем централизованный Supabase клиент
   const supabase = useMemo(() => {
@@ -255,28 +254,6 @@ export const UserProvider = ({ children }: { children: ReactNode }) => {
       initUser(); 
     }
   }, [webApp, supabase]);
-
-  // Effect to add default goal once user data is loaded
-  useEffect(() => {
-    if (dbUser && !initialGoalAddedRef.current) {
-      console.log("User data loaded, checking and adding goal 1 if needed.");
-      initialGoalAddedRef.current = true; // Mark as attempted
-      addUserGoal(dbUser.id, 1)
-        .then(addedGoal => {
-          if (addedGoal) {
-            console.log("Successfully ensured user has goal 1:", addedGoal);
-            // Optionally invalidate user goals query if needed immediately
-            // queryClient.invalidateQueries({ queryKey: ['user-goals'] })
-          } else {
-            console.log("User already had goal 1 or failed to add it (check previous logs).");
-          }
-        })
-        .catch(error => {
-          console.error("Error trying to add default goal:", error);
-          // Potentially reset initialGoalAddedRef.current = false; to retry later?
-        });
-    }
-  }, [dbUser]); // Run when dbUser changes
 
   const value = {
     telegramUser,

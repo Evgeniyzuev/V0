@@ -241,117 +241,75 @@ export async function POST(request: Request) {
     // Получаем структуру таблицы, чтобы проверить доступные колонки
     console.log("Creating new user with fields:", newUser);
     
-    const { data: insertedUser, error: insertError } = await supabase
+    let wasUserCreated = false; // Флаг для отслеживания создания
+    let finalUserData = null;
+
+    const { data: upsertedUser, error: upsertError } = await supabase
       .from('users')
-      .insert(newUser)
+      .upsert(newUser, { 
+        onConflict: 'telegram_id', // Используем upsert на случай гонки запросов
+        ignoreDuplicates: false, // Чтобы вернуть существующую запись, если конфликт
+      })
       .select()
       .single();
-    
-    if (insertError) {
-      console.error('Error creating user:', insertError);
-      console.error('Insert error details:', insertError.message);
-      
-      // Пробуем более минимальный набор полей в случае ошибки
-      const minimalUser: NewUser = {
-        telegram_id: telegramId,
-        telegram_username: telegramUser.username === "" ? null : telegramUser.username || null,
-        first_name: telegramUser.first_name === "" ? null : telegramUser.first_name || null,  
-        last_name: telegramUser.last_name === "" ? null : telegramUser.last_name || null,
-        referrer_id: newUser.referrer_id
-      };
-      
-      console.log("Retrying with minimal but complete fields:", minimalUser);
-      
-      const { data: minimalInsertedUser, error: minimalInsertError } = await supabase
-        .from('users')
-        .insert(minimalUser)
-        .select()
-        .single();
-        
-      if (minimalInsertError) {
-        console.error('Error creating user with minimal fields:', minimalInsertError);
-        console.error('Minimal insert error details:', minimalInsertError.message);
-        
-        // Еще одна попытка только с обязательным полем
-        console.log("Making final attempt with only required fields");
-        const requiredUserOnly = {
-          telegram_id: telegramId
-        };
-        
-        const { data: basicUser, error: basicError } = await supabase
-          .from('users')
-          .insert(requiredUserOnly)
-          .select()
-          .single();
-          
-        if (basicError) {
-          console.error('Final attempt failed:', basicError);
-          return NextResponse.json(
-            { error: `Database error while creating user: ${basicError.message}` },
-            { status: 500 }
-          );
-        }
-        
-        console.log("Created user with only telegram_id:", basicUser);
-        
-        // Если пользователь создан только с telegram_id, пробуем обновить остальные поля
-        if (basicUser?.id) {
-          try {
-            console.log("Trying to update user data separately after minimal creation");
-            
-            const updateFields: any = {};
-            
-            // Добавляем только непустые поля
-            if (telegramUser.username) updateFields.telegram_username = telegramUser.username;
-            if (telegramUser.first_name) updateFields.first_name = telegramUser.first_name;
-            if (telegramUser.last_name) updateFields.last_name = telegramUser.last_name;
-            if (newUser.referrer_id) updateFields.referrer_id = newUser.referrer_id;
-            
-            console.log("Update fields:", updateFields);
-            
-            if (Object.keys(updateFields).length > 0) {
-              const { error: updateError } = await supabase
-                .from('users')
-                .update(updateFields)
-                .eq('id', basicUser.id);
-              
-              if (updateError) {
-                console.error("Failed to update additional fields:", updateError);
-              } else {
-                console.log("Successfully updated additional fields");
-                
-                // Получаем обновленные данные пользователя
-                const { data: updatedUser } = await supabase
-                  .from('users')
-                  .select('*')
-                  .eq('id', basicUser.id)
-                  .single();
-                
-                if (updatedUser) {
-                  console.log("Returning updated user:", updatedUser);
-                  return NextResponse.json({ success: true, user: updatedUser });
-                }
-              }
-            }
-          } catch (updateError) {
-            console.error("Error during post-creation update:", updateError);
-          }
-        }
-        
-        return NextResponse.json({ success: true, user: basicUser });
+
+    if (upsertError) {
+      console.error('Error upserting user:', upsertError);
+      // Если ошибка не связана с дубликатом (которого не должно быть из-за upsert)
+      return NextResponse.json(
+        { error: 'Database error while creating/updating user' },
+        { status: 500 }
+      );
+    }
+
+    finalUserData = upsertedUser;
+
+    // Проверяем, был ли пользователь действительно создан (сравниваем время создания)
+    // Это не самый надежный способ, но может сработать для upsert
+    if (finalUserData && finalUserData.created_at) {
+      const createdAt = new Date(finalUserData.created_at);
+      const now = new Date();
+      // Считаем созданным, если запись появилась менее 5 секунд назад
+      if (now.getTime() - createdAt.getTime() < 5000) { 
+        wasUserCreated = true;
+        console.log(`User ${finalUserData.id} was likely created now.`);
       }
-      
-      console.log(`Successfully created user with minimal fields for Telegram ID: ${telegramId}`);
-      return NextResponse.json({ success: true, user: minimalInsertedUser });
+    }
+
+    // Если пользователь был создан, добавляем ему цель №1
+    if (finalUserData && wasUserCreated) {
+      console.log(`Adding default goal 1 for newly created user ${finalUserData.id}`);
+      try {
+        const newUserGoalData = {
+          user_id: finalUserData.id, // Используем ID из таблицы users
+          goal_id: 1,
+          status: 'not_started',
+          // Можно добавить difficulty_level, если нужно, запросив его у goals
+          // difficulty_level: (await supabase.from('goals').select('difficulty_level').eq('id', 1).single()).data?.difficulty_level ?? null
+        };
+
+        const { error: goalError } = await supabase
+          .from('user_goals')
+          .insert(newUserGoalData); // Просто insert, т.к. пользователь точно новый
+
+        if (goalError) {
+          // Логируем ошибку, но не прерываем ответ пользователю
+          console.error(`Failed to add default goal for new user ${finalUserData.id}:`, goalError);
+        } else {
+          console.log(`Successfully added default goal 1 for new user ${finalUserData.id}`);
+        }
+      } catch (e) {
+        console.error(`Exception while adding default goal for user ${finalUserData.id}:`, e);
+      }
     }
     
-    console.log(`Successfully created user for Telegram ID: ${telegramId}`);
-    return NextResponse.json({ success: true, user: insertedUser });
+    console.log("Returning user data:", finalUserData);
+    return NextResponse.json({ success: true, user: finalUserData });
     
-  } catch (e: any) {
-    console.error('Error in telegram-user API:', e);
+  } catch (error: any) {
+    console.error('Unhandled error in POST /api/auth/telegram-user:', error);
     return NextResponse.json(
-      { error: e.message || 'Server error' },
+      { error: error.message || 'Internal server error' },
       { status: 500 }
     );
   }
