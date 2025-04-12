@@ -99,33 +99,24 @@ export default function AddWish() {
     try {
       const supabase = createClientSupabaseClient()
       
-      // 1. Создаем новую запись в goals без указания ID (автоинкремент)
-      const { data: goalData, error: goalError } = await supabase
-        .from('goals')
+      // Создаем пользовательскую цель напрямую в user_goals
+      // Не создаем запись в goals, оставляем goal_id как NULL
+      const { data: userGoalData, error: userGoalError } = await supabase
+        .from('user_goals')
         .insert({
-          title,
-          description,
+          user_id: dbUser.id,
+          status: 'not_started',
+          // goal_id не указываем, чтобы он был NULL
+          // Сохраняем данные цели прямо в user_goals
+          title: title, 
+          description: description,
           image_url: imageUrl || null,
-          created_by: dbUser.id,
         })
         .select()
         .single()
 
-      if (goalError) {
-        throw new Error(`Ошибка создания цели: ${goalError.message}`)
-      }
-
-      // 2. Добавляем запись в user_goals с полученным goal_id
-      const { error: userGoalError } = await supabase
-        .from('user_goals')
-        .insert({
-          user_id: dbUser.id,
-          goal_id: goalData.id, // используем ID, полученный из первой вставки
-          status: 'not_started',
-        })
-
       if (userGoalError) {
-        throw new Error(`Ошибка связывания цели с пользователем: ${userGoalError.message}`)
+        throw new Error(`Ошибка создания цели: ${userGoalError.message}`)
       }
 
       // Успешное создание
