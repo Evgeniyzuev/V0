@@ -1,11 +1,14 @@
 "use client"
 
 import type React from "react"
-
+import { GoogleGenAI } from "@google/genai"
 import { useState } from "react"
 import { Bot, Send, Paperclip } from "lucide-react"
 import { Input } from "@/components/ui/input"
 import { Button } from "@/components/ui/button"
+
+// Initialize GoogleGenAI client
+const ai = new GoogleGenAI({ apiKey: process.env.NEXT_PUBLIC_GEMINI_API_KEY || "" })
 
 export default function AIAssistantTab() {
   const [message, setMessage] = useState("")
@@ -16,36 +19,75 @@ export default function AIAssistantTab() {
       timestamp: new Date().toISOString(),
     },
   ])
+  const [isLoading, setIsLoading] = useState(false)
 
-  const handleSendMessage = (e: React.FormEvent) => {
+  const handleSendMessage = async (e: React.FormEvent) => {
     e.preventDefault()
 
-    if (!message.trim()) return
+    if (!message.trim() || isLoading) return
+
+    const userMessage = {
+      sender: "user",
+      text: message,
+      timestamp: new Date().toISOString(),
+    }
 
     // Add user message to chat
-    setChatHistory([
-      ...chatHistory,
-      {
-        sender: "user",
-        text: message,
-        timestamp: new Date().toISOString(),
-      },
-    ])
+    setChatHistory((prev) => [...prev, userMessage])
 
     // Clear input
     setMessage("")
+    setIsLoading(true)
 
-    // Simulate assistant response after a short delay
-    setTimeout(() => {
+    try {
+      // Prepare contents for the API, including history and the new message
+      const contents = [
+        ...chatHistory.map((msg) => ({
+          role: msg.sender === "user" ? "user" : "model",
+          parts: [{ text: msg.text }],
+        })),
+        {
+          role: "user",
+          parts: [{ text: userMessage.text }],
+        },
+      ]
+
+      // Call the Gemini API using generateContent
+      const result = await ai.models.generateContent({
+        model: "gemini-2.0-flash", // Use gemini-2.0-flash as per example
+        contents: contents,
+        // Optional: Add generationConfig if needed
+        // generationConfig: {
+        //   maxOutputTokens: 100,
+        // },
+      })
+
+      // Access the response text via candidates directly on the result object
+      const assistantResponseText = result.candidates?.[0]?.content?.parts?.[0]?.text || "Sorry, I couldn't generate a response.";
+
+      // Add assistant response to chat
       setChatHistory((prev) => [
         ...prev,
         {
           sender: "assistant",
-          text: "I'm here to help you achieve your goals. Would you like me to suggest some tasks based on your current goals?",
+          text: assistantResponseText,
           timestamp: new Date().toISOString(),
         },
       ])
-    }, 1000)
+    } catch (error) {
+      console.error("Error calling Gemini API:", error)
+      // Add error message to chat
+      setChatHistory((prev) => [
+        ...prev,
+        {
+          sender: "assistant",
+          text: "Sorry, I encountered an error. Please try again.",
+          timestamp: new Date().toISOString(),
+        },
+      ])
+    } finally {
+      setIsLoading(false)
+    }
   }
 
   const formatTime = (timestamp: string) => {
@@ -84,12 +126,17 @@ export default function AIAssistantTab() {
             value={message}
             onChange={(e) => setMessage(e.target.value)}
             className="flex-1 bg-gray-100 border-0"
+            disabled={isLoading}
           />
-          <Button type="button" variant="ghost" size="icon" className="text-gray-400">
+          <Button type="button" variant="ghost" size="icon" className="text-gray-400" disabled={isLoading}>
             <Paperclip className="h-5 w-5" />
           </Button>
-          <Button type="submit" variant="ghost" size="icon" className="text-purple-600">
-            <Send className="h-5 w-5" />
+          <Button type="submit" variant="ghost" size="icon" className="text-purple-600" disabled={isLoading}>
+            {isLoading ? (
+              <div className="h-5 w-5 animate-spin rounded-full border-b-2 border-purple-600"></div>
+            ) : (
+              <Send className="h-5 w-5" />
+            )}
           </Button>
         </form>
       </div>
