@@ -8,6 +8,7 @@ export type AIModel = {
   apiKey?: string;
   maxTokens?: number;
   temperature?: number;
+  version?: string;
 };
 
 export type CustomInstructions = {
@@ -32,7 +33,7 @@ export const DEFAULT_MODELS: AIModel[] = [
     id: 'gemini-pro',
     name: 'Gemini Pro',
     description: 'Google\'s advanced language model',
-    apiEndpoint: 'https://generativelanguage.googleapis.com/v1beta/models/gemini-pro:generateContent',
+    apiEndpoint: 'https://generativelanguage.googleapis.com/v1/models/gemini-pro:generateText',
     apiKey: AI_CONFIG.gemini.apiKey,
     maxTokens: 2048,
     temperature: 0.7

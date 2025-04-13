@@ -1,5 +1,6 @@
 import { AIModel, CustomInstructions } from '@/types/ai-models';
 import { Goal, UserGoal, UserTask } from '@/types/supabase';
+import { GoogleGenerativeAI } from "@google/generative-ai";
 
 interface AIContext {
   userGoals?: (Goal | UserGoal)[];
@@ -67,38 +68,22 @@ export class AIService {
   }
 
   private async callGemini(messages: any[], apiKey: string) {
-    // For Gemini, we need to add the API key as a query parameter
-    const url = `${this.model.apiEndpoint}?key=${apiKey}`;
-    
-    // Gemini expects a different format for messages
-    const lastMessage = messages[messages.length - 1];
-    const systemPrompt = messages[0].content;
-    
-    const response = await fetch(url, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        contents: [{
-          parts: [
-            { text: `${systemPrompt}\n\nUser: ${lastMessage.content}` }
-          ]
-        }],
-        generationConfig: {
-          maxOutputTokens: this.model.maxTokens,
-          temperature: this.model.temperature,
-        },
-      }),
-    });
+    try {
+      const genAI = new GoogleGenerativeAI(apiKey);
+      const model = genAI.getGenerativeModel({ model: "gemini-pro" });
 
-    if (!response.ok) {
-      const error = await response.json();
-      throw new Error(error.error?.message || 'Gemini API call failed');
+      // Combine system prompt and user message
+      const lastMessage = messages[messages.length - 1];
+      const systemPrompt = messages[0].content;
+      const prompt = `${systemPrompt}\n\nUser: ${lastMessage.content}`;
+
+      const result = await model.generateContent(prompt);
+      const response = await result.response;
+      return response.text();
+    } catch (error) {
+      console.error('Error calling Gemini API:', error);
+      throw new Error(error instanceof Error ? error.message : 'Failed to generate content');
     }
-
-    const data = await response.json();
-    return data.candidates[0].content.parts[0].text;
   }
 
   private async callClaude(messages: any[], apiKey: string) {
