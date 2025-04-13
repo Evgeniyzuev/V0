@@ -82,7 +82,9 @@ export class AIService {
       return response.text();
     } catch (error) {
       console.error('Error calling Gemini API:', error);
-      throw new Error(error instanceof Error ? error.message : 'Failed to generate content');
+      const errorMessage = error instanceof Error ? error.message : 'Failed to generate content';
+      console.error('Gemini API Error Message:', errorMessage);
+      throw new Error(`Gemini API Error: ${errorMessage}`);
     }
   }
 
