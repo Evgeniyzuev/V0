@@ -6,11 +6,13 @@ import { useState } from "react"
 import { Bot, Send, Paperclip } from "lucide-react"
 import { Input } from "@/components/ui/input"
 import { Button } from "@/components/ui/button"
+import { useToast } from "@/components/ui/use-toast"
 
 // Initialize GoogleGenAI client
 const ai = new GoogleGenAI({ apiKey: process.env.NEXT_PUBLIC_GEMINI_API_KEY || "" })
 
 export default function AIAssistantTab() {
+  const { toast } = useToast()
   const [message, setMessage] = useState("")
   const [chatHistory, setChatHistory] = useState([
     {
@@ -76,7 +78,13 @@ export default function AIAssistantTab() {
       ])
     } catch (error) {
       console.error("Error calling Gemini API:", error)
-      // Add error message to chat
+      // Show error toast notification
+      toast({
+        variant: "destructive",
+        title: "AI Assistant Error",
+        description: "Sorry, I encountered an error connecting to the AI. Please try again.",
+      })
+      // Optionally keep the chat message as well, or remove it if the toast is sufficient
       setChatHistory((prev) => [
         ...prev,
         {
