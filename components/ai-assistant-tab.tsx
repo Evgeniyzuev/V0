@@ -7,7 +7,6 @@ import { Input } from "@/components/ui/input"
 import { Button } from "@/components/ui/button"
 import { useToast } from "@/components/ui/use-toast"
 import { useUser } from "./UserContext"
-import { createAIContext, type UserGoal, type UserTask } from "@/types/user-context"
 import { generateSystemInstructions, generateDailyGreeting, generateInterestingSuggestion } from "@/lib/ai/assistant-instructions"
 
 interface ChatMessage {
@@ -37,7 +36,7 @@ interface DailyContext {
 
 export default function AIAssistantTab() {
   const { toast } = useToast()
-  const { dbUser, goals, tasks } = useUser()
+  const { dbUser, goals, tasks, isLoading: isUserContextLoading } = useUser()
   const [message, setMessage] = useState("")
   const [chatHistory, setChatHistory] = useState<ChatMessage[]>([])
   const [isLoading, setIsLoading] = useState(false)
@@ -90,13 +89,14 @@ export default function AIAssistantTab() {
 
   // Generate welcome message with daily context
   const generateWelcomeMessage = () => {
-    if (!dbUser) {
-      return "Hi there! I'm your personal AI assistant. Thousands of users have already achieved their goals with my help. I can help you succeed too. Sign in to get started on your journey!";
+    // Check if user data is still loading
+    if (isUserContextLoading || !dbUser) {
+      return "Hi there! I'm your personal AI assistant. Connecting to your profile...";
     }
 
     const dailyContext = getDailyContext();
 
-    // Generate daily greeting if it's first visit
+    // Pass current dbUser, goals, tasks
     const greeting = generateDailyGreeting({ dbUser, goals, tasks }, dailyContext);
     if (greeting) {
       const suggestion = generateInterestingSuggestion({ dbUser, goals, tasks });
@@ -154,37 +154,40 @@ export default function AIAssistantTab() {
     }
   };
 
-  // Initialize chat history
+  // Initialize chat history - wait for user context
   useEffect(() => {
-    if (isInitialized) return;
+    // Wait until user context is NOT loading and initialization hasn't run
+    if (isInitialized || isUserContextLoading) return;
 
     const savedHistory = loadChatHistory();
     
     if (savedHistory.length === 0) {
-      // If no saved history, set welcome message
-      setChatHistory([{
-        sender: "assistant",
-        text: generateWelcomeMessage(),
-        timestamp: new Date().toISOString(),
+      // Generate welcome message *after* context might be loaded
+      setChatHistory([{ 
+        sender: "assistant", 
+        text: generateWelcomeMessage(), // Call it here when context is ready
+        timestamp: new Date().toISOString() 
       }]);
     } else {
       setChatHistory(savedHistory);
     }
     
     setIsInitialized(true);
-  }, [dbUser, isInitialized]);
+  }, [dbUser, goals, tasks, isUserContextLoading, isInitialized]); // Depend on loading state and data
 
   // Save chat history when it changes
   useEffect(() => {
-    if (chatHistory.length > 0) {
+    // Only save if initialized and history has content
+    if (isInitialized && chatHistory.length > 0) {
       saveChatHistory(chatHistory);
     }
-  }, [chatHistory, dbUser?.id]);
+  }, [chatHistory, dbUser?.id, isInitialized]);
 
   const handleSendMessage = async (e: React.FormEvent) => {
     e.preventDefault()
 
-    if (!message.trim() || isLoading) return
+    // Ensure user context is loaded before sending
+    if (!message.trim() || isLoading || isUserContextLoading) return
 
     const userMessage = {
       sender: "user",
@@ -198,6 +201,7 @@ export default function AIAssistantTab() {
 
     try {
       const systemInstructions = generateSystemInstructions();
+      console.log("Sending to /api/chat with context:", { dbUser, goals, tasks }); // Log the context being sent
 
       // Call our server API endpoint
       const response = await fetch("/api/chat", {
@@ -207,7 +211,8 @@ export default function AIAssistantTab() {
         },
         body: JSON.stringify({
           messages: [...chatHistory, userMessage],
-          userContext: { dbUser, goals, tasks },
+          // Pass the current state of dbUser, goals, tasks
+          userContext: { dbUser, goals, tasks }, 
           systemInstructions,
         }),
       })
