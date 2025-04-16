@@ -1,9 +1,3 @@
-import type { Database } from "./supabase"
-import type { GoalStatus } from "./supabase"
-
-type DbGoal = Database['public']['Tables']['user_goals']['Row']
-type DbTask = Database['public']['Tables']['tasks']['Row']
-
 export interface TelegramUser {
   id: number;
   first_name?: string;
@@ -31,8 +25,8 @@ export interface DbUser {
   paid_referrals?: number;
   reinvest_setup?: number;
   referrer_id?: number;
-  goals?: DbGoal[];
-  tasks?: DbTask[];
+  goals?: UserGoal[];
+  tasks?: UserTask[];
   skills?: string[];
   interests?: string[];
   preferences?: {
@@ -116,45 +110,30 @@ export function createAIContext(dbUser: DbUser): AIAssistantContext {
       experience: dbUser.core || 0
     },
     goals: (dbUser.goals || []).map(goal => ({
-      id: String(goal.id),
-      title: goal.title || '',
-      description: goal.description || '',
-      progress: goal.progress_percentage || 0,
-      status: mapGoalStatus(goal.status),
-      priority: goal.difficulty_level || 1,
-      dueDate: goal.target_date || undefined,
-      tasks: []
+      id: goal.id,
+      title: goal.title,
+      description: goal.description,
+      progress: calculateGoalProgress(goal),
+      status: goal.status,
+      priority: goal.priority,
+      dueDate: goal.dueDate,
+      tasks: goal.tasks
     })),
     tasks: (dbUser.tasks || []).map(task => ({
-      id: String(task.id),
-      goalId: task.goal_id ? String(task.goal_id) : undefined,
+      id: task.id,
+      goalId: task.goalId,
       title: task.title,
-      description: task.description || '',
-      status: 'TODO',
-      priority: 'medium',
-      dueDate: task.due_date || undefined
+      description: task.description,
+      status: task.status,
+      priority: task.priority || 'medium',
+      dueDate: task.dueDate
     })),
     preferences: dbUser.preferences || {}
   };
 }
 
-function mapGoalStatus(status: GoalStatus): 'BACKLOG' | 'IN_PROGRESS' | 'DONE' | 'ARCHIVED' {
-  const statusMap: Record<GoalStatus, 'BACKLOG' | 'IN_PROGRESS' | 'DONE' | 'ARCHIVED'> = {
-    'not_started': 'BACKLOG',
-    'in_progress': 'IN_PROGRESS',
-    'completed': 'DONE',
-    'paused': 'BACKLOG',
-    'abandoned': 'ARCHIVED'
-  };
-  return statusMap[status] || 'BACKLOG';
-}
-
-function mapTaskStatus(status: string): 'TODO' | 'IN_PROGRESS' | 'DONE' {
-  const statusMap: Record<string, 'TODO' | 'IN_PROGRESS' | 'DONE'> = {
-    'pending': 'TODO',
-    'in_progress': 'IN_PROGRESS',
-    'completed': 'DONE',
-    'failed': 'TODO'
-  };
-  return statusMap[status.toLowerCase()] || 'TODO';
+function calculateGoalProgress(goal: UserGoal): number {
+  if (!goal.tasks?.length) return 0;
+  const completedTasks = goal.tasks.filter(task => task.status === 'DONE').length;
+  return Math.round((completedTasks / goal.tasks.length) * 100);
 } 

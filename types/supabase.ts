@@ -7,18 +7,14 @@
  */
 export interface Task {
   id: number;
-  user_id: string;
-  goal_id?: string;
   title: string;
   icon_url: string | null;
-  due_date?: string | null; // ISO timestamp
+  due_date: string | null; // ISO timestamp
   reward: number;
-  description?: string | null;
+  description: string | null;
   notes: string | null;
   number: number;
   completion_condition: string | null;
-  created_at?: string;
-  updated_at?: string;
 }
 
 /**

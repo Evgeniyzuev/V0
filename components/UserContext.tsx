@@ -122,28 +122,16 @@ export const UserProvider = ({ children }: { children: ReactNode }) => {
           .from('users')
           .select(`
             *,
-            user_goals (
+            goals (
               id,
               title,
               description,
               status,
-              progress_percentage,
-              target_date,
-              difficulty_level,
-              goal_id,
-              goal:goals (
-                id,
-                title,
-                description
-              )
+              priority,
+              dueDate,
+              tasks (*)
             ),
-            tasks (
-              id,
-              title,
-              description,
-              goal_id,
-              due_date
-            )
+            tasks (*)
           `)
           .eq('id', authUser.id)
           .single();
@@ -172,28 +160,16 @@ export const UserProvider = ({ children }: { children: ReactNode }) => {
           .from('users')
           .select(`
             *,
-            user_goals (
+            goals (
               id,
               title,
               description,
               status,
-              progress_percentage,
-              target_date,
-              difficulty_level,
-              goal_id,
-              goal:goals (
-                id,
-                title,
-                description
-              )
+              priority,
+              dueDate,
+              tasks (*)
             ),
-            tasks (
-              id,
-              title,
-              description,
-              goal_id,
-              due_date
-            )
+            tasks (*)
           `)
           .eq('telegram_id', telegramUser.id)
           .single();
