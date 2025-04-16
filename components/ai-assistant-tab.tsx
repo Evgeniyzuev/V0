@@ -95,23 +95,29 @@ export default function AIAssistantTab() {
       return "Hi there! I'm your personal AI assistant. Thousands of users have already achieved their goals with my help. I can help you succeed too. Sign in to get started on your journey!";
     }
 
-    console.log("Raw dbUser in welcome:", dbUser);
-    console.log("Goals from dbUser:", (dbUser as any).goals);
+    const aiContext = createAIContext(dbUser);
+    const dailyContext = getDailyContext();
 
+    // Generate daily greeting if it's first visit
+    const greeting = generateDailyGreeting(aiContext, dailyContext);
+    if (greeting) {
+      const suggestion = generateInterestingSuggestion(aiContext);
+      return `${greeting}\n\n${suggestion}`;
+    }
+
+    // Fallback to regular welcome message
     const name = dbUser.first_name || dbUser.telegram_username || 'there';
-    const goals = (dbUser as any).goals || [];
+    const goals = (dbUser as any).goals as UserGoal[] || [];
+    const tasks = (dbUser as any).tasks as UserTask[] || [];
 
     if (goals.length > 0) {
-      console.log("Found goals:", goals);
       const activeGoals = goals.filter(goal => goal.status !== 'completed');
       if (activeGoals.length > 0) {
-        console.log("Active goal found:", activeGoals[0]);
         return `Hi ${name}! I see you're working on "${activeGoals[0].title || `Goal ${activeGoals[0].id}`}". How can I help you make progress on this goal today?`;
       }
     }
 
-    if (typeof dbUser === 'object' && 'tasks' in dbUser) {
-      const tasks = dbUser.tasks as UserTask[] || [];
+    if (tasks.length > 0) {
       const pendingTasks = tasks.filter(task => task.status !== 'DONE');
       if (pendingTasks.length > 0) {
         const highPriorityTasks = pendingTasks.filter(task => task.priority === 'high');
@@ -199,30 +205,7 @@ export default function AIAssistantTab() {
     setIsLoading(true)
 
     try {
-      // Debug log user data
-      console.log("Raw dbUser data:", dbUser);
-      
-      // Create AI context with raw data
-      const aiContext = dbUser ? {
-        profile: {
-          id: dbUser.id,
-          name: dbUser.first_name || dbUser.telegram_username || 'there',
-          level: dbUser.level || 1,
-          skills: [],
-          interests: [],
-          experience: 0
-        },
-        goals: (dbUser as any).goals || [],
-        tasks: (dbUser as any).tasks || [],
-        lastInteraction: new Date().toISOString(),
-        preferences: {
-          communicationStyle: 'casual',
-          focusAreas: [],
-          reminderFrequency: 'daily'
-        }
-      } : null;
-
-      console.log("Created AI context:", aiContext);
+      const aiContext = dbUser ? createAIContext(dbUser) : null;
       const systemInstructions = generateSystemInstructions();
 
       // Call our server API endpoint

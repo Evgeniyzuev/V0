@@ -9,7 +9,6 @@ import { createClientSupabaseClient } from "@/lib/supabase"
 // import type { User as TelegramUser, WebApp as TelegramWebApp } from '@grammyjs/web-app'
 import { addUserGoal } from '@/lib/api/goals' // Import the function to add goals
 import { User, Session } from "@supabase/supabase-js";
-import { UserGoal, UserTask } from "@/types/user-context";
 
 // Интерфейс для WebApp для TypeScript
 interface TelegramWebApp {
@@ -51,7 +50,7 @@ interface TelegramUser {
   is_premium?: boolean; // Добавим поле
 }
 
-export interface DbUser {
+interface DbUser {
   id: string;
   user_id?: string;
   telegram_id: number;
@@ -61,17 +60,16 @@ export interface DbUser {
   avatar_url?: string;
   phone_number?: string;
   created_at?: string;
+  // Добавляем поля, которые используются в компоненте профиля
   wallet_balance?: number;
   aicore_balance?: number;
   level?: number;
   core?: number;
   paid_referrals?: number;
   reinvest_setup?: number;
+  // Добавляем поле для реферальной системы
   referrer_id?: number;
-  goals?: UserGoal[];
-  tasks?: UserTask[];
-  skills?: string[];
-  interests?: string[];
+  // Добавьте другие поля из вашей таблицы users
 }
 
 interface UserContextType {
@@ -124,7 +122,7 @@ export const UserProvider = ({ children }: { children: ReactNode }) => {
         console.log("Refreshing user data from DB for auth user ID:", authUser.id);
         const { data, error: fetchError } = await supabase
           .from('users')
-          .select('*, goals(*), tasks(*)')
+          .select('*')
           .eq('id', authUser.id)
           .single();
 
@@ -144,7 +142,7 @@ export const UserProvider = ({ children }: { children: ReactNode }) => {
         console.log("Refreshing user data from DB for Telegram ID:", telegramUser.id);
         const { data, error: fetchError } = await supabase
           .from('users')
-          .select('*, goals(*), tasks(*)')
+          .select('*')
           .eq('telegram_id', telegramUser.id)
           .single();
 
