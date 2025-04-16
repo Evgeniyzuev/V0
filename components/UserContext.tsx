@@ -214,6 +214,9 @@ export const UserProvider = ({ children }: { children: ReactNode }) => {
         try {
           console.log('Starting Telegram WebApp SDK initialization...');
           
+          // Check if we're in development environment
+          const isDevelopment = process.env.NODE_ENV === 'development';
+          
           // Check if Telegram WebApp is already available globally
           if (window.Telegram?.WebApp) {
             console.log('Found global Telegram WebApp object');
@@ -226,7 +229,7 @@ export const UserProvider = ({ children }: { children: ReactNode }) => {
               console.log('Found user in global WebApp:', globalWebApp.initDataUnsafe.user);
               setTelegramUser(globalWebApp.initDataUnsafe.user);
             } else {
-              console.warn('No user data in global WebApp');
+              console.log(isDevelopment ? 'No user data in global WebApp (expected in development)' : 'No user data in global WebApp');
             }
             return;
           }
@@ -244,22 +247,31 @@ export const UserProvider = ({ children }: { children: ReactNode }) => {
               console.log('Found user in SDK:', WebAppSdk.initDataUnsafe.user);
               setTelegramUser(WebAppSdk.initDataUnsafe.user);
             } else {
-              console.warn('No user data in SDK WebApp');
+              console.log(isDevelopment ? 'No user data in SDK (expected in development)' : 'No user data in SDK WebApp');
               // Try to wait a bit and check again
               setTimeout(() => {
                 if (WebAppSdk.initDataUnsafe?.user) {
                   console.log('Found user after delay:', WebAppSdk.initDataUnsafe.user);
                   setTelegramUser(WebAppSdk.initDataUnsafe.user);
                 } else {
-                  console.error('Still no user data after delay');
-                  setError("Не удалось получить данные пользователя Telegram");
+                  if (!isDevelopment) {
+                    console.error('Still no user data after delay');
+                    setError("Не удалось получить данные пользователя Telegram");
+                  } else {
+                    console.log('No user data available (expected in development environment)');
+                  }
                 }
               }, 1000);
             }
           }
         } catch (e) {
-          console.error('Failed to load or init Telegram WebApp SDK:', e);
-          setError("Не удалось инициализировать Telegram WebApp");
+          const isDevelopment = process.env.NODE_ENV === 'development';
+          if (!isDevelopment) {
+            console.error('Failed to load or init Telegram WebApp SDK:', e);
+            setError("Не удалось инициализировать Telegram WebApp");
+          } else {
+            console.log('Telegram WebApp SDK not available (expected in development)');
+          }
         } finally {
           setIsLoading(false);
         }
