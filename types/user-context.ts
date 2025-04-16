@@ -1,4 +1,5 @@
 import type { Database } from "./supabase"
+import type { GoalStatus } from "./supabase"
 
 type DbGoal = Database['public']['Tables']['user_goals']['Row']
 type DbTask = Database['public']['Tables']['tasks']['Row']
@@ -115,30 +116,45 @@ export function createAIContext(dbUser: DbUser): AIAssistantContext {
       experience: dbUser.core || 0
     },
     goals: (dbUser.goals || []).map(goal => ({
-      id: goal.id,
-      title: goal.title,
-      description: goal.description,
-      progress: calculateGoalProgress(goal),
-      status: goal.status,
-      priority: goal.priority,
-      dueDate: goal.dueDate,
-      tasks: goal.tasks
+      id: String(goal.id),
+      title: goal.title || '',
+      description: goal.description || '',
+      progress: goal.progress_percentage || 0,
+      status: mapGoalStatus(goal.status),
+      priority: goal.difficulty_level || 1,
+      dueDate: goal.target_date || undefined,
+      tasks: []
     })),
     tasks: (dbUser.tasks || []).map(task => ({
-      id: task.id,
-      goalId: task.goalId,
+      id: String(task.id),
+      goalId: task.goal_id ? String(task.goal_id) : undefined,
       title: task.title,
-      description: task.description,
-      status: task.status,
-      priority: task.priority || 'medium',
-      dueDate: task.dueDate
+      description: task.description || '',
+      status: 'TODO',
+      priority: 'medium',
+      dueDate: task.due_date || undefined
     })),
     preferences: dbUser.preferences || {}
   };
 }
 
-function calculateGoalProgress(goal: UserGoal): number {
-  if (!goal.tasks?.length) return 0;
-  const completedTasks = goal.tasks.filter(task => task.status === 'DONE').length;
-  return Math.round((completedTasks / goal.tasks.length) * 100);
+function mapGoalStatus(status: GoalStatus): 'BACKLOG' | 'IN_PROGRESS' | 'DONE' | 'ARCHIVED' {
+  const statusMap: Record<GoalStatus, 'BACKLOG' | 'IN_PROGRESS' | 'DONE' | 'ARCHIVED'> = {
+    'not_started': 'BACKLOG',
+    'in_progress': 'IN_PROGRESS',
+    'completed': 'DONE',
+    'paused': 'BACKLOG',
+    'abandoned': 'ARCHIVED'
+  };
+  return statusMap[status] || 'BACKLOG';
+}
+
+function mapTaskStatus(status: string): 'TODO' | 'IN_PROGRESS' | 'DONE' {
+  const statusMap: Record<string, 'TODO' | 'IN_PROGRESS' | 'DONE'> = {
+    'pending': 'TODO',
+    'in_progress': 'IN_PROGRESS',
+    'completed': 'DONE',
+    'failed': 'TODO'
+  };
+  return statusMap[status.toLowerCase()] || 'TODO';
 } 
