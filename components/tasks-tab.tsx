@@ -60,7 +60,7 @@ type Task = {
 }
 
 export default function TasksTab() {
-  const { dbUser, isLoading: isUserLoading, refreshUserData } = useUser()
+  const { dbUser, isLoading: isUserLoading, refreshUserData, goals } = useUser()
 
   const [activeTab, setActiveTab] = useState("new")
   const [expandedTaskId, setExpandedTaskId] = useState<number | null>(null)
@@ -82,10 +82,11 @@ export default function TasksTab() {
   } | null>(null);
   const [isUpdatingLevel, setIsUpdatingLevel] = useState(false); // To prevent multiple updates
 
-  const { verifying, handleTaskVerification } = useTaskVerification({
+  const { verifying, handleTaskVerification }: { verifying: boolean; handleTaskVerification: (taskNumber: number) => Promise<void> } = useTaskVerification({
     dbUser,
     refreshUserData,
     setStatusMessage,
+    goals,
     onTaskComplete: (taskNumber: number, reward: number, oldCore: number, newCore: number) => {
       setCompletionModal({
         isOpen: true,

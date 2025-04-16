@@ -18,6 +18,7 @@ interface UseTaskVerificationProps {
   refreshUserData: () => Promise<void>;
   setStatusMessage: (message: StatusMessage) => void;
   onTaskComplete?: (taskNumber: number, reward: number, oldCore: number, newCore: number) => void;
+  goals: any[] | null;
 }
 
 /**
@@ -28,7 +29,8 @@ export function useTaskVerification({
   dbUser,
   refreshUserData,
   setStatusMessage,
-  onTaskComplete
+  onTaskComplete,
+  goals
 }: UseTaskVerificationProps) {
   const [verifying, setVerifying] = useState(false);
 
@@ -80,6 +82,11 @@ export function useTaskVerification({
         message = success
           ? `Task ${taskNumber}: Congratulations! Task completed successfully.`
           : `Task ${taskNumber}: Task not completed. You must be logged in.`;
+      } else if (taskNumber === 2) {
+        success = goals ? goals.length > 1 : false;
+        message = success
+          ? `Task ${taskNumber}: Congratulations! You have more than one goal.`
+          : `Task ${taskNumber}: Task not completed. You need to have more than one personal goal.`;
       }
       // Add more task verifications here
       // --- End task verification logic ---
