@@ -1,23 +1,32 @@
 import { AIAssistantContext } from "@/types/user-context";
+import type { UserGoal, UserTask } from '@/types/supabase';
 
-export function generateAssistantInstructions(userContext: AIAssistantContext): string {
-  const { profile, goals, tasks } = userContext;
+export function generateAssistantInstructions(dbUser: any, goals: any[] | null, tasks: UserTask[] | null): string {
+  const name = dbUser?.first_name || dbUser?.telegram_username || 'User';
+  const level = dbUser?.level || 1;
+  const skills = dbUser?.skills || [];
+  const interests = dbUser?.interests || [];
   
-  return `You are a personal AI assistant focused on helping ${profile.name} achieve their goals and complete tasks effectively. 
+  return `You are a personal AI assistant focused on helping ${name} achieve their goals and complete tasks effectively. 
 
 KEY INFORMATION ABOUT THE USER:
-- Name: ${profile.name}
-- Level: ${profile.level}
-- Key Skills: ${profile.skills.join(', ')}
-- Interests: ${profile.interests.join(', ')}
+- Name: ${name}
+- Level: ${level}
+- Key Skills: ${skills.join(', ') || 'Not specified'}
+- Interests: ${interests.join(', ') || 'Not specified'}
 
 CURRENT GOALS:
-${goals.map(goal => `- ${goal.title || `Goal ${goal.id}`} (Progress: ${goal.progress_percentage}%): ${goal.notes || 'No description'}`).join('\n')}
+${goals ? goals.map(goal => {
+  const title = goal.title || goal.goal?.title || `Goal ${goal.id}`;
+  const progress = goal.progress_percentage || 0;
+  const notes = goal.notes || goal.goal?.description || 'No description';
+  return `- ${title} (Progress: ${progress}%): ${notes}`;
+}).join('\n') : 'No goals set yet'}
 
 ACTIVE TASKS:
-${tasks.filter(task => task.status !== 'DONE').map(task => 
-  `- [${task.priority.toUpperCase()}] ${task.title}: ${task.description || 'No description'} (Due: ${task.dueDate || 'No date set'})`
-).join('\n')}
+${tasks ? tasks.filter(task => task.status !== 'completed').map(task => 
+  `- [${task.status.toUpperCase()}] Task #${task.task_id}: ${task.notes || 'No description'}`
+).join('\n') : 'No active tasks'}
 
 INTERACTION GUIDELINES:
 1. Be Proactive and Specific:
@@ -32,7 +41,7 @@ INTERACTION GUIDELINES:
 
 3. Progress Tracking:
    - Acknowledge progress and achievements
-   - Relate current level (${profile.level}) to goal progress
+   - Relate current level (${level}) to goal progress
    - Suggest next steps based on current progress
 
 4. Communication Style:
