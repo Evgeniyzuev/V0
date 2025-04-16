@@ -9,6 +9,7 @@ import { createClientSupabaseClient } from "@/lib/supabase"
 // import type { User as TelegramUser, WebApp as TelegramWebApp } from '@grammyjs/web-app'
 import { addUserGoal } from '@/lib/api/goals' // Import the function to add goals
 import { User, Session } from "@supabase/supabase-js";
+import { DbUser, UserGoalRecord, UserTaskRecord, TelegramUser } from "@/types/user-context";
 
 // Интерфейс для WebApp для TypeScript
 interface TelegramWebApp {
@@ -37,39 +38,6 @@ declare global {
       WebApp?: TelegramWebApp;
     }
   }
-}
-
-// Типы данных
-interface TelegramUser {
-  id: number;
-  first_name?: string;
-  last_name?: string;
-  username?: string;
-  photo_url?: string;
-  language_code?: string; // Добавим поле
-  is_premium?: boolean; // Добавим поле
-}
-
-interface DbUser {
-  id: string;
-  user_id?: string;
-  telegram_id: number;
-  telegram_username?: string;
-  first_name?: string;
-  last_name?: string;
-  avatar_url?: string;
-  phone_number?: string;
-  created_at?: string;
-  // Добавляем поля, которые используются в компоненте профиля
-  wallet_balance?: number;
-  aicore_balance?: number;
-  level?: number;
-  core?: number;
-  paid_referrals?: number;
-  reinvest_setup?: number;
-  // Добавляем поле для реферальной системы
-  referrer_id?: number;
-  // Добавьте другие поля из вашей таблицы users
 }
 
 interface UserContextType {
@@ -108,7 +76,6 @@ export const UserProvider = ({ children }: { children: ReactNode }) => {
   const refreshUserData = async (force = false) => {
     if (!supabase) return;
     
-    // Reset userLoadedRef if forcing refresh
     if (force) userLoadedRef.current = false;
 
     if (userLoadedRef.current) {
@@ -117,32 +84,115 @@ export const UserProvider = ({ children }: { children: ReactNode }) => {
     }
     
     try {
-      // Если у нас есть authUser (пользователь из Supabase Auth), загружаем данные по UUID
       if (authUser) {
-        console.log("Refreshing user data from DB for auth user ID:", authUser.id);
-        const { data, error: fetchError } = await supabase
+        console.log("Fetching user data for auth user ID:", authUser.id);
+        
+        // First, get user data with their goals
+        const { data: userData, error: userError } = await supabase
           .from('users')
-          .select('*')
+          .select(`
+            *,
+            user_goals (
+              id,
+              goal_id,
+              status,
+              progress_percentage,
+              notes,
+              goals (
+                id,
+                title,
+                description
+              )
+            ),
+            user_tasks (
+              id,
+              task_id,
+              status,
+              priority,
+              due_date,
+              tasks (
+                id,
+                title,
+                description
+              )
+            )
+          `)
           .eq('id', authUser.id)
           .single();
 
-        if (fetchError && fetchError.code !== 'PGRST116') {
-          console.error('Error fetching user data by auth ID:', fetchError);
-          setError('Ошибка при получении данных пользователя');
-        } else if (data) {
-          console.log("User data loaded from DB by auth ID:", data);
-          setDbUser(data);
-          userLoadedRef.current = true;
+        if (userError) {
+          console.error('Error fetching user data:', userError);
           return;
         }
+
+        // Transform the data to match expected format
+        const goals = userData.user_goals?.map((ug: UserGoalRecord) => ({
+          id: ug.goal_id,
+          status: ug.status,
+          progress_percentage: ug.progress_percentage,
+          notes: ug.notes,
+          title: ug.goals?.title || '',
+          description: ug.goals?.description || '',
+        })) || [];
+
+        const tasks = userData.user_tasks?.map((ut: UserTaskRecord) => ({
+          id: ut.task_id,
+          status: ut.status,
+          priority: ut.priority,
+          due_date: ut.due_date,
+          title: ut.tasks?.title || '',
+          description: ut.tasks?.description || '',
+        })) || [];
+
+        console.log("Transformed user data:", {
+          userId: userData.id,
+          goalsCount: goals.length,
+          tasksCount: tasks.length,
+          goals: goals,
+          tasks: tasks
+        });
+
+        setDbUser({
+          ...userData,
+          goals: goals,
+          tasks: tasks
+        });
+        userLoadedRef.current = true;
+        return;
       }
       
-      // Запасной вариант: если у нас есть telegram_id, загружаем по нему
+      // Fallback to telegram_id
       if (telegramUser?.id) {
-        console.log("Refreshing user data from DB for Telegram ID:", telegramUser.id);
+        console.log("Fetching user data for Telegram ID:", telegramUser.id);
         const { data, error: fetchError } = await supabase
           .from('users')
-          .select('*')
+          .select(`
+            *,
+            user_goals (
+              id,
+              goal_id,
+              status,
+              progress_percentage,
+              notes,
+              goals (
+                id,
+                title,
+                description
+              )
+            ),
+            user_tasks (
+              id,
+              task_id,
+              status,
+              priority,
+              due_date,
+              tasks (
+                id,
+                title,
+                description
+              )
+            )
+          `)
           .eq('telegram_id', telegramUser.id)
           .single();
 
@@ -150,8 +200,46 @@ export const UserProvider = ({ children }: { children: ReactNode }) => {
           console.error('Error fetching user data by Telegram ID:', fetchError);
           setError('Ошибка при получении данных пользователя');
         } else if (data) {
-          console.log("User data loaded from DB by Telegram ID:", data);
-          setDbUser(data);
+          console.log("Loaded user data with goals and tasks:", {
+            userId: data.id,
+            goalsCount: data.user_goals?.length || 0,
+            tasksCount: data.user_tasks?.length || 0,
+            goals: data.user_goals?.map((ug: UserGoalRecord) => ({
+              id: ug.goal_id,
+              status: ug.status,
+              progress_percentage: ug.progress_percentage,
+              notes: ug.notes,
+              title: ug.goals?.title || '',
+              description: ug.goals?.description || ''
+            })) || [],
+            tasks: data.user_tasks?.map((ut: UserTaskRecord) => ({
+              id: ut.task_id,
+              status: ut.status,
+              priority: ut.priority,
+              due_date: ut.due_date,
+              title: ut.tasks?.title || '',
+              description: ut.tasks?.description || ''
+            })) || []
+          });
+          setDbUser({
+            ...data,
+            goals: data.user_goals?.map((ug: UserGoalRecord) => ({
+              id: ug.goal_id,
+              status: ug.status,
+              progress_percentage: ug.progress_percentage,
+              notes: ug.notes,
+              title: ug.goals?.title || '',
+              description: ug.goals?.description || ''
+            })) || [],
+            tasks: data.user_tasks?.map((ut: UserTaskRecord) => ({
+              id: ut.task_id,
+              status: ut.status,
+              priority: ut.priority,
+              due_date: ut.due_date,
+              title: ut.tasks?.title || '',
+              description: ut.tasks?.description || ''
+            })) || []
+          });
           userLoadedRef.current = true;
         }
       }

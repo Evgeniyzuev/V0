@@ -7,7 +7,7 @@ import { Input } from "@/components/ui/input"
 import { Button } from "@/components/ui/button"
 import { useToast } from "@/components/ui/use-toast"
 import { useUser } from "./UserContext"
-import { createAIContext, type UserGoal, type UserTask } from "@/types/user-context"
+import { createAIContext, type UserGoal, type UserTask, type DbUser } from "@/types/user-context"
 import { generateSystemInstructions, generateDailyGreeting, generateInterestingSuggestion } from "@/lib/ai/assistant-instructions"
 
 interface ChatMessage {
@@ -154,7 +154,12 @@ export default function AIAssistantTab() {
     const savedHistory = loadChatHistory();
     
     if (savedHistory.length === 0) {
-      // If no saved history, set welcome message
+      console.log("Generating welcome message with user data:", {
+        hasUser: !!dbUser,
+        goals: (dbUser as DbUser)?.goals?.length || 0,
+        tasks: (dbUser as DbUser)?.tasks?.length || 0
+      });
+      
       setChatHistory([{
         sender: "assistant",
         text: generateWelcomeMessage(),
@@ -185,21 +190,31 @@ export default function AIAssistantTab() {
       timestamp: new Date().toISOString(),
     }
 
-    // Add user message to chat
     setChatHistory((prev) => [...prev, userMessage])
-
-    // Clear input
     setMessage("")
     setIsLoading(true)
 
     try {
-      // Create AI context from user data
-      console.log('Current dbUser data:', dbUser);
-      const aiContext = dbUser ? createAIContext(dbUser) : null;
-      console.log('Created AI Context:', aiContext);
+      console.log("Creating AI context with user data:", {
+        hasUser: !!dbUser,
+        userData: dbUser && {
+          id: dbUser.id,
+          goals: (dbUser as DbUser).goals?.map((g: UserGoal) => ({ id: g.id, title: g.title })),
+          tasks: (dbUser as DbUser).tasks?.map((t: UserTask) => ({ id: t.id, title: t.title }))
+        }
+      });
+
+      const aiContext = dbUser ? createAIContext(dbUser as DbUser) : null;
+      
+      console.log("Created AI context:", {
+        hasContext: !!aiContext,
+        profile: aiContext?.profile,
+        goalsCount: aiContext?.goals.length || 0,
+        tasksCount: aiContext?.tasks.length || 0
+      });
+
       const systemInstructions = generateSystemInstructions();
 
-      // Call our server API endpoint
       const response = await fetch("/api/chat", {
         method: "POST",
         headers: {
