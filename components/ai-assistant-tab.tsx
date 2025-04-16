@@ -1,23 +1,65 @@
 "use client"
 
 import type React from "react"
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { Bot, Send, Paperclip } from "lucide-react"
 import { Input } from "@/components/ui/input"
 import { Button } from "@/components/ui/button"
 import { useToast } from "@/components/ui/use-toast"
+import { useUser } from "./UserContext"
+import { createAIContext, type UserGoal, type UserTask } from "@/types/user-context"
 
 export default function AIAssistantTab() {
   const { toast } = useToast()
+  const { dbUser } = useUser()
   const [message, setMessage] = useState("")
-  const [chatHistory, setChatHistory] = useState([
-    {
-      sender: "assistant",
-      text: "Hi there! I'm your personal AI assistant. How can I help you with your goals today?",
-      timestamp: new Date().toISOString(),
-    },
-  ])
+  const [chatHistory, setChatHistory] = useState<Array<{ sender: string; text: string; timestamp: string }>>([])
   const [isLoading, setIsLoading] = useState(false)
+
+  // Generate personalized welcome message based on user context
+  const generateWelcomeMessage = () => {
+    if (!dbUser) {
+      return "Hi there! I'm your personal AI assistant. How can I help you achieve your goals today?";
+    }
+
+    const name = dbUser.first_name || dbUser.telegram_username || 'there';
+    const goals = (dbUser as any).goals as UserGoal[] || [];
+    const tasks = (dbUser as any).tasks as UserTask[] || [];
+    const hasGoals = goals.length > 0;
+    const hasTasks = tasks.length > 0;
+
+    if (hasGoals) {
+      const activeGoals = goals.filter(goal => goal.progress < 100);
+      if (activeGoals.length > 0) {
+        const nextGoal = activeGoals[0];
+        return `Hi ${name}! I see you're working on "${nextGoal.title}". How can I help you make progress on this goal today?`;
+      }
+    }
+
+    if (hasTasks) {
+      const pendingTasks = tasks.filter(task => task.status !== 'done');
+      if (pendingTasks.length > 0) {
+        const highPriorityTasks = pendingTasks.filter(task => task.priority === 'high');
+        if (highPriorityTasks.length > 0) {
+          return `Hi ${name}! You have ${highPriorityTasks.length} high-priority ${highPriorityTasks.length === 1 ? 'task' : 'tasks'} to focus on. Would you like to discuss how to tackle ${highPriorityTasks.length === 1 ? 'it' : 'them'}?`;
+        }
+        return `Hi ${name}! You have ${pendingTasks.length} pending ${pendingTasks.length === 1 ? 'task' : 'tasks'}. How can I help you make progress today?`;
+      }
+    }
+
+    return `Hi ${name}! I'm your personal AI assistant. Let's work on setting some meaningful goals for you today. What would you like to achieve?`;
+  };
+
+  // Initialize chat history with welcome message
+  useEffect(() => {
+    setChatHistory([
+      {
+        sender: "assistant",
+        text: generateWelcomeMessage(),
+        timestamp: new Date().toISOString(),
+      },
+    ]);
+  }, [dbUser]); // Re-run when dbUser changes
 
   const handleSendMessage = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -38,6 +80,9 @@ export default function AIAssistantTab() {
     setIsLoading(true)
 
     try {
+      // Create AI context from user data
+      const aiContext = dbUser ? createAIContext(dbUser) : null;
+
       // Call our server API endpoint
       const response = await fetch("/api/chat", {
         method: "POST",
@@ -46,6 +91,7 @@ export default function AIAssistantTab() {
         },
         body: JSON.stringify({
           messages: [...chatHistory, userMessage],
+          userContext: aiContext,
         }),
       })
 
