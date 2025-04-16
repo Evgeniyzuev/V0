@@ -31,17 +31,6 @@ function initUtils(): TelegramUtils {
   };
 }
 
-// Добавляем типы для Telegram WebApp
-declare global {
-  interface Window {
-    Telegram?: {
-      WebApp?: {
-        openTelegramLink: (url: string) => void;
-      }
-    }
-  }
-}
-
 // Добавим компонент для реферальной ссылки
 function ReferralLinkSection({ userId, telegramId }: { userId?: string, telegramId?: number }) {
   const [referralLink, setReferralLink] = useState<string>("")

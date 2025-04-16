@@ -13,6 +13,7 @@ import { User, Session } from "@supabase/supabase-js";
 // Интерфейс для WebApp для TypeScript
 interface TelegramWebApp {
   ready: () => void;
+  expand: () => void;
   initData: string;
   initDataUnsafe: {
     user?: {
@@ -21,13 +22,21 @@ interface TelegramWebApp {
       last_name?: string;
       username?: string;
       photo_url?: string;
-      // Добавим недостающие поля, если они ожидаются SDK
       language_code?: string;
       is_premium?: boolean;
     };
     [key: string]: any;
   };
-  expand: () => void; // Добавим метод expand
+  openTelegramLink: (url: string) => void;
+}
+
+// Добавляем типы для Telegram WebApp
+declare global {
+  interface Window {
+    Telegram?: {
+      WebApp?: TelegramWebApp;
+    }
+  }
 }
 
 // Типы данных
@@ -203,26 +212,62 @@ export const UserProvider = ({ children }: { children: ReactNode }) => {
     const initTelegramSdk = async () => {
       if (typeof window !== 'undefined') {
         try {
-          // Используем динамический импорт @twa-dev/sdk
+          console.log('Starting Telegram WebApp SDK initialization...');
+          
+          // Check if Telegram WebApp is already available globally
+          if (window.Telegram?.WebApp) {
+            console.log('Found global Telegram WebApp object');
+            const globalWebApp = window.Telegram.WebApp;
+            globalWebApp.ready();
+            globalWebApp.expand();
+            setWebApp(globalWebApp as unknown as TelegramWebApp);
+            
+            if (globalWebApp.initDataUnsafe?.user) {
+              console.log('Found user in global WebApp:', globalWebApp.initDataUnsafe.user);
+              setTelegramUser(globalWebApp.initDataUnsafe.user);
+            } else {
+              console.warn('No user data in global WebApp');
+            }
+            return;
+          }
+
+          // Fallback to @twa-dev/sdk if global object not available
+          console.log('Falling back to @twa-dev/sdk...');
           const WebAppSdk = (await import('@twa-dev/sdk')).default;
           if (WebAppSdk) {
+            console.log('Successfully imported @twa-dev/sdk');
             WebAppSdk.ready();
             WebAppSdk.expand();
             setWebApp(WebAppSdk as unknown as TelegramWebApp);
-            setTelegramUser(WebAppSdk.initDataUnsafe.user || null);
-            console.log('Telegram WebApp SDK Initialized:', WebAppSdk);
-            console.log('Telegram User:', WebAppSdk.initDataUnsafe.user);
+            
+            if (WebAppSdk.initDataUnsafe?.user) {
+              console.log('Found user in SDK:', WebAppSdk.initDataUnsafe.user);
+              setTelegramUser(WebAppSdk.initDataUnsafe.user);
+            } else {
+              console.warn('No user data in SDK WebApp');
+              // Try to wait a bit and check again
+              setTimeout(() => {
+                if (WebAppSdk.initDataUnsafe?.user) {
+                  console.log('Found user after delay:', WebAppSdk.initDataUnsafe.user);
+                  setTelegramUser(WebAppSdk.initDataUnsafe.user);
+                } else {
+                  console.error('Still no user data after delay');
+                  setError("Не удалось получить данные пользователя Telegram");
+                }
+              }, 1000);
+            }
           }
         } catch (e) {
           console.error('Failed to load or init Telegram WebApp SDK:', e);
           setError("Не удалось инициализировать Telegram WebApp");
+        } finally {
           setIsLoading(false);
         }
       } else {
-        // Случай, когда код выполняется не в браузере (SSR/SSG)
         setIsLoading(false);
       }
     };
+    
     initTelegramSdk();
   }, []);
 
