@@ -9,12 +9,19 @@ import { useToast } from "@/components/ui/use-toast"
 import { useUser } from "./UserContext"
 import { createAIContext, type UserGoal, type UserTask } from "@/types/user-context"
 
+interface ChatMessage {
+  sender: string;
+  text: string;
+  timestamp: string;
+}
+
 export default function AIAssistantTab() {
   const { toast } = useToast()
   const { dbUser } = useUser()
   const [message, setMessage] = useState("")
-  const [chatHistory, setChatHistory] = useState<Array<{ sender: string; text: string; timestamp: string }>>([])
+  const [chatHistory, setChatHistory] = useState<ChatMessage[]>([])
   const [isLoading, setIsLoading] = useState(false)
+  const [isInitialized, setIsInitialized] = useState(false)
 
   // Generate personalized welcome message based on user context
   const generateWelcomeMessage = () => {
@@ -50,16 +57,60 @@ export default function AIAssistantTab() {
     return `Hi ${name}! I'm your personal AI assistant. Let's work on setting some meaningful goals for you today. What would you like to achieve?`;
   };
 
-  // Initialize chat history with welcome message
+  // Load chat history from localStorage
+  const loadChatHistory = () => {
+    if (typeof window === 'undefined') return [];
+    
+    try {
+      const userId = dbUser?.id || 'anonymous';
+      const savedHistory = localStorage.getItem(`chat_history_${userId}`);
+      if (savedHistory) {
+        return JSON.parse(savedHistory) as ChatMessage[];
+      }
+    } catch (error) {
+      console.error('Error loading chat history:', error);
+    }
+    return [];
+  };
+
+  // Save chat history to localStorage
+  const saveChatHistory = (history: ChatMessage[]) => {
+    if (typeof window === 'undefined') return;
+    
+    try {
+      const userId = dbUser?.id || 'anonymous';
+      localStorage.setItem(`chat_history_${userId}`, JSON.stringify(history));
+    } catch (error) {
+      console.error('Error saving chat history:', error);
+    }
+  };
+
+  // Initialize chat history
   useEffect(() => {
-    setChatHistory([
-      {
+    if (isInitialized) return;
+
+    const savedHistory = loadChatHistory();
+    
+    if (savedHistory.length === 0) {
+      // If no saved history, set welcome message
+      setChatHistory([{
         sender: "assistant",
         text: generateWelcomeMessage(),
         timestamp: new Date().toISOString(),
-      },
-    ]);
-  }, [dbUser]); // Re-run when dbUser changes
+      }]);
+    } else {
+      setChatHistory(savedHistory);
+    }
+    
+    setIsInitialized(true);
+  }, [dbUser, isInitialized]);
+
+  // Save chat history when it changes
+  useEffect(() => {
+    if (chatHistory.length > 0) {
+      saveChatHistory(chatHistory);
+    }
+  }, [chatHistory, dbUser?.id]);
 
   const handleSendMessage = async (e: React.FormEvent) => {
     e.preventDefault()
