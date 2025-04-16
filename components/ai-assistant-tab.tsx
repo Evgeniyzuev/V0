@@ -1,15 +1,11 @@
 "use client"
 
 import type React from "react"
-import { GoogleGenAI } from "@google/genai"
 import { useState } from "react"
 import { Bot, Send, Paperclip } from "lucide-react"
 import { Input } from "@/components/ui/input"
 import { Button } from "@/components/ui/button"
 import { useToast } from "@/components/ui/use-toast"
-
-// Initialize GoogleGenAI client
-const ai = new GoogleGenAI({ apiKey: process.env.NEXT_PUBLIC_GEMINI_API_KEY || "" })
 
 export default function AIAssistantTab() {
   const { toast } = useToast()
@@ -42,54 +38,46 @@ export default function AIAssistantTab() {
     setIsLoading(true)
 
     try {
-      // Prepare contents for the API, including history and the new message
-      const contents = [
-        ...chatHistory.map((msg) => ({
-          role: msg.sender === "user" ? "user" : "model",
-          parts: [{ text: msg.text }],
-        })),
-        {
-          role: "user",
-          parts: [{ text: userMessage.text }],
+      // Call our server API endpoint
+      const response = await fetch("/api/chat", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
         },
-      ]
-
-      // Call the Gemini API using generateContent
-      const result = await ai.models.generateContent({
-        model: "gemini-2.0-flash", // Use gemini-2.0-flash as per example
-        contents: contents,
-        // Optional: Add generationConfig if needed
-        // generationConfig: {
-        //   maxOutputTokens: 100,
-        // },
+        body: JSON.stringify({
+          messages: [...chatHistory, userMessage],
+        }),
       })
 
-      // Access the response text via candidates directly on the result object
-      const assistantResponseText = result.candidates?.[0]?.content?.parts?.[0]?.text || "Sorry, I couldn't generate a response.";
+      const data = await response.json()
+
+      if (!response.ok) {
+        throw new Error(data.error || "Failed to get response from server")
+      }
 
       // Add assistant response to chat
       setChatHistory((prev) => [
         ...prev,
         {
           sender: "assistant",
-          text: assistantResponseText,
+          text: data.response,
           timestamp: new Date().toISOString(),
         },
       ])
     } catch (error) {
-      console.error("Error calling Gemini API:", error)
+      console.error("Error calling chat API:", error)
       // Show error toast notification
       toast({
         variant: "destructive",
         title: "AI Assistant Error",
-        description: "Sorry, I encountered an error connecting to the AI. Please try again.",
+        description: error instanceof Error ? error.message : "Sorry, I encountered an error connecting to the AI. Please try again.",
       })
-      // Optionally keep the chat message as well, or remove it if the toast is sufficient
+      // Add error message to chat
       setChatHistory((prev) => [
         ...prev,
         {
           sender: "assistant",
-          text: "Sorry, I encountered an error. Please try again.",
+          text: error instanceof Error ? error.message : "Sorry, I encountered an error. Please try again.",
           timestamp: new Date().toISOString(),
         },
       ])
