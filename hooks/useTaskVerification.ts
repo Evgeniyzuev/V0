@@ -18,7 +18,6 @@ interface UseTaskVerificationProps {
   refreshUserData: () => Promise<void>;
   setStatusMessage: (message: StatusMessage) => void;
   onTaskComplete?: (taskNumber: number, reward: number, oldCore: number, newCore: number) => void;
-  goals: any[] | null;
 }
 
 /**
@@ -29,13 +28,12 @@ export function useTaskVerification({
   dbUser,
   refreshUserData,
   setStatusMessage,
-  onTaskComplete,
-  goals
+  onTaskComplete
 }: UseTaskVerificationProps) {
   const [verifying, setVerifying] = useState(false);
 
   // Wrap handleTaskVerification in useCallback
-  const handleTaskVerification = useCallback(async (taskNumber: number) => {
+  const handleTaskVerification = useCallback(async (taskNumber: number, currentGoals: any[] | null) => {
     // Check dbUser?.id inside the callback where it has the latest value
     if (verifying || !dbUser?.id) return;
     setVerifying(true);
@@ -85,7 +83,7 @@ export function useTaskVerification({
           ? `Task ${taskNumber}: Congratulations! Task completed successfully.`
           : `Task ${taskNumber}: Task not completed. You must be logged in.`;
       } else if (taskNumber === 2) {
-        success = goals ? goals.length > 1 : false;
+        success = currentGoals ? currentGoals.length > 1 : false;
         message = success
           ? `Task ${taskNumber}: Congratulations! You have more than one goal.`
           : `Task ${taskNumber}: Task not completed. You need to have more than one personal goal.`;
@@ -151,11 +149,10 @@ export function useTaskVerification({
     // Add dependencies: props used inside the callback
     verifying, 
     dbUser, 
-    goals, 
     refreshUserData, 
     setStatusMessage, 
     onTaskComplete
   ]);
 
-  return { verifying, handleTaskVerification };
+  return { verifying, handleTaskVerification: handleTaskVerification as (taskNumber: number, currentGoals: any[] | null) => Promise<void> };
 }

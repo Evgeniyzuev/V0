@@ -82,11 +82,10 @@ export default function TasksTab() {
   } | null>(null);
   const [isUpdatingLevel, setIsUpdatingLevel] = useState(false); // To prevent multiple updates
 
-  const { verifying, handleTaskVerification }: { verifying: boolean; handleTaskVerification: (taskNumber: number) => Promise<void> } = useTaskVerification({
+  const { verifying, handleTaskVerification }: { verifying: boolean; handleTaskVerification: (taskNumber: number, currentGoals: any[] | null) => Promise<void> } = useTaskVerification({
     dbUser,
     refreshUserData,
     setStatusMessage,
-    goals,
     onTaskComplete: (taskNumber: number, reward: number, oldCore: number, newCore: number) => {
       setCompletionModal({
         isOpen: true,
@@ -437,7 +436,7 @@ export default function TasksTab() {
                     variant="outline"
                     onClick={(e) => { 
                       e.stopPropagation();
-                      handleTaskVerification(task.number);
+                      handleTaskVerification(task.number, goals);
                     }}
                     disabled={verifying}
                   >
