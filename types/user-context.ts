@@ -34,27 +34,30 @@ export interface DbUser {
 export interface UserGoal {
   id: string;
   title: string;
-  description: string;
-  targetDate?: string;
+  description?: string;
   progress: number;
+  status: 'BACKLOG' | 'IN_PROGRESS' | 'DONE' | 'ARCHIVED';
+  priority?: number;
+  dueDate?: string;
 }
 
 export interface UserTask {
   id: string;
-  title: string;
-  description: string;
-  dueDate?: string;
-  status: 'todo' | 'in-progress' | 'done';
-  priority: 'low' | 'medium' | 'high';
   goalId?: string;
+  title: string;
+  description?: string;
+  status: 'TODO' | 'IN_PROGRESS' | 'DONE';
+  priority: 'low' | 'medium' | 'high';
+  dueDate?: string;
 }
 
 export interface UserProfile {
+  id: string;
   name: string;
   level: number;
-  experience: number;
   skills: string[];
   interests: string[];
+  experience: number;
 }
 
 export interface UserContext {
@@ -64,30 +67,52 @@ export interface UserContext {
   lastInteraction?: string;
 }
 
-export function createAIContext(dbUser: DbUser): AIAssistantContext {
-  return {
-    profile: {
-      name: dbUser.first_name || dbUser.telegram_username || 'User',
-      level: dbUser.level || 1,
-      experience: dbUser.core || 0,
-      skills: dbUser.skills || [],
-      interests: dbUser.interests || [],
-    },
-    goals: dbUser.goals || [],
-    tasks: dbUser.tasks || [],
-    lastInteraction: new Date().toISOString(),
-  };
-}
-
 export interface AIAssistantContext {
-  profile: {
-    name: string;
-    level: number;
-    experience: number;
-    skills: string[];
-    interests: string[];
-  };
+  profile: UserProfile;
   goals: UserGoal[];
   tasks: UserTask[];
   lastInteraction?: string;
+  preferences?: {
+    communicationStyle?: 'formal' | 'casual';
+    focusAreas?: string[];
+    reminderFrequency?: 'daily' | 'weekly' | 'never';
+  };
+}
+
+export function createAIContext(user: any): AIAssistantContext {
+  return {
+    profile: {
+      id: user.id,
+      name: user.first_name || user.telegram_username || 'there',
+      level: user.level || 1,
+      skills: user.skills || [],
+      interests: (user.preferences?.interestAreas as string[]) || [],
+      experience: user.experience || 0
+    },
+    goals: (user.goals || []).map((goal: any) => ({
+      id: goal.id,
+      title: goal.title,
+      description: goal.description,
+      progress: calculateGoalProgress(goal),
+      status: goal.status,
+      priority: goal.priority,
+      dueDate: goal.dueDate
+    })),
+    tasks: (user.tasks || []).map((task: any) => ({
+      id: task.id,
+      goalId: task.goalId,
+      title: task.title,
+      description: task.description,
+      status: task.status,
+      priority: task.priority || 'medium',
+      dueDate: task.dueDate
+    })),
+    preferences: user.preferences || {}
+  };
+}
+
+function calculateGoalProgress(goal: any): number {
+  if (!goal.tasks?.length) return 0;
+  const completedTasks = goal.tasks.filter((task: any) => task.status === 'DONE').length;
+  return Math.round((completedTasks / goal.tasks.length) * 100);
 } 

@@ -8,11 +8,19 @@ import { Button } from "@/components/ui/button"
 import { useToast } from "@/components/ui/use-toast"
 import { useUser } from "./UserContext"
 import { createAIContext, type UserGoal, type UserTask } from "@/types/user-context"
+import { generateSystemInstructions, generateDailyGreeting, generateInterestingSuggestion } from "@/lib/ai/assistant-instructions"
 
 interface ChatMessage {
   sender: string;
   text: string;
   timestamp: string;
+}
+
+interface DailyContext {
+  isFirstVisitToday: boolean;
+  lastVisitTimestamp?: string;
+  completedTodayTasks: number;
+  pendingHighPriorityTasks: number;
 }
 
 export default function AIAssistantTab() {
@@ -22,29 +30,83 @@ export default function AIAssistantTab() {
   const [chatHistory, setChatHistory] = useState<ChatMessage[]>([])
   const [isLoading, setIsLoading] = useState(false)
   const [isInitialized, setIsInitialized] = useState(false)
+  const [lastVisitDate, setLastVisitDate] = useState<string | undefined>(undefined)
 
-  // Generate personalized welcome message based on user context
+  // Check if this is first visit today
+  const checkFirstVisitToday = () => {
+    if (typeof window === 'undefined') return false;
+    
+    const today = new Date().toDateString();
+    const lastVisit = localStorage.getItem(`last_visit_${dbUser?.id || 'anonymous'}`);
+    const isFirstToday = lastVisit !== today;
+    
+    if (isFirstToday) {
+      localStorage.setItem(`last_visit_${dbUser?.id || 'anonymous'}`, today);
+      setLastVisitDate(today);
+    }
+    
+    return isFirstToday;
+  };
+
+  // Get daily context for AI
+  const getDailyContext = (): DailyContext => {
+    if (!dbUser) return {
+      isFirstVisitToday: checkFirstVisitToday(),
+      completedTodayTasks: 0,
+      pendingHighPriorityTasks: 0
+    };
+
+    const tasks = (dbUser as any).tasks as UserTask[] || [];
+    const today = new Date().toDateString();
+    
+    const completedToday = tasks.filter(task => 
+      task.status === 'DONE' && 
+      new Date(task.dueDate || '').toDateString() === today
+    ).length;
+
+    const highPriority = tasks.filter(task => 
+      task.status !== 'DONE' && 
+      task.priority === 'high'
+    ).length;
+
+    return {
+      isFirstVisitToday: checkFirstVisitToday(),
+      lastVisitTimestamp: lastVisitDate,
+      completedTodayTasks: completedToday,
+      pendingHighPriorityTasks: highPriority
+    };
+  };
+
+  // Generate welcome message with daily context
   const generateWelcomeMessage = () => {
     if (!dbUser) {
       return "Hi there! I'm your personal AI assistant. Thousands of users have already achieved their goals with my help. I can help you succeed too. Sign in to get started on your journey!";
     }
 
+    const aiContext = createAIContext(dbUser);
+    const dailyContext = getDailyContext();
+
+    // Generate daily greeting if it's first visit
+    const greeting = generateDailyGreeting(aiContext, dailyContext);
+    if (greeting) {
+      const suggestion = generateInterestingSuggestion(aiContext);
+      return `${greeting}\n\n${suggestion}`;
+    }
+
+    // Fallback to regular welcome message
     const name = dbUser.first_name || dbUser.telegram_username || 'there';
     const goals = (dbUser as any).goals as UserGoal[] || [];
     const tasks = (dbUser as any).tasks as UserTask[] || [];
-    const hasGoals = goals.length > 0;
-    const hasTasks = tasks.length > 0;
 
-    if (hasGoals) {
+    if (goals.length > 0) {
       const activeGoals = goals.filter(goal => goal.progress < 100);
       if (activeGoals.length > 0) {
-        const nextGoal = activeGoals[0];
-        return `Hi ${name}! I see you're working on "${nextGoal.title}". How can I help you make progress on this goal today?`;
+        return `Hi ${name}! I see you're working on "${activeGoals[0].title}". How can I help you make progress on this goal today?`;
       }
     }
 
-    if (hasTasks) {
-      const pendingTasks = tasks.filter(task => task.status !== 'done');
+    if (tasks.length > 0) {
+      const pendingTasks = tasks.filter(task => task.status !== 'DONE');
       if (pendingTasks.length > 0) {
         const highPriorityTasks = pendingTasks.filter(task => task.priority === 'high');
         if (highPriorityTasks.length > 0) {
@@ -133,6 +195,7 @@ export default function AIAssistantTab() {
     try {
       // Create AI context from user data
       const aiContext = dbUser ? createAIContext(dbUser) : null;
+      const systemInstructions = generateSystemInstructions();
 
       // Call our server API endpoint
       const response = await fetch("/api/chat", {
@@ -143,6 +206,7 @@ export default function AIAssistantTab() {
         body: JSON.stringify({
           messages: [...chatHistory, userMessage],
           userContext: aiContext,
+          systemInstructions,
         }),
       })
 
