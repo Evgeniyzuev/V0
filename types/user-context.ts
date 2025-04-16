@@ -1,36 +1,4 @@
-export interface TelegramUser {
-  id: number;
-  first_name?: string;
-  last_name?: string;
-  username?: string;
-  photo_url?: string;
-  language_code?: string;
-  is_premium?: boolean;
-}
-
-export interface DbUser {
-  id: string;
-  user_id?: string;
-  telegram_id: number;
-  telegram_username?: string;
-  first_name?: string;
-  last_name?: string;
-  avatar_url?: string;
-  phone_number?: string;
-  created_at?: string;
-  wallet_balance?: number;
-  aicore_balance?: number;
-  level?: number;
-  core?: number;
-  paid_referrals?: number;
-  reinvest_setup?: number;
-  referrer_id?: number;
-  goals?: UserGoal[];
-  tasks?: UserTask[];
-  skills?: string[];
-  interests?: string[];
-}
-
+// Define base types needed for AI Assistant context
 export interface UserGoal {
   id: string;
   title: string;
@@ -39,6 +7,7 @@ export interface UserGoal {
   status: 'BACKLOG' | 'IN_PROGRESS' | 'DONE' | 'ARCHIVED';
   priority?: number;
   dueDate?: string;
+  tasks?: UserTask[];
 }
 
 export interface UserTask {
@@ -60,13 +29,6 @@ export interface UserProfile {
   experience: number;
 }
 
-export interface UserContext {
-  profile: UserProfile;
-  goals: UserGoal[];
-  tasks: UserTask[];
-  lastInteraction?: string;
-}
-
 export interface AIAssistantContext {
   profile: UserProfile;
   goals: UserGoal[];
@@ -79,40 +41,39 @@ export interface AIAssistantContext {
   };
 }
 
-export function createAIContext(user: any): AIAssistantContext {
+interface UserData {
+  id: string;
+  first_name?: string;
+  telegram_username?: string;
+  level?: number;
+  skills?: string[];
+  interests?: string[];
+  goals?: UserGoal[];
+  tasks?: UserTask[];
+}
+
+export function createAIContext(user: UserData): AIAssistantContext {
   return {
     profile: {
       id: user.id,
       name: user.first_name || user.telegram_username || 'there',
       level: user.level || 1,
       skills: user.skills || [],
-      interests: (user.preferences?.interestAreas as string[]) || [],
-      experience: user.experience || 0
+      interests: user.interests || [],
+      experience: 0 // This could be calculated based on goals/tasks completion
     },
-    goals: (user.goals || []).map((goal: any) => ({
-      id: goal.id,
-      title: goal.title,
-      description: goal.description,
-      progress: calculateGoalProgress(goal),
-      status: goal.status,
-      priority: goal.priority,
-      dueDate: goal.dueDate
-    })),
-    tasks: (user.tasks || []).map((task: any) => ({
-      id: task.id,
-      goalId: task.goalId,
-      title: task.title,
-      description: task.description,
-      status: task.status,
-      priority: task.priority || 'medium',
-      dueDate: task.dueDate
-    })),
-    preferences: user.preferences || {}
+    goals: user.goals || [],
+    tasks: user.tasks || [],
+    preferences: {
+      communicationStyle: 'casual',
+      focusAreas: user.interests || [],
+      reminderFrequency: 'daily'
+    }
   };
 }
 
-function calculateGoalProgress(goal: any): number {
+function calculateGoalProgress(goal: UserGoal): number {
   if (!goal.tasks?.length) return 0;
-  const completedTasks = goal.tasks.filter((task: any) => task.status === 'DONE').length;
+  const completedTasks = goal.tasks.filter((task: UserTask) => task.status === 'DONE').length;
   return Math.round((completedTasks / goal.tasks.length) * 100);
 } 
