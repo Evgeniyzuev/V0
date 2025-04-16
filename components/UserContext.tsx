@@ -108,6 +108,7 @@ export const UserProvider = ({ children }: { children: ReactNode }) => {
   const refreshUserData = async (force = false) => {
     if (!supabase) return;
     
+    // Reset userLoadedRef if forcing refresh
     if (force) userLoadedRef.current = false;
 
     if (userLoadedRef.current) {
@@ -116,23 +117,12 @@ export const UserProvider = ({ children }: { children: ReactNode }) => {
     }
     
     try {
+      // Если у нас есть authUser (пользователь из Supabase Auth), загружаем данные по UUID
       if (authUser) {
-        console.log("Fetching user data for auth user ID:", authUser.id);
+        console.log("Refreshing user data from DB for auth user ID:", authUser.id);
         const { data, error: fetchError } = await supabase
           .from('users')
-          .select(`
-            *,
-            goals (
-              id,
-              title,
-              description,
-              status,
-              priority,
-              dueDate,
-              tasks (*)
-            ),
-            tasks (*)
-          `)
+          .select('*')
           .eq('id', authUser.id)
           .single();
 
@@ -140,37 +130,19 @@ export const UserProvider = ({ children }: { children: ReactNode }) => {
           console.error('Error fetching user data by auth ID:', fetchError);
           setError('Ошибка при получении данных пользователя');
         } else if (data) {
-          console.log("Loaded user data with goals and tasks:", {
-            userId: data.id,
-            goalsCount: data.goals?.length || 0,
-            tasksCount: data.tasks?.length || 0,
-            goals: data.goals,
-            tasks: data.tasks
-          });
+          console.log("User data loaded from DB by auth ID:", data);
           setDbUser(data);
           userLoadedRef.current = true;
           return;
         }
       }
       
-      // Fallback to telegram_id
+      // Запасной вариант: если у нас есть telegram_id, загружаем по нему
       if (telegramUser?.id) {
-        console.log("Fetching user data for Telegram ID:", telegramUser.id);
+        console.log("Refreshing user data from DB for Telegram ID:", telegramUser.id);
         const { data, error: fetchError } = await supabase
           .from('users')
-          .select(`
-            *,
-            goals (
-              id,
-              title,
-              description,
-              status,
-              priority,
-              dueDate,
-              tasks (*)
-            ),
-            tasks (*)
-          `)
+          .select('*')
           .eq('telegram_id', telegramUser.id)
           .single();
 
@@ -178,13 +150,7 @@ export const UserProvider = ({ children }: { children: ReactNode }) => {
           console.error('Error fetching user data by Telegram ID:', fetchError);
           setError('Ошибка при получении данных пользователя');
         } else if (data) {
-          console.log("Loaded user data with goals and tasks:", {
-            userId: data.id,
-            goalsCount: data.goals?.length || 0,
-            tasksCount: data.tasks?.length || 0,
-            goals: data.goals,
-            tasks: data.tasks
-          });
+          console.log("User data loaded from DB by Telegram ID:", data);
           setDbUser(data);
           userLoadedRef.current = true;
         }
