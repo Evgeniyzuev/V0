@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useCallback } from 'react';
 import { createClientSupabaseClient } from "@/lib/supabase"
 // Remove the explicit import for User if it's causing an error
 // import { User } from '@/lib/types'; 
@@ -34,7 +34,9 @@ export function useTaskVerification({
 }: UseTaskVerificationProps) {
   const [verifying, setVerifying] = useState(false);
 
-  const handleTaskVerification = async (taskNumber: number) => {
+  // Wrap handleTaskVerification in useCallback
+  const handleTaskVerification = useCallback(async (taskNumber: number) => {
+    // Check dbUser?.id inside the callback where it has the latest value
     if (verifying || !dbUser?.id) return;
     setVerifying(true);
     console.log(`Starting verification for task ${taskNumber}...`);
@@ -98,14 +100,14 @@ export function useTaskVerification({
         const { data: currentUser } = await supabase
           .from('users')
           .select('aicore_balance')
-          .eq('id', dbUser.id)
+          .eq('id', dbUser.id) // Use dbUser.id from the closure
           .single();
 
         const oldCore = currentUser?.aicore_balance || 0;
 
         // Begin a transaction to update both user_tasks and profiles
         const { error: updateError } = await supabase.rpc('complete_task', {
-          p_user_id: dbUser.id,
+          p_user_id: dbUser.id, // Use dbUser.id from the closure
           p_task_id: taskNumber,
           p_reward_amount: task.reward
         });
@@ -116,7 +118,7 @@ export function useTaskVerification({
         const { data: updatedUser } = await supabase
           .from('users')
           .select('aicore_balance')
-          .eq('id', dbUser.id)
+          .eq('id', dbUser.id) // Use dbUser.id from the closure
           .single();
 
         const newCore = updatedUser?.aicore_balance || 0;
@@ -138,12 +140,22 @@ export function useTaskVerification({
         text: `An error occurred during verification for task ${taskNumber}: ${error.message}` 
       });
     } finally {
-      setTimeout(() => {
+      const timer = setTimeout(() => {
         setStatusMessage(null);
       }, 3000);
       setVerifying(false);
+      // Optional: Clear timeout if component unmounts before 3s
+      // return () => clearTimeout(timer);
     }
-  };
+  }, [
+    // Add dependencies: props used inside the callback
+    verifying, 
+    dbUser, 
+    goals, 
+    refreshUserData, 
+    setStatusMessage, 
+    onTaskComplete
+  ]);
 
   return { verifying, handleTaskVerification };
 }
