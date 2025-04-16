@@ -194,7 +194,9 @@ export default function AIAssistantTab() {
 
     try {
       // Create AI context from user data
+      console.log('Current dbUser data:', dbUser);
       const aiContext = dbUser ? createAIContext(dbUser) : null;
+      console.log('Created AI Context:', aiContext);
       const systemInstructions = generateSystemInstructions();
 
       // Call our server API endpoint

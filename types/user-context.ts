@@ -29,6 +29,12 @@ export interface DbUser {
   tasks?: UserTask[];
   skills?: string[];
   interests?: string[];
+  preferences?: {
+    interestAreas?: string[];
+    communicationStyle?: 'formal' | 'casual';
+    focusAreas?: string[];
+    reminderFrequency?: 'daily' | 'weekly' | 'never';
+  };
 }
 
 export interface UserGoal {
@@ -39,6 +45,7 @@ export interface UserGoal {
   status: 'BACKLOG' | 'IN_PROGRESS' | 'DONE' | 'ARCHIVED';
   priority?: number;
   dueDate?: string;
+  tasks?: UserTask[];
 }
 
 export interface UserTask {
@@ -68,7 +75,14 @@ export interface UserContext {
 }
 
 export interface AIAssistantContext {
-  profile: UserProfile;
+  profile: {
+    id: string;
+    name: string;
+    level: number;
+    skills: string[];
+    interests: string[];
+    experience: number;
+  };
   goals: UserGoal[];
   tasks: UserTask[];
   lastInteraction?: string;
@@ -79,26 +93,33 @@ export interface AIAssistantContext {
   };
 }
 
-export function createAIContext(user: any): AIAssistantContext {
+export function createAIContext(dbUser: DbUser): AIAssistantContext {
+  console.log('Creating AI Context from user data:', {
+    id: dbUser.id,
+    goals: dbUser.goals?.length || 0,
+    tasks: dbUser.tasks?.length || 0
+  });
+
   return {
     profile: {
-      id: user.id,
-      name: user.first_name || user.telegram_username || 'there',
-      level: user.level || 1,
-      skills: user.skills || [],
-      interests: (user.preferences?.interestAreas as string[]) || [],
-      experience: user.experience || 0
+      id: dbUser.id,
+      name: dbUser.first_name || dbUser.telegram_username || 'there',
+      level: dbUser.level || 1,
+      skills: dbUser.skills || [],
+      interests: dbUser.preferences?.interestAreas || [],
+      experience: dbUser.core || 0
     },
-    goals: (user.goals || []).map((goal: any) => ({
+    goals: (dbUser.goals || []).map(goal => ({
       id: goal.id,
       title: goal.title,
       description: goal.description,
       progress: calculateGoalProgress(goal),
       status: goal.status,
       priority: goal.priority,
-      dueDate: goal.dueDate
+      dueDate: goal.dueDate,
+      tasks: goal.tasks
     })),
-    tasks: (user.tasks || []).map((task: any) => ({
+    tasks: (dbUser.tasks || []).map(task => ({
       id: task.id,
       goalId: task.goalId,
       title: task.title,
@@ -107,12 +128,12 @@ export function createAIContext(user: any): AIAssistantContext {
       priority: task.priority || 'medium',
       dueDate: task.dueDate
     })),
-    preferences: user.preferences || {}
+    preferences: dbUser.preferences || {}
   };
 }
 
-function calculateGoalProgress(goal: any): number {
+function calculateGoalProgress(goal: UserGoal): number {
   if (!goal.tasks?.length) return 0;
-  const completedTasks = goal.tasks.filter((task: any) => task.status === 'DONE').length;
+  const completedTasks = goal.tasks.filter(task => task.status === 'DONE').length;
   return Math.round((completedTasks / goal.tasks.length) * 100);
 } 
