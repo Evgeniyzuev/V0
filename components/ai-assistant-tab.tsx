@@ -19,7 +19,7 @@ export default function AIAssistantTab() {
   // Generate personalized welcome message based on user context
   const generateWelcomeMessage = () => {
     if (!dbUser) {
-      return "Hi there! I'm your personal AI assistant. How can I help you achieve your goals today?";
+      return "Hi there! I'm your personal AI assistant. Thousands of users have already achieved their goals with my help. I can help you succeed too. Sign in to get started on your journey!";
     }
 
     const name = dbUser.first_name || dbUser.telegram_username || 'there';
