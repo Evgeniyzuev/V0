@@ -95,7 +95,15 @@ export default function AIAssistantTab() {
       return "Hi there! I'm your personal AI assistant. Thousands of users have already achieved their goals with my help. I can help you succeed too. Sign in to get started on your journey!";
     }
 
+    console.log("Generating welcome message with user data:", {
+      userId: dbUser.id,
+      goals: dbUser.goals,
+      tasks: dbUser.tasks
+    });
+
     const aiContext = createAIContext(dbUser);
+    console.log("Created AI context:", aiContext);
+    
     const dailyContext = getDailyContext();
 
     // Generate daily greeting if it's first visit
@@ -109,6 +117,8 @@ export default function AIAssistantTab() {
     const name = dbUser.first_name || dbUser.telegram_username || 'there';
     const goals = (dbUser as any).goals as UserGoal[] || [];
     const tasks = (dbUser as any).tasks as UserTask[] || [];
+
+    console.log("Goals and tasks for welcome message:", { goals, tasks });
 
     if (goals.length > 0) {
       const activeGoals = goals.filter(goal => goal.status !== 'completed');
