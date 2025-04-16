@@ -95,35 +95,46 @@ export default function AIAssistantTab() {
     }
 
     const dailyContext = getDailyContext();
+    let baseMessage = "";
+    const userGoals = goals || []; // Use goals from context
+    const userTasks = tasks || []; // Use tasks from context
 
-    // Pass current dbUser, goals, tasks
+    // Pass current dbUser, goals, tasks to generation functions
     const greeting = generateDailyGreeting({ dbUser, goals, tasks }, dailyContext);
     if (greeting) {
       const suggestion = generateInterestingSuggestion({ dbUser, goals, tasks });
-      return `${greeting}\n\n${suggestion}`;
+      baseMessage = `${greeting}\n\n${suggestion}`;
+    } else {
+      // Fallback to regular welcome message if no daily greeting
+      const name = dbUser.first_name || dbUser.telegram_username || 'there';
+      if (userGoals.length > 0) {
+        const activeGoals = userGoals.filter(goal => goal.status !== 'completed');
+        if (activeGoals.length > 0) {
+          const goalTitle = activeGoals[0].title || activeGoals[0].goal?.title || `Goal ${activeGoals[0].id}`;
+          baseMessage = `Hi ${name}! I see you're working on "${goalTitle}". How can I help you make progress on this goal today?`;
+        }
+      }
+
+      if (!baseMessage && userTasks.length > 0) {
+        const pendingTasks = userTasks.filter(task => task.status !== 'completed');
+        if (pendingTasks.length > 0) {
+          baseMessage = `Hi ${name}! You have ${pendingTasks.length} pending ${pendingTasks.length === 1 ? 'task' : 'tasks'}. How can I help you make progress today?`;
+        }
+      }
+
+      if (!baseMessage) {
+        baseMessage = `Hi ${name}! I'm your personal AI assistant. Let's work on setting some meaningful goals for you today. What would you like to achieve?`;
+      }
     }
 
-    // Fallback to regular welcome message
-    const name = dbUser.first_name || dbUser.telegram_username || 'there';
-    const userGoals = goals || [];
-    const userTasks = tasks || [];
-
+    // Add debugging info about goals
     if (userGoals.length > 0) {
-      const activeGoals = userGoals.filter(goal => goal.status !== 'completed');
-      if (activeGoals.length > 0) {
-        const goalTitle = activeGoals[0].title || activeGoals[0].goal?.title || `Goal ${activeGoals[0].id}`;
-        return `Hi ${name}! I see you're working on "${goalTitle}". How can I help you make progress on this goal today?`;
-      }
+      baseMessage += `\n\n(Debug: I see ${userGoals.length} goal(s) loaded.)`;
+    } else {
+      baseMessage += `\n\n(Debug: I don't see any goals loaded currently.)`;
     }
 
-    if (userTasks.length > 0) {
-      const pendingTasks = userTasks.filter(task => task.status !== 'completed');
-      if (pendingTasks.length > 0) {
-        return `Hi ${name}! You have ${pendingTasks.length} pending ${pendingTasks.length === 1 ? 'task' : 'tasks'}. How can I help you make progress today?`;
-      }
-    }
-
-    return `Hi ${name}! I'm your personal AI assistant. Let's work on setting some meaningful goals for you today. What would you like to achieve?`;
+    return baseMessage;
   };
 
   // Load chat history from localStorage
