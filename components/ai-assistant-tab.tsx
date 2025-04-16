@@ -37,7 +37,7 @@ interface DailyContext {
 
 export default function AIAssistantTab() {
   const { toast } = useToast()
-  const { dbUser } = useUser()
+  const { dbUser, goals, tasks } = useUser()
   const [message, setMessage] = useState("")
   const [chatHistory, setChatHistory] = useState<ChatMessage[]>([])
   const [isLoading, setIsLoading] = useState(false)
@@ -68,17 +68,16 @@ export default function AIAssistantTab() {
       pendingHighPriorityTasks: 0
     };
 
-    const tasks = (dbUser as any).tasks as UserTask[] || [];
+    const userTasks = tasks || [];
     const today = new Date().toDateString();
     
-    const completedToday = tasks.filter(task => 
-      task.status === 'DONE' && 
-      new Date(task.dueDate || '').toDateString() === today
+    const completedToday = userTasks.filter(task => 
+      task.status === 'completed' && 
+      task.assigned_at && new Date(task.assigned_at).toDateString() === today
     ).length;
 
-    const highPriority = tasks.filter(task => 
-      task.status !== 'DONE' && 
-      task.priority === 'high'
+    const highPriority = userTasks.filter(task => 
+      task.status !== 'completed'
     ).length;
 
     return {
@@ -95,35 +94,31 @@ export default function AIAssistantTab() {
       return "Hi there! I'm your personal AI assistant. Thousands of users have already achieved their goals with my help. I can help you succeed too. Sign in to get started on your journey!";
     }
 
-    const aiContext = createAIContext(dbUser);
     const dailyContext = getDailyContext();
 
     // Generate daily greeting if it's first visit
-    const greeting = generateDailyGreeting(aiContext, dailyContext);
+    const greeting = generateDailyGreeting({ dbUser, goals, tasks }, dailyContext);
     if (greeting) {
-      const suggestion = generateInterestingSuggestion(aiContext);
+      const suggestion = generateInterestingSuggestion({ dbUser, goals, tasks });
       return `${greeting}\n\n${suggestion}`;
     }
 
     // Fallback to regular welcome message
     const name = dbUser.first_name || dbUser.telegram_username || 'there';
-    const goals = (dbUser as any).goals as UserGoal[] || [];
-    const tasks = (dbUser as any).tasks as UserTask[] || [];
+    const userGoals = goals || [];
+    const userTasks = tasks || [];
 
-    if (goals.length > 0) {
-      const activeGoals = goals.filter(goal => goal.status !== 'completed');
+    if (userGoals.length > 0) {
+      const activeGoals = userGoals.filter(goal => goal.status !== 'completed');
       if (activeGoals.length > 0) {
-        return `Hi ${name}! I see you're working on "${activeGoals[0].title || `Goal ${activeGoals[0].id}`}". How can I help you make progress on this goal today?`;
+        const goalTitle = activeGoals[0].title || activeGoals[0].goal?.title || `Goal ${activeGoals[0].id}`;
+        return `Hi ${name}! I see you're working on "${goalTitle}". How can I help you make progress on this goal today?`;
       }
     }
 
-    if (tasks.length > 0) {
-      const pendingTasks = tasks.filter(task => task.status !== 'DONE');
+    if (userTasks.length > 0) {
+      const pendingTasks = userTasks.filter(task => task.status !== 'completed');
       if (pendingTasks.length > 0) {
-        const highPriorityTasks = pendingTasks.filter(task => task.priority === 'high');
-        if (highPriorityTasks.length > 0) {
-          return `Hi ${name}! You have ${highPriorityTasks.length} high-priority ${highPriorityTasks.length === 1 ? 'task' : 'tasks'} to focus on. Would you like to discuss how to tackle ${highPriorityTasks.length === 1 ? 'it' : 'them'}?`;
-        }
         return `Hi ${name}! You have ${pendingTasks.length} pending ${pendingTasks.length === 1 ? 'task' : 'tasks'}. How can I help you make progress today?`;
       }
     }
@@ -197,15 +192,11 @@ export default function AIAssistantTab() {
       timestamp: new Date().toISOString(),
     }
 
-    // Add user message to chat
     setChatHistory((prev) => [...prev, userMessage])
-
-    // Clear input
     setMessage("")
     setIsLoading(true)
 
     try {
-      const aiContext = dbUser ? createAIContext(dbUser) : null;
       const systemInstructions = generateSystemInstructions();
 
       // Call our server API endpoint
@@ -216,7 +207,7 @@ export default function AIAssistantTab() {
         },
         body: JSON.stringify({
           messages: [...chatHistory, userMessage],
-          userContext: aiContext,
+          userContext: { dbUser, goals, tasks },
           systemInstructions,
         }),
       })

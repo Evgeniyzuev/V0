@@ -7,6 +7,12 @@ interface DailyContext {
   pendingHighPriorityTasks: number;
 }
 
+interface UserContext {
+  dbUser: any;
+  goals: any[] | null;
+  tasks: any[] | null;
+}
+
 export function generateSystemInstructions(): string {
   return `You are an AI assistant in the WeAi platform - a decentralized social platform and public life-support system. 
 Your mission is to help users maximize their potential, achieve their goals, and contribute to solving global challenges.
@@ -47,32 +53,29 @@ RESPONSE STRUCTURE:
 Remember: Your goal is to help users achieve real progress while building a sustainable, supportive system for all.`;
 }
 
-export function generateDailyGreeting(context: AIAssistantContext, dailyContext: DailyContext): string {
-  const { profile, goals, tasks } = context;
+export function generateDailyGreeting(context: UserContext, dailyContext: DailyContext): string {
+  const { dbUser, goals, tasks } = context;
   const { isFirstVisitToday, lastVisitTimestamp, completedTodayTasks, pendingHighPriorityTasks } = dailyContext;
 
-  if (!isFirstVisitToday) return "";
-
-  let greeting = `Good ${getTimeOfDay()}${profile.name ? `, ${profile.name}` : ""}! `;
-
-  // If they have completed tasks today
-  if (completedTodayTasks > 0) {
-    greeting += `Great job completing ${completedTodayTasks} ${completedTodayTasks === 1 ? "task" : "tasks"} today! `;
+  const name = dbUser?.first_name || dbUser?.telegram_username || 'there';
+  
+  if (isFirstVisitToday) {
+    if (lastVisitTimestamp) {
+      return `Welcome back, ${name}! Since your last visit, you've completed ${completedTodayTasks} tasks. You have ${pendingHighPriorityTasks} tasks that need attention.`;
+    }
+    return `Good to see you, ${name}! You have ${pendingHighPriorityTasks} tasks waiting for you today.`;
   }
 
-  // If they have high priority tasks
-  if (pendingHighPriorityTasks > 0) {
-    greeting += `You have ${pendingHighPriorityTasks} high-priority ${pendingHighPriorityTasks === 1 ? "task" : "tasks"} to focus on. `;
-  }
+  if (!goals || !tasks) return `Hi ${name}! Let's get started with your journey.`;
 
-  // If they have active goals
-  const activeGoals = goals.filter(g => g.progress_percentage < 100);
+  const activeGoals = goals.filter(goal => goal.status !== 'completed');
+  const pendingTasks = tasks.filter(task => task.status !== 'completed');
+
   if (activeGoals.length > 0) {
-    const nextGoal = activeGoals[0];
-    greeting += `Let's make progress on your goal: "${nextGoal.title}". `;
+    return `Hi ${name}! Let's continue working on your goals. You have ${activeGoals.length} active goals and ${pendingTasks.length} pending tasks.`;
   }
 
-  return greeting;
+  return ``;
 }
 
 export function generateContextBasedPrompt(context: AIAssistantContext, scenario: string): string {
@@ -106,32 +109,22 @@ function getTimeOfDay(): string {
   return "evening";
 }
 
-export function generateInterestingSuggestion(context: AIAssistantContext): string {
-  const { profile, goals, tasks } = context;
+export function generateInterestingSuggestion(context: UserContext): string {
+  const { dbUser, goals, tasks } = context;
+  const name = dbUser?.first_name || dbUser?.telegram_username || 'there';
 
-  // If user has no goals yet
-  if (goals.length === 0) {
-    return `Based on your interests in ${profile.interests.join(", ")}, would you like to explore some popular goals that others with similar interests are working on?`;
+  if (!goals || !tasks) return "Let's start by setting some goals for you. What would you like to achieve?";
+
+  const activeGoals = goals.filter(goal => goal.status !== 'completed');
+  const pendingTasks = tasks.filter(task => task.status !== 'completed');
+
+  if (activeGoals.length === 0) {
+    return "Would you like to set some goals? I can help you create a plan to achieve them.";
   }
 
-  // If user has goals but no recent progress
-  const activeGoals = goals.filter(g => g.progress_percentage < 100);
-  if (activeGoals.length > 0) {
-    const stuckGoals = activeGoals.filter(g => {
-      const relatedTasks = tasks.filter(t => t.goalId === g.id);
-      return relatedTasks.every(t => t.status !== 'IN_PROGRESS');
-    });
-
-    if (stuckGoals.length > 0) {
-      return `I notice you haven't made progress on "${stuckGoals[0].title}" recently. Would you like to explore some new approaches or break this down into smaller steps?`;
-    }
+  if (pendingTasks.length === 0) {
+    return "Great job on keeping up with your tasks! Would you like to take on new challenges?";
   }
 
-  // If user is making good progress
-  const completedTasks = tasks.filter(t => t.status === 'DONE');
-  if (completedTasks.length > 0) {
-    return `You're making great progress! Based on your completed tasks, would you like to explore some more advanced goals in ${profile.interests[0]}?`;
-  }
-
-  return `I see you're interested in ${profile.interests.join(", ")}. Would you like to discover some exciting opportunities in these areas?`;
+  return "I'm here to help you make progress on your goals. What would you like to focus on today?";
 } 
