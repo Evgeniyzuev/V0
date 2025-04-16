@@ -7,8 +7,9 @@ import { createClient } from '@supabase/supabase-js';
 import { createClientSupabaseClient } from "@/lib/supabase"
 // Удаляем неиспользуемый импорт
 // import type { User as TelegramUser, WebApp as TelegramWebApp } from '@grammyjs/web-app'
-import { addUserGoal } from '@/lib/api/goals' // Import the function to add goals
+import { addUserGoal, fetchUserGoals } from '@/lib/api/goals' // Import fetchUserGoals
 import { User, Session } from "@supabase/supabase-js";
+import type { UserGoal, UserTask } from '@/types/supabase'; // Import types
 
 // Интерфейс для WebApp для TypeScript
 interface TelegramWebApp {
@@ -79,6 +80,10 @@ interface UserContextType {
   isLoading: boolean;
   error: string | null;
   refreshUserData: () => Promise<void>;
+  goals: any[] | null;  // Change type to any[] temporarily until we can properly type the response
+  tasks: UserTask[] | null;
+  refreshGoals: () => Promise<void>;
+  refreshTasks: () => Promise<void>;
 }
 
 const UserContext = createContext<UserContextType | undefined>(undefined);
@@ -93,6 +98,8 @@ export const UserProvider = ({ children }: { children: ReactNode }) => {
   const [error, setError] = useState<string | null>(null);
   const [webApp, setWebApp] = useState<TelegramWebApp | null>(null);
   const [session, setSession] = useState<Session | null>(null);
+  const [goals, setGoals] = useState<any[] | null>(null);  // Change type to any[]
+  const [tasks, setTasks] = useState<UserTask[] | null>(null);
   
   // Флаги для предотвращения повторных запросов
   const apiCalledRef = useRef(false);
@@ -412,6 +419,47 @@ export const UserProvider = ({ children }: { children: ReactNode }) => {
     }
   }, [telegramUser, authUser]);
 
+  // Add function to refresh goals
+  const refreshGoals = async () => {
+    if (!authUser?.id) return;
+    try {
+      const userGoals = await fetchUserGoals(authUser.id);
+      setGoals(userGoals);
+    } catch (err) {
+      console.error('Error refreshing goals:', err);
+      setError('Ошибка при обновлении целей');
+    }
+  };
+
+  // Add function to refresh tasks
+  const refreshTasks = async () => {
+    if (!authUser?.id || !supabase) return;
+    try {
+      const { data, error: fetchError } = await supabase
+        .from('user_tasks')
+        .select(`
+          *,
+          task:tasks(*)
+        `)
+        .eq('user_id', authUser.id)
+        .order('assigned_at', { ascending: false });
+
+      if (fetchError) throw fetchError;
+      setTasks(data);
+    } catch (err) {
+      console.error('Error refreshing tasks:', err);
+      setError('Ошибка при обновлении заданий');
+    }
+  };
+
+  // Load goals and tasks when user is authenticated
+  useEffect(() => {
+    if (authUser?.id) {
+      refreshGoals();
+      refreshTasks();
+    }
+  }, [authUser?.id]);
+
   // Формируем значение контекста
   const contextValue = useMemo(() => ({
     telegramUser,
@@ -420,7 +468,11 @@ export const UserProvider = ({ children }: { children: ReactNode }) => {
     isLoading,
     error,
     refreshUserData: manualRefresh,
-  }), [telegramUser, authUser, dbUser, isLoading, error, manualRefresh]);
+    goals,
+    tasks,
+    refreshGoals,
+    refreshTasks,
+  }), [telegramUser, authUser, dbUser, isLoading, error, manualRefresh, goals, tasks]);
 
   return (
     <UserContext.Provider value={contextValue}>

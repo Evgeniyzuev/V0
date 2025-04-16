@@ -67,36 +67,17 @@ export const fetchUserGoals = async (userId: string | undefined) => {
       *,
       goal:goals(*)
     `)
-    .eq('user_id', userId) // <-- Добавляем фильтр по user_id
+    .eq('user_id', userId)
     .order('created_at', { ascending: false })
 
   if (error) {
     console.error('Error fetching user goals:', error)
     toast.error('Error fetching user goals: ' + error.message)
-    throw error // Или можно вернуть пустой массив: return []
+    throw error
   }
 
   console.log('Fetched user goals:', userGoals)
-
-  // Transform the data to match the Goal type
-  const transformedGoals = userGoals.map(userGoal => ({
-    id: userGoal.goal?.id || userGoal.id,
-    user_goal_id: userGoal.id,
-    status: userGoal.status,
-    progress_percentage: userGoal.progress_percentage,
-    notes: userGoal.notes,
-    created_at: userGoal.goal?.created_at || userGoal.created_at,
-    title: userGoal.title || userGoal.goal?.title,
-    description: userGoal.description || userGoal.goal?.description,
-    image_url: userGoal.image_url || userGoal.goal?.image_url,
-    estimated_cost: userGoal.estimated_cost || userGoal.goal?.estimated_cost,
-    steps: userGoal.steps || userGoal.goal?.steps,
-    difficulty_level: userGoal.difficulty_level || userGoal.goal?.difficulty_level,
-    goal: userGoal.goal // Include the original goal data
-  }))
-
-  console.log('Transformed goals:', transformedGoals)
-  return transformedGoals
+  return userGoals as UserGoal[]; // Return the raw data as UserGoal array
 }
 
 /**
@@ -130,7 +111,12 @@ export const addUserGoal = async (userId: string, goalId: number): Promise<UserG
     current_step_index: null,
     progress_details: null,
     notes: null,
-    difficulty_level: goalTemplate?.difficulty_level ?? null // Use fetched difficulty or null
+    difficulty_level: goalTemplate?.difficulty_level ?? null,
+    title: null,
+    description: null,
+    image_url: null,
+    estimated_cost: null,
+    steps: null
   }
 
   const { data, error: upsertError } = await supabase
