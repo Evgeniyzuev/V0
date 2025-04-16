@@ -16,6 +16,18 @@ interface ChatMessage {
   timestamp: string;
 }
 
+interface DbGoal {
+  id: number;
+  user_id: string;
+  goal_id: number | null;
+  title?: string;
+  notes?: string;
+  status: 'not_started' | 'in_progress' | 'completed' | 'archived';
+  progress_percentage: number;
+  created_at: string;
+  updated_at: string;
+}
+
 interface DailyContext {
   isFirstVisitToday: boolean;
   lastVisitTimestamp?: string;
@@ -99,9 +111,9 @@ export default function AIAssistantTab() {
     const tasks = (dbUser as any).tasks as UserTask[] || [];
 
     if (goals.length > 0) {
-      const activeGoals = goals.filter(goal => goal.progress < 100);
+      const activeGoals = goals.filter(goal => goal.status !== 'completed');
       if (activeGoals.length > 0) {
-        return `Hi ${name}! I see you're working on "${activeGoals[0].title}". How can I help you make progress on this goal today?`;
+        return `Hi ${name}! I see you're working on "${activeGoals[0].title || `Goal ${activeGoals[0].id}`}". How can I help you make progress on this goal today?`;
       }
     }
 
@@ -193,7 +205,6 @@ export default function AIAssistantTab() {
     setIsLoading(true)
 
     try {
-      // Create AI context from user data
       const aiContext = dbUser ? createAIContext(dbUser) : null;
       const systemInstructions = generateSystemInstructions();
 

@@ -1,18 +1,19 @@
 // Define base types needed for AI Assistant context
 export interface UserGoal {
-  id: string;
-  title: string;
-  description?: string;
-  progress: number;
-  status: 'BACKLOG' | 'IN_PROGRESS' | 'DONE' | 'ARCHIVED';
-  priority?: number;
-  dueDate?: string;
-  tasks?: UserTask[];
+  id: number;
+  user_id: string;
+  goal_id: number | null;
+  title?: string;
+  notes?: string;
+  status: 'not_started' | 'in_progress' | 'completed' | 'archived';
+  progress_percentage: number;
+  created_at: string;
+  updated_at: string;
 }
 
 export interface UserTask {
   id: string;
-  goalId?: string;
+  goalId?: number;
   title: string;
   description?: string;
   status: 'TODO' | 'IN_PROGRESS' | 'DONE';
@@ -60,9 +61,12 @@ export function createAIContext(user: UserData): AIAssistantContext {
       level: user.level || 1,
       skills: user.skills || [],
       interests: user.interests || [],
-      experience: 0 // This could be calculated based on goals/tasks completion
+      experience: 0
     },
-    goals: user.goals || [],
+    goals: user.goals?.map(goal => ({
+      ...goal,
+      progress: goal.progress_percentage
+    })) || [],
     tasks: user.tasks || [],
     preferences: {
       communicationStyle: 'casual',
@@ -73,7 +77,5 @@ export function createAIContext(user: UserData): AIAssistantContext {
 }
 
 function calculateGoalProgress(goal: UserGoal): number {
-  if (!goal.tasks?.length) return 0;
-  const completedTasks = goal.tasks.filter((task: UserTask) => task.status === 'DONE').length;
-  return Math.round((completedTasks / goal.tasks.length) * 100);
+  return goal.progress_percentage;
 } 

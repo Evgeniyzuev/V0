@@ -66,7 +66,7 @@ export function generateDailyGreeting(context: AIAssistantContext, dailyContext:
   }
 
   // If they have active goals
-  const activeGoals = goals.filter(g => g.progress < 100);
+  const activeGoals = goals.filter(g => g.progress_percentage < 100);
   if (activeGoals.length > 0) {
     const nextGoal = activeGoals[0];
     greeting += `Let's make progress on your goal: "${nextGoal.title}". `;
@@ -115,7 +115,7 @@ export function generateInterestingSuggestion(context: AIAssistantContext): stri
   }
 
   // If user has goals but no recent progress
-  const activeGoals = goals.filter(g => g.progress < 100);
+  const activeGoals = goals.filter(g => g.progress_percentage < 100);
   if (activeGoals.length > 0) {
     const stuckGoals = activeGoals.filter(g => {
       const relatedTasks = tasks.filter(t => t.goalId === g.id);
