@@ -207,76 +207,80 @@ export const UserProvider = ({ children }: { children: ReactNode }) => {
     }
   }, [authUser]);
 
-  // Function to initialize Telegram user
-  const initializeTelegramUser = async (tgUser: TelegramUser) => {
-    if (!supabase || apiCalledRef.current) return;
-    
-    try {
-      apiCalledRef.current = true;
-      
-      // Call our API to create/get user
-      const response = await fetch('/api/auth/telegram-user', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          telegramUser: tgUser,
-          initData: webApp?.initData
-        }),
-      });
-      
-      const data = await response.json();
-      
-      if (!response.ok) {
-        throw new Error(data.error || 'Failed to initialize user');
-      }
-      
-      // If we got back a password, we need to sign in
-      if (data.password) {
-        const email = `telegram_${tgUser.id}@example.com`;
-        const { error: signInError } = await supabase.auth.signInWithPassword({
-          email,
-          password: data.password,
-        });
-        
-        if (signInError) {
-          console.error('Error signing in:', signInError);
-          throw new Error('Failed to sign in with credentials');
+  // Загрузка Telegram SDK
+  useEffect(() => {
+    const initTelegramSdk = async () => {
+      if (typeof window !== 'undefined') {
+        try {
+          console.log('Starting Telegram WebApp SDK initialization...');
+          
+          // Check if we're in development environment
+          const isDevelopment = process.env.NODE_ENV === 'development';
+          
+          // Check if Telegram WebApp is already available globally
+          if (window.Telegram?.WebApp) {
+            console.log('Found global Telegram WebApp object');
+            const globalWebApp = window.Telegram.WebApp;
+            globalWebApp.ready();
+            globalWebApp.expand();
+            setWebApp(globalWebApp as unknown as TelegramWebApp);
+            
+            if (globalWebApp.initDataUnsafe?.user) {
+              console.log('Found user in global WebApp:', globalWebApp.initDataUnsafe.user);
+              setTelegramUser(globalWebApp.initDataUnsafe.user);
+            } else {
+              console.log(isDevelopment ? 'No user data in global WebApp (expected in development)' : 'No user data in global WebApp');
+            }
+            return;
+          }
+
+          // Fallback to @twa-dev/sdk if global object not available
+          console.log('Falling back to @twa-dev/sdk...');
+          const WebAppSdk = (await import('@twa-dev/sdk')).default;
+          if (WebAppSdk) {
+            console.log('Successfully imported @twa-dev/sdk');
+            WebAppSdk.ready();
+            WebAppSdk.expand();
+            setWebApp(WebAppSdk as unknown as TelegramWebApp);
+            
+            if (WebAppSdk.initDataUnsafe?.user) {
+              console.log('Found user in SDK:', WebAppSdk.initDataUnsafe.user);
+              setTelegramUser(WebAppSdk.initDataUnsafe.user);
+            } else {
+              console.log(isDevelopment ? 'No user data in SDK (expected in development)' : 'No user data in SDK WebApp');
+              // Try to wait a bit and check again
+              setTimeout(() => {
+                if (WebAppSdk.initDataUnsafe?.user) {
+                  console.log('Found user after delay:', WebAppSdk.initDataUnsafe.user);
+                  setTelegramUser(WebAppSdk.initDataUnsafe.user);
+                } else {
+                  if (!isDevelopment) {
+                    console.error('Still no user data after delay');
+                    setError("Не удалось получить данные пользователя Telegram");
+                  } else {
+                    console.log('No user data available (expected in development environment)');
+                  }
+                }
+              }, 1000);
+            }
+          }
+        } catch (e) {
+          const isDevelopment = process.env.NODE_ENV === 'development';
+          if (!isDevelopment) {
+            console.error('Failed to load or init Telegram WebApp SDK:', e);
+            setError("Не удалось инициализировать Telegram WebApp");
+          } else {
+            console.log('Telegram WebApp SDK not available (expected in development)');
+          }
+        } finally {
+          setIsLoading(false);
         }
+      } else {
+        setIsLoading(false);
       }
-      
-      // Set the Telegram user data
-      setTelegramUser(tgUser);
-      
-      return data;
-    } catch (err) {
-      console.error('Error initializing Telegram user:', err);
-      setError(err instanceof Error ? err.message : 'Failed to initialize user');
-      apiCalledRef.current = false;
-    }
-  };
-
-  // Effect to initialize Telegram user when WebApp is ready
-  useEffect(() => {
-    if (webApp?.initDataUnsafe?.user && !telegramUser && !apiCalledRef.current) {
-      const tgUser = webApp.initDataUnsafe.user;
-      initializeTelegramUser(tgUser);
-    }
-  }, [webApp]);
-
-  // Effect to initialize WebApp
-  useEffect(() => {
-    if (typeof window !== 'undefined' && window.Telegram?.WebApp) {
-      const globalWebApp = window.Telegram.WebApp;
-      globalWebApp.ready();
-      globalWebApp.expand();
-      setWebApp(globalWebApp as unknown as TelegramWebApp);
-      
-      if (globalWebApp.initDataUnsafe?.user) {
-        setTelegramUser(globalWebApp.initDataUnsafe.user);
-      }
-    }
+    };
+    
+    initTelegramSdk();
   }, []);
 
   // Инициализация пользователя через Telegram и отправка на API
