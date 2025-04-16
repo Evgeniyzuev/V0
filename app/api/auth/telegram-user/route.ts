@@ -1,10 +1,15 @@
 import { NextResponse } from 'next/server';
 import { createServerSupabaseClient } from "@/lib/supabase"
-import { TelegramUser } from "@/types/user-context";
 import crypto from 'crypto';
 
 // Типы данных
-// interface TelegramUser removed as it's now imported
+interface TelegramUser {
+  id: number;
+  first_name?: string;
+  last_name?: string;
+  username?: string;
+  photo_url?: string;
+}
 
 // Определяем интерфейс для нового пользователя
 interface NewUser {

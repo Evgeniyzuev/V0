@@ -8,36 +8,6 @@ export interface TelegramUser {
   is_premium?: boolean;
 }
 
-export interface DbGoal {
-  id: string;
-  title: string;
-  description?: string;
-}
-
-export interface DbTask {
-  id: string;
-  title: string;
-  description?: string;
-}
-
-export interface UserGoalRecord {
-  id: string;
-  goal_id: string;
-  status: string;
-  progress_percentage?: number;
-  notes?: string;
-  goals?: DbGoal;
-}
-
-export interface UserTaskRecord {
-  id: string;
-  task_id: string;
-  status: string;
-  priority?: string;
-  due_date?: string;
-  tasks?: DbTask;
-}
-
 export interface DbUser {
   id: string;
   user_id?: string;
@@ -55,8 +25,6 @@ export interface DbUser {
   paid_referrals?: number;
   reinvest_setup?: number;
   referrer_id?: number;
-  user_goals?: UserGoalRecord[];
-  user_tasks?: UserTaskRecord[];
   goals?: UserGoal[];
   tasks?: UserTask[];
   skills?: string[];

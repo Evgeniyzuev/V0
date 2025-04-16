@@ -9,7 +9,6 @@ import { createClientSupabaseClient } from "@/lib/supabase"
 // import type { User as TelegramUser, WebApp as TelegramWebApp } from '@grammyjs/web-app'
 import { addUserGoal } from '@/lib/api/goals' // Import the function to add goals
 import { User, Session } from "@supabase/supabase-js";
-import { DbUser, UserGoalRecord, UserTaskRecord, TelegramUser } from "@/types/user-context";
 
 // Интерфейс для WebApp для TypeScript
 interface TelegramWebApp {
@@ -38,6 +37,39 @@ declare global {
       WebApp?: TelegramWebApp;
     }
   }
+}
+
+// Типы данных
+interface TelegramUser {
+  id: number;
+  first_name?: string;
+  last_name?: string;
+  username?: string;
+  photo_url?: string;
+  language_code?: string; // Добавим поле
+  is_premium?: boolean; // Добавим поле
+}
+
+interface DbUser {
+  id: string;
+  user_id?: string;
+  telegram_id: number;
+  telegram_username?: string;
+  first_name?: string;
+  last_name?: string;
+  avatar_url?: string;
+  phone_number?: string;
+  created_at?: string;
+  // Добавляем поля, которые используются в компоненте профиля
+  wallet_balance?: number;
+  aicore_balance?: number;
+  level?: number;
+  core?: number;
+  paid_referrals?: number;
+  reinvest_setup?: number;
+  // Добавляем поле для реферальной системы
+  referrer_id?: number;
+  // Добавьте другие поля из вашей таблицы users
 }
 
 interface UserContextType {
@@ -86,79 +118,39 @@ export const UserProvider = ({ children }: { children: ReactNode }) => {
     try {
       if (authUser) {
         console.log("Fetching user data for auth user ID:", authUser.id);
-        
-        // First, get user data with their goals
-        const { data: userData, error: userError } = await supabase
+        const { data, error: fetchError } = await supabase
           .from('users')
           .select(`
             *,
-            user_goals (
+            goals (
               id,
-              goal_id,
-              status,
-              progress_percentage,
-              notes,
-              goals (
-                id,
-                title,
-                description
-              )
-            ),
-            user_tasks (
-              id,
-              task_id,
+              title,
+              description,
               status,
               priority,
-              due_date,
-              tasks (
-                id,
-                title,
-                description
-              )
-            )
+              dueDate,
+              tasks (*)
+            ),
+            tasks (*)
           `)
           .eq('id', authUser.id)
           .single();
 
-        if (userError) {
-          console.error('Error fetching user data:', userError);
+        if (fetchError && fetchError.code !== 'PGRST116') {
+          console.error('Error fetching user data by auth ID:', fetchError);
+          setError('Ошибка при получении данных пользователя');
+        } else if (data) {
+          console.log("Loaded user data with goals and tasks:", {
+            userId: data.id,
+            goalsCount: data.goals?.length || 0,
+            tasksCount: data.tasks?.length || 0,
+            goals: data.goals,
+            tasks: data.tasks
+          });
+          setDbUser(data);
+          userLoadedRef.current = true;
           return;
         }
-
-        // Transform the data to match expected format
-        const goals = userData.user_goals?.map((ug: UserGoalRecord) => ({
-          id: ug.goal_id,
-          status: ug.status,
-          progress_percentage: ug.progress_percentage,
-          notes: ug.notes,
-          title: ug.goals?.title || '',
-          description: ug.goals?.description || '',
-        })) || [];
-
-        const tasks = userData.user_tasks?.map((ut: UserTaskRecord) => ({
-          id: ut.task_id,
-          status: ut.status,
-          priority: ut.priority,
-          due_date: ut.due_date,
-          title: ut.tasks?.title || '',
-          description: ut.tasks?.description || '',
-        })) || [];
-
-        console.log("Transformed user data:", {
-          userId: userData.id,
-          goalsCount: goals.length,
-          tasksCount: tasks.length,
-          goals: goals,
-          tasks: tasks
-        });
-
-        setDbUser({
-          ...userData,
-          goals: goals,
-          tasks: tasks
-        });
-        userLoadedRef.current = true;
-        return;
       }
       
       // Fallback to telegram_id
@@ -168,30 +160,16 @@ export const UserProvider = ({ children }: { children: ReactNode }) => {
           .from('users')
           .select(`
             *,
-            user_goals (
+            goals (
               id,
-              goal_id,
-              status,
-              progress_percentage,
-              notes,
-              goals (
-                id,
-                title,
-                description
-              )
-            ),
-            user_tasks (
-              id,
-              task_id,
+              title,
+              description,
               status,
               priority,
-              due_date,
-              tasks (
-                id,
-                title,
-                description
-              )
-            )
+              dueDate,
+              tasks (*)
+            ),
+            tasks (*)
           `)
           .eq('telegram_id', telegramUser.id)
           .single();
@@ -202,44 +180,12 @@ export const UserProvider = ({ children }: { children: ReactNode }) => {
         } else if (data) {
           console.log("Loaded user data with goals and tasks:", {
             userId: data.id,
-            goalsCount: data.user_goals?.length || 0,
-            tasksCount: data.user_tasks?.length || 0,
-            goals: data.user_goals?.map((ug: UserGoalRecord) => ({
-              id: ug.goal_id,
-              status: ug.status,
-              progress_percentage: ug.progress_percentage,
-              notes: ug.notes,
-              title: ug.goals?.title || '',
-              description: ug.goals?.description || ''
-            })) || [],
-            tasks: data.user_tasks?.map((ut: UserTaskRecord) => ({
-              id: ut.task_id,
-              status: ut.status,
-              priority: ut.priority,
-              due_date: ut.due_date,
-              title: ut.tasks?.title || '',
-              description: ut.tasks?.description || ''
-            })) || []
+            goalsCount: data.goals?.length || 0,
+            tasksCount: data.tasks?.length || 0,
+            goals: data.goals,
+            tasks: data.tasks
           });
-          setDbUser({
-            ...data,
-            goals: data.user_goals?.map((ug: UserGoalRecord) => ({
-              id: ug.goal_id,
-              status: ug.status,
-              progress_percentage: ug.progress_percentage,
-              notes: ug.notes,
-              title: ug.goals?.title || '',
-              description: ug.goals?.description || ''
-            })) || [],
-            tasks: data.user_tasks?.map((ut: UserTaskRecord) => ({
-              id: ut.task_id,
-              status: ut.status,
-              priority: ut.priority,
-              due_date: ut.due_date,
-              title: ut.tasks?.title || '',
-              description: ut.tasks?.description || ''
-            })) || []
-          });
+          setDbUser(data);
           userLoadedRef.current = true;
         }
       }
