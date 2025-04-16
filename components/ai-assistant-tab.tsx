@@ -9,6 +9,10 @@ import { useToast } from "@/components/ui/use-toast"
 import { useUser } from "./UserContext"
 import { createAIContext, type UserGoal, type UserTask, type DbUser } from "@/types/user-context"
 import { generateSystemInstructions, generateDailyGreeting, generateInterestingSuggestion } from "@/lib/ai/assistant-instructions"
+import type { Database } from "@/types/supabase"
+
+type DbGoal = Database['public']['Tables']['user_goals']['Row']
+type DbTask = Database['public']['Tables']['tasks']['Row']
 
 interface ChatMessage {
   sender: string;
@@ -21,6 +25,11 @@ interface DailyContext {
   lastVisitTimestamp?: string;
   completedTodayTasks: number;
   pendingHighPriorityTasks: number;
+}
+
+interface ExtendedDbUser extends Omit<DbUser, 'goals' | 'tasks'> {
+  goals?: DbGoal[];
+  tasks?: DbTask[];
 }
 
 export default function AIAssistantTab() {
@@ -156,8 +165,8 @@ export default function AIAssistantTab() {
     if (savedHistory.length === 0) {
       console.log("Generating welcome message with user data:", {
         hasUser: !!dbUser,
-        goals: (dbUser as DbUser)?.goals?.length || 0,
-        tasks: (dbUser as DbUser)?.tasks?.length || 0
+        goals: (dbUser as ExtendedDbUser)?.goals?.length || 0,
+        tasks: (dbUser as ExtendedDbUser)?.tasks?.length || 0
       });
       
       setChatHistory([{
@@ -199,18 +208,57 @@ export default function AIAssistantTab() {
         hasUser: !!dbUser,
         userData: dbUser && {
           id: dbUser.id,
-          goals: (dbUser as DbUser).goals?.map((g: UserGoal) => ({ id: g.id, title: g.title })),
-          tasks: (dbUser as DbUser).tasks?.map((t: UserTask) => ({ id: t.id, title: t.title }))
+          goals: (dbUser as ExtendedDbUser)?.goals?.length || 0,
+          tasks: (dbUser as ExtendedDbUser)?.tasks?.length || 0
         }
       });
 
-      const aiContext = dbUser ? createAIContext(dbUser as DbUser) : null;
+      // Transform goals and tasks to match expected format
+      const transformedGoals = ((dbUser as ExtendedDbUser)?.goals || []).map(goal => ({
+        id: String(goal.id),
+        title: goal.title || 'Untitled Goal',
+        description: goal.description || '',
+        progress: goal.progress_percentage || 0,
+        status: mapGoalStatus(goal.status),
+        priority: 1,
+        dueDate: goal.target_date || undefined,
+        tasks: [] // Tasks will be added from the tasks array
+      } as UserGoal));
+
+      const transformedTasks = ((dbUser as ExtendedDbUser)?.tasks || []).map(task => ({
+        id: String(task.id),
+        goalId: task.goal_id ? String(task.goal_id) : undefined,
+        title: task.title,
+        description: task.description || '',
+        status: mapTaskStatus('TODO'), // Default to TODO since Task type doesn't have status
+        priority: 'medium',
+        dueDate: task.due_date || undefined
+      } as UserTask));
+
+      // Add tasks to their respective goals
+      transformedTasks.forEach(task => {
+        if (task.goalId) {
+          const goal = transformedGoals.find(g => g.id === task.goalId);
+          if (goal && Array.isArray(goal.tasks)) {
+            goal.tasks.push(task);
+          }
+        }
+      });
+
+      // Create aiContext with transformed data
+      const aiContext = dbUser ? createAIContext({
+        ...dbUser,
+        goals: transformedGoals,
+        tasks: transformedTasks
+      } as unknown as DbUser) : null;
       
       console.log("Created AI context:", {
         hasContext: !!aiContext,
         profile: aiContext?.profile,
         goalsCount: aiContext?.goals.length || 0,
-        tasksCount: aiContext?.tasks.length || 0
+        tasksCount: aiContext?.tasks.length || 0,
+        goals: aiContext?.goals,
+        tasks: aiContext?.tasks
       });
 
       const systemInstructions = generateSystemInstructions();
@@ -316,5 +364,26 @@ export default function AIAssistantTab() {
       </div>
     </div>
   )
+}
+
+// Add helper functions at the end of the file
+function mapGoalStatus(status: string): 'BACKLOG' | 'IN_PROGRESS' | 'DONE' | 'ARCHIVED' {
+  const statusMap: Record<string, 'BACKLOG' | 'IN_PROGRESS' | 'DONE' | 'ARCHIVED'> = {
+    'not_started': 'BACKLOG',
+    'in_progress': 'IN_PROGRESS',
+    'completed': 'DONE',
+    'paused': 'BACKLOG',
+    'abandoned': 'ARCHIVED'
+  };
+  return statusMap[status] || 'BACKLOG';
+}
+
+function mapTaskStatus(status: string): 'TODO' | 'IN_PROGRESS' | 'DONE' {
+  const statusMap: Record<string, 'TODO' | 'IN_PROGRESS' | 'DONE'> = {
+    'todo': 'TODO',
+    'in_progress': 'IN_PROGRESS',
+    'done': 'DONE'
+  };
+  return statusMap[status.toLowerCase()] || 'TODO';
 }
 

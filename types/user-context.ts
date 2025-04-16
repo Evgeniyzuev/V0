@@ -1,3 +1,8 @@
+import type { Database } from "./supabase"
+
+type DbGoal = Database['public']['Tables']['user_goals']['Row']
+type DbTask = Database['public']['Tables']['tasks']['Row']
+
 export interface TelegramUser {
   id: number;
   first_name?: string;
@@ -25,8 +30,8 @@ export interface DbUser {
   paid_referrals?: number;
   reinvest_setup?: number;
   referrer_id?: number;
-  goals?: UserGoal[];
-  tasks?: UserTask[];
+  goals?: DbGoal[];
+  tasks?: DbTask[];
   skills?: string[];
   interests?: string[];
   preferences?: {
