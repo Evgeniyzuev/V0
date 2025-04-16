@@ -2,7 +2,7 @@
 
 import type React from "react"
 import { useState, useEffect } from "react"
-import { Bot, Send, Paperclip } from "lucide-react"
+import { Bot, Send, Paperclip, Trash2 } from "lucide-react"
 import { Input } from "@/components/ui/input"
 import { Button } from "@/components/ui/button"
 import { useToast } from "@/components/ui/use-toast"
@@ -263,6 +263,17 @@ export default function AIAssistantTab() {
     return date.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })
   }
 
+  const clearHistory = () => {
+    if (typeof window === 'undefined') return;
+    const userId = dbUser?.id || 'anonymous';
+    localStorage.removeItem(`chat_history_${userId}`);
+    setChatHistory([{
+      sender: "assistant",
+      text: generateWelcomeMessage(),
+      timestamp: new Date().toISOString(),
+    }]);
+  };
+
   return (
     <div className="flex flex-col h-full bg-gray-50">
       {/* Chat messages */}
@@ -289,6 +300,16 @@ export default function AIAssistantTab() {
       {/* Message input */}
       <div className="p-3 bg-white border-t pb-14">
         <form onSubmit={handleSendMessage} className="flex items-center gap-2">
+          <Button 
+            type="button" 
+            variant="ghost" 
+            size="icon" 
+            className="text-gray-400 hover:text-red-500" 
+            onClick={clearHistory}
+            title="Clear chat history"
+          >
+            <Trash2 className="h-5 w-5" />
+          </Button>
           <Input
             placeholder="Ask about your goals..."
             value={message}

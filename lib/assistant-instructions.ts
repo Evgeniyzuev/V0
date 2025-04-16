@@ -1,6 +1,6 @@
-import { UserContext } from "@/types/user-context";
+import { AIAssistantContext } from "@/types/user-context";
 
-export function generateAssistantInstructions(userContext: UserContext): string {
+export function generateAssistantInstructions(userContext: AIAssistantContext): string {
   const { profile, goals, tasks } = userContext;
   
   return `You are a personal AI assistant focused on helping ${profile.name} achieve their goals and complete tasks effectively. 
@@ -12,11 +12,11 @@ KEY INFORMATION ABOUT THE USER:
 - Interests: ${profile.interests.join(', ')}
 
 CURRENT GOALS:
-${goals.map(goal => `- ${goal.title} (Progress: ${goal.progress}%): ${goal.description}`).join('\n')}
+${goals.map(goal => `- ${goal.title || `Goal ${goal.id}`} (Progress: ${goal.progress_percentage}%): ${goal.notes || 'No description'}`).join('\n')}
 
 ACTIVE TASKS:
-${tasks.filter(task => task.status !== 'done').map(task => 
-  `- [${task.priority.toUpperCase()}] ${task.title}: ${task.description} (Due: ${task.dueDate || 'No date set'})`
+${tasks.filter(task => task.status !== 'DONE').map(task => 
+  `- [${task.priority.toUpperCase()}] ${task.title}: ${task.description || 'No description'} (Due: ${task.dueDate || 'No date set'})`
 ).join('\n')}
 
 INTERACTION GUIDELINES:
