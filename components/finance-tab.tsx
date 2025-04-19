@@ -251,11 +251,14 @@ export default function FinanceTab() {
     const days = findDaysToTarget(targetCoreAmount);
     setTimeToTarget(days);
     setHasCalculated(true);
+    // Store state in localStorage for task verification
+    localStorage.setItem('timeToTargetCalculated', 'true');
   }
 
   // Reset calculation state when target amount changes
   useEffect(() => {
     setHasCalculated(false);
+    localStorage.removeItem('timeToTargetCalculated');
   }, [targetCoreAmount]);
 
   // Показываем индикатор загрузки
@@ -538,30 +541,13 @@ export default function FinanceTab() {
                         min={0}
                       />
                     </div>
-                    <div className="flex gap-1">
-                      <Button 
-                        className="h-6 text-xs"
-                        onClick={calculateTimeToTarget}
-                        disabled={!targetCoreAmount || targetCoreAmount <= coreBalance}
-                      >
-                        Calculate
-                      </Button>
-                      {hasCalculated && (
-                        <Button
-                          size="sm"
-                          variant="outline"
-                          className="h-6 text-xs"
-                          onClick={() => handleTaskVerification(3, goals, { hasCalculated })}
-                          disabled={verifying}
-                        >
-                          {verifying ? (
-                            <span className="animate-spin rounded-full h-3 w-3 border-b-2 border-gray-800"></span>
-                          ) : (
-                            <Check className="h-3 w-3" />
-                          )}
-                        </Button>
-                      )}
-                    </div>
+                    <Button 
+                      className="h-6 text-xs"
+                      onClick={calculateTimeToTarget}
+                      disabled={!targetCoreAmount || targetCoreAmount <= coreBalance}
+                    >
+                      Calculate
+                    </Button>
                   </div>
 
                   {timeToTarget !== null && (

@@ -100,7 +100,7 @@ export default function TasksTab() {
   } | null>(null);
   const [isUpdatingLevel, setIsUpdatingLevel] = useState(false); // To prevent multiple updates
 
-  const { verifying, handleTaskVerification }: { verifying: boolean; handleTaskVerification: (taskNumber: number, currentGoals: any[] | null) => Promise<void> } = useTaskVerification({
+  const { verifying, handleTaskVerification, verifyTask }: { verifying: boolean; handleTaskVerification: (taskNumber: number, currentGoals: any[] | null) => Promise<void>; verifyTask: (taskNumber: number) => void } = useTaskVerification({
     dbUser,
     refreshUserData,
     setStatusMessage,

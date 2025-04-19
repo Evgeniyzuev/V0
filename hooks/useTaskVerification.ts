@@ -32,6 +32,10 @@ export function useTaskVerification({
 }: UseTaskVerificationProps) {
   const [verifying, setVerifying] = useState(false);
 
+  const verifyTask = async (taskNumber: number) => {
+    await handleTaskVerification(taskNumber, null);
+  };
+
   // Wrap handleTaskVerification in useCallback
   const handleTaskVerification = useCallback(async (taskNumber: number, currentGoals: any[] | null, taskState?: any) => {
     // Check dbUser?.id inside the callback where it has the latest value
@@ -91,10 +95,11 @@ export function useTaskVerification({
           : `Задание ${taskNumber} не выполнено. У вас ${goalsCount} целей, нужно больше одной цели.`;
       } else if (taskNumber === 3) {
         // Check if user has used the Time to Target calculator
-        success = taskState?.hasCalculated === true;
+        const hasCalculated = localStorage.getItem('timeToTargetCalculated') === 'true';
+        success = hasCalculated;
         message = success
           ? `Задание ${taskNumber} выполнено! Вы успешно использовали калькулятор времени до цели.`
-          : `Задание ${taskNumber} не выполнено. Введите целевую сумму и нажмите Calculate.`;
+          : `Задание ${taskNumber} не выполнено. Перейдите на вкладку Core, введите целевую сумму и нажмите Calculate.`;
       }
       // Add more task verifications here
       // --- End task verification logic ---
@@ -162,5 +167,9 @@ export function useTaskVerification({
     onTaskComplete
   ]);
 
-  return { verifying, handleTaskVerification: handleTaskVerification as (taskNumber: number, currentGoals: any[] | null, taskState?: any) => Promise<void> };
+  return {
+    verifying,
+    handleTaskVerification,
+    verifyTask,
+  };
 }
