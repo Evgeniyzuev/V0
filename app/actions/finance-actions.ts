@@ -3,15 +3,21 @@
 import { createServerSupabaseClient } from "@/lib/supabase"
 import { revalidatePath } from "next/cache"
 
-// Функция для получения балансов пользователя
-// Если указан userId, используем его, иначе получаем первого пользователя
+// Безопасные серверные функции для работы с балансом и уровнями
 export async function getUserBalances(userId?: string) {
   try {
     const supabase = createServerSupabaseClient()
 
-    let query = supabase.from("users").select("id, wallet_balance, aicore_balance")
+    let query = supabase
+      .from("users")
+      .select(`
+        id, 
+        wallet_balance, 
+        aicore_balance,
+        level,
+        level_progress:aicore_balance
+      `)
 
-    // Если указан userId, используем его для фильтрации
     if (userId) {
       query = query.eq("id", userId)
     }
@@ -20,58 +26,68 @@ export async function getUserBalances(userId?: string) {
 
     if (error) {
       console.error("Error fetching user balances:", error)
-      return { success: false, error: error.message, walletBalance: 0, coreBalance: 0, userId: null }
+      return { 
+        success: false, 
+        error: error.message, 
+        walletBalance: 0, 
+        coreBalance: 0, 
+        level: 0,
+        userId: null 
+      }
     }
+
+    // Получаем требования для следующего уровня
+    const { data: nextLevelData } = await supabase
+      .from('level_thresholds')
+      .select('core_requirement')
+      .gt('level', data.level)
+      .order('level', { ascending: true })
+      .limit(1)
+      .single()
+
+    const nextLevelRequirement = nextLevelData?.core_requirement || data.aicore_balance * 2
 
     return {
       success: true,
       walletBalance: Number.parseFloat(data.wallet_balance),
       coreBalance: Number.parseFloat(data.aicore_balance),
+      level: data.level,
+      nextLevelRequirement,
       userId: data.id,
     }
   } catch (error) {
     console.error("Error in getUserBalances:", error)
-    return { success: false, error: "Failed to fetch user balances", walletBalance: 0, coreBalance: 0, userId: null }
+    return { 
+      success: false, 
+      error: "Failed to fetch user balances", 
+      walletBalance: 0, 
+      coreBalance: 0, 
+      level: 0,
+      userId: null 
+    }
   }
 }
 
 export async function topUpWalletBalance(amount: number, userId: string) {
   try {
-    if (!userId) {
-      return { success: false, error: "User ID is required" }
-    }
-
-    if (amount <= 0) {
-      return { success: false, error: "Amount must be greater than zero" }
-    }
+    if (!userId) return { success: false, error: "User ID is required" }
+    if (amount <= 0) return { success: false, error: "Amount must be greater than zero" }
 
     const supabase = createServerSupabaseClient()
 
-    // Get current balance
-    const { data: userData, error: fetchError } = await supabase
-      .from("users")
-      .select("wallet_balance")
-      .eq("id", userId)
-      .single()
+    // Используем транзакцию для безопасного обновления
+    const { data, error } = await supabase.rpc('top_up_wallet', {
+      p_user_id: userId,
+      p_amount: amount
+    })
 
-    if (fetchError) {
-      console.error("Error fetching user balance:", fetchError)
-      return { success: false, error: fetchError.message }
-    }
-
-    const currentBalance = Number.parseFloat(userData.wallet_balance)
-    const newBalance = currentBalance + amount
-
-    // Update balance
-    const { error: updateError } = await supabase.from("users").update({ wallet_balance: newBalance }).eq("id", userId)
-
-    if (updateError) {
-      console.error("Error updating wallet balance:", updateError)
-      return { success: false, error: updateError.message }
+    if (error) {
+      console.error("Error in top up:", error)
+      return { success: false, error: error.message }
     }
 
     revalidatePath("/")
-    return { success: true, newBalance }
+    return { success: true, newBalance: data.new_balance }
   } catch (error) {
     console.error("Error in topUpWalletBalance:", error)
     return { success: false, error: "Failed to top up wallet balance" }
@@ -80,62 +96,71 @@ export async function topUpWalletBalance(amount: number, userId: string) {
 
 export async function transferToCore(amount: number, userId: string) {
   try {
-    if (!userId) {
-      return { success: false, error: "User ID is required" }
-    }
-
-    if (amount <= 0) {
-      return { success: false, error: "Amount must be greater than zero" }
-    }
+    if (!userId) return { success: false, error: "User ID is required" }
+    if (amount <= 0) return { success: false, error: "Amount must be greater than zero" }
 
     const supabase = createServerSupabaseClient()
 
-    // Get current balances
-    const { data: userData, error: fetchError } = await supabase
-      .from("users")
-      .select("wallet_balance, aicore_balance")
-      .eq("id", userId)
-      .single()
+    // Используем хранимую процедуру для безопасного перевода и обновления уровня
+    const { data, error } = await supabase.rpc('transfer_to_core', {
+      p_user_id: userId,
+      p_amount: amount
+    })
 
-    if (fetchError) {
-      console.error("Error fetching user balances:", fetchError)
-      return { success: false, error: fetchError.message }
-    }
-
-    const walletBalance = Number.parseFloat(userData.wallet_balance)
-    const coreBalance = Number.parseFloat(userData.aicore_balance)
-
-    // Check if wallet has enough funds
-    if (walletBalance < amount) {
-      return { success: false, error: "Insufficient funds in wallet" }
-    }
-
-    const newWalletBalance = walletBalance - amount
-    const newCoreBalance = coreBalance + amount
-
-    // Update balances
-    const { error: updateError } = await supabase
-      .from("users")
-      .update({
-        wallet_balance: newWalletBalance,
-        aicore_balance: newCoreBalance,
-      })
-      .eq("id", userId)
-
-    if (updateError) {
-      console.error("Error updating balances:", updateError)
-      return { success: false, error: updateError.message }
+    if (error) {
+      console.error("Error in transfer:", error)
+      return { success: false, error: error.message }
     }
 
     revalidatePath("/")
     return {
       success: true,
-      newWalletBalance,
-      newCoreBalance,
+      newWalletBalance: data.new_wallet_balance,
+      newCoreBalance: data.new_core_balance,
+      newLevel: data.new_level
     }
   } catch (error) {
     console.error("Error in transferToCore:", error)
     return { success: false, error: "Failed to transfer to core" }
+  }
+}
+
+// Безопасная функция для получения информации об уровне
+export async function getLevelInfo(userId: string) {
+  try {
+    const supabase = createServerSupabaseClient()
+    
+    const { data: userData, error: userError } = await supabase
+      .from('users')
+      .select('level, aicore_balance')
+      .eq('id', userId)
+      .single()
+    
+    if (userError) throw new Error(userError.message)
+
+    const { data: nextLevelData } = await supabase
+      .from('level_thresholds')
+      .select('level, core_requirement')
+      .gt('level', userData.level)
+      .order('level', { ascending: true })
+      .limit(1)
+      .single()
+
+    return {
+      success: true,
+      currentLevel: userData.level,
+      currentBalance: userData.aicore_balance,
+      nextLevel: nextLevelData?.level,
+      nextLevelRequirement: nextLevelData?.core_requirement
+    }
+  } catch (error) {
+    console.error("Error in getLevelInfo:", error)
+    return { 
+      success: false, 
+      error: "Failed to get level info",
+      currentLevel: 0,
+      currentBalance: 0
+    }
   }
 }
 
