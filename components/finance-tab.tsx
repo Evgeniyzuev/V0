@@ -310,7 +310,7 @@ export default function FinanceTab() {
       </div>
 
       {/* Balance card */}
-      <div className="p-3">
+      <div className="p-2">
         <div className="bg-gradient-to-r from-purple-500 to-blue-500 rounded-xl p-4 text-white">
           <div className="flex justify-between items-start">
             <div>
@@ -351,8 +351,8 @@ export default function FinanceTab() {
       </div>
 
       {/* Daily Income Card */}
-      <div className="px-3 mt-1">
-        <Card className="w-full">
+      <div className="px-2 mt-1">
+        <Card className="w-full bg-gradient-to-r from-purple-500/10 to-blue-500/10">
           <CardContent className="p-3">
             <div className="flex flex-col space-y-3">
               <div className="flex items-center justify-between">
@@ -373,7 +373,7 @@ export default function FinanceTab() {
                       type="number"
                       value={reinvestPercentage}
                       onChange={(e) => handleReinvestChange(e.target.value)}
-                      className="w-14 h-6 text-sm text-right"
+                      className="w-20 h-6 text-sm text-right"
                       min={50}
                       max={100}
                     />
@@ -415,8 +415,8 @@ export default function FinanceTab() {
       {/* Core Growth Calculator Card */}
       {activeTab === "core" && (
         <>
-          <div className="px-3 mt-1">
-            <Card className="w-full">
+          <div className="px-2 mt-1">
+            <Card className="w-full bg-gradient-to-r from-purple-500/10 to-blue-500/10">
               <CardContent className="p-3">
                 <div className="flex flex-col space-y-3">
                   <div className="flex items-center justify-between">
@@ -461,14 +461,14 @@ export default function FinanceTab() {
                   </div>
 
                   <div className="flex items-center justify-between">
-                    <div className="flex items-center space-x-1">
-                      <span className="text-sm text-gray-500">Future Core Balance</span>
+                    <div className="flex flex-col">
+                      <span className="text-xs text-gray-500">Future Core Balance</span>
                       <span className="text-sm font-medium text-blue-600">
                         ${calculateFutureCore().toFixed(2)}
                       </span>
                     </div>
-                    <div className="flex items-center space-x-1">
-                      <span className="text-sm text-gray-500">Daily Income</span>
+                    <div className="flex flex-col">
+                      <span className="text-xs text-gray-500">Daily Income</span>
                       <span className="text-sm font-medium text-green-600">
                         ${(calculateFutureCore() * DAILY_RATE).toFixed(2)}
                       </span>
@@ -480,8 +480,8 @@ export default function FinanceTab() {
           </div>
 
           {/* Time to Target Calculator Card */}
-          <div className="px-3 mt-1">
-            <Card className="w-full">
+          <div className="px-2 mt-1">
+            <Card className="w-full bg-gradient-to-r from-purple-500/10 to-blue-500/10">
               <CardContent className="p-3">
                 <div className="flex flex-col space-y-3">
                   <div className="flex items-center justify-between">
@@ -533,8 +533,8 @@ export default function FinanceTab() {
 
       {/* Action buttons - Wallet Tab */}
       {activeTab === "wallet" && (
-        <div className="px-3 grid grid-cols-2 gap-2 mt-1 mb-2">
-          <Card>
+        <div className="px-2 grid grid-cols-2 gap-2 mt-1 mb-2">
+          <Card className="bg-gradient-to-r from-purple-500/10 to-blue-500/10">
             <CardContent className="p-3 flex flex-col items-center justify-center">
               <button
                 className="w-full h-full flex flex-col items-center py-1.5"
@@ -549,7 +549,7 @@ export default function FinanceTab() {
             </CardContent>
           </Card>
 
-          <Card>
+          <Card className="bg-gradient-to-r from-purple-500/10 to-blue-500/10">
             <CardContent className="p-3 flex flex-col items-center justify-center">
               <button
                 className="w-full h-full flex flex-col items-center py-1.5"
@@ -568,8 +568,8 @@ export default function FinanceTab() {
 
       {/* Additional Wallet Actions */}
       {activeTab === "wallet" && (
-        <div className="px-3 grid grid-cols-2 gap-2">
-          <Card>
+        <div className="px-2 grid grid-cols-2 gap-2">
+          <Card className="bg-gradient-to-r from-purple-500/10 to-blue-500/10">
             <CardContent className="p-3 flex flex-col items-center justify-center">
               <div className="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center mb-1.5">
                 <Send className="h-4 w-4 text-blue-500" />
@@ -578,7 +578,7 @@ export default function FinanceTab() {
             </CardContent>
           </Card>
 
-          <Card>
+          <Card className="bg-gradient-to-r from-purple-500/10 to-blue-500/10">
             <CardContent className="p-3 flex flex-col items-center justify-center">
               <div className="w-8 h-8 bg-green-100 rounded-full flex items-center justify-center mb-1.5">
                 <ArrowDown className="h-4 w-4 text-green-500" />
@@ -591,8 +591,8 @@ export default function FinanceTab() {
 
       {/* Core Tab Content */}
       {activeTab === "core" && (
-        <div className="px-3 mt-1">
-          <Card>
+        <div className="px-2 mt-1">
+          <Card className="bg-gradient-to-r from-purple-500/10 to-blue-500/10">
             <CardContent className="p-3 flex flex-col items-center justify-center">
               <button
                 className="w-full h-full flex flex-col items-center py-1.5"
