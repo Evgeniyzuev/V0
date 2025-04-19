@@ -443,7 +443,7 @@ export default function UserProfileTab() {
                     <div className="flex justify-between items-center border-b pb-2">
                       <div className="flex items-center">
                         <Users className="h-4 w-4 text-purple-600 mr-2" />
-                        <span className="text-sm">Referred Users</span>
+                        <span className="text-sm">Referrals</span>
                       </div>
                       <span className="font-medium">{dbUser.paid_referrals}</span>
                     </div>

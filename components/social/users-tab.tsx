@@ -4,78 +4,83 @@ import { useState, useEffect } from "react"
 import { createClientSupabaseClient } from "@/lib/supabase"
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card"
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar"
+import { useUser } from "@/components/UserContext"
+import { User } from "@supabase/supabase-js"
 
-// Define the type for a user, adjust based on your actual users table schema
-type User = {
+type Referral = {
   id: string
   created_at: string
-  username?: string // Optional username field
-  email?: string    // Optional email field
-  avatar_url?: string // Optional avatar URL field
-  // Add other fields from your 'users' table as needed
+  username?: string
+  level: number
+  avatar_url?: string
 }
 
-// Initialize Supabase client - Replace with your actual credentials or central client instance
-// It's better practice to use the environment variables as done in posts-tab.tsx
-const supabase = createClientSupabaseClient();
+const supabase = createClientSupabaseClient()
 
 export default function UsersTab() {
-  const [users, setUsers] = useState<User[]>([])
+  const { telegramUser } = useUser()
+  const [referrals, setReferrals] = useState<Referral[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
 
   useEffect(() => {
-    async function fetchUsers() {
+    async function fetchReferrals() {
+      if (!telegramUser?.id) return
+
       setLoading(true)
       setError(null)
-      // Fetch data from the 'users' table. Adjust 'users' if your table name is different.
-      const { data, error } = await supabase.from("users").select("*")
+
+      const { data, error } = await supabase
+        .from("users")
+        .select("id, created_at, username, level, avatar_url")
+        .eq("referrer_id", telegramUser.id)
+        .order("created_at", { ascending: false })
 
       if (error) {
-        console.error("Error fetching users:", error)
-        setError("Failed to fetch users. Please check the console for details.")
+        console.error("Error fetching referrals:", error)
+        setError("Failed to fetch referrals. Please check the console for details.")
       } else {
-        setUsers(data || [])
+        setReferrals(data || [])
       }
       setLoading(false)
     }
 
-    fetchUsers()
-  }, [])
+    fetchReferrals()
+  }, [telegramUser?.id])
 
   if (loading) {
-    return <div className="p-4 text-center">Loading users...</div>
+    return <div className="p-4 text-center">Loading referrals...</div>
   }
 
   if (error) {
     return <div className="p-4 text-center text-red-600">{error}</div>
   }
 
-  if (users.length === 0) {
-    return <div className="p-4 text-center">No users found.</div>
+  if (referrals.length === 0) {
+    return <div className="p-4 text-center">No referrals found.</div>
   }
 
   return (
     <div className="p-4 space-y-4">
-      <h2 className="text-2xl font-bold">All Users</h2>
+      <h2 className="text-2xl font-bold">Your Referrals</h2>
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-        {users.map((user) => (
-          <Card key={user.id}>
+        {referrals.map((referral) => (
+          <Card key={referral.id}>
             <CardHeader className="flex flex-row items-center gap-4">
               <Avatar className="h-10 w-10">
-                <AvatarImage src={user.avatar_url || undefined} alt={user.username || "User"} />
-                <AvatarFallback>{user.username ? user.username.charAt(0).toUpperCase() : 'U'}</AvatarFallback>
+                <AvatarImage src={referral.avatar_url || undefined} alt={referral.username || "User"} />
+                <AvatarFallback>{referral.username ? referral.username.charAt(0).toUpperCase() : 'U'}</AvatarFallback>
               </Avatar>
               <div className="grid gap-1">
-                 <CardTitle>{user.username || `User ${user.id.substring(0, 6)}`}</CardTitle>
-                 {/* Optionally display email or other info */}
-                 {/* <p className="text-sm text-muted-foreground">{user.email}</p> */}
+                <CardTitle>{referral.username || `User ${referral.id.substring(0, 6)}`}</CardTitle>
+                <p className="text-sm text-muted-foreground">Level {referral.level}</p>
               </div>
             </CardHeader>
-            {/* <CardContent>
-              <p>Joined: {new Date(user.created_at).toLocaleDateString()}</p>
-              Add more user details here if needed
-            </CardContent> */}
+            <CardContent>
+              <p className="text-sm text-muted-foreground">
+                Joined: {new Date(referral.created_at).toLocaleDateString()}
+              </p>
+            </CardContent>
           </Card>
         ))}
       </div>
