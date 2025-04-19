@@ -443,7 +443,7 @@ export default function UserProfileTab() {
                     <div className="flex justify-between items-center border-b pb-2">
                       <div className="flex items-center">
                         <Users className="h-4 w-4 text-purple-600 mr-2" />
-                        <span className="text-sm">Paid Referrals</span>
+                        <span className="text-sm">Referred Users</span>
                       </div>
                       <span className="font-medium">{dbUser.paid_referrals}</span>
                     </div>
@@ -468,51 +468,6 @@ export default function UserProfileTab() {
                       <span className="font-medium text-sm">{new Date(dbUser.created_at).toLocaleDateString()}</span>
                     </div>
                   )}
-
-                  {/* Telegram Data Section */}
-                  <div className="mt-6 pt-4 border-t">
-                    <h3 className="font-medium mb-3 flex items-center">
-                      <MessageCircle className="h-4 w-4 text-purple-600 mr-2" />
-                      Telegram Data
-                    </h3>
-                    <p className="text-sm text-gray-600">
-                      ID: {dbUser.telegram_id || telegramUser?.id || 'No data'}
-                    </p>
-                    <p className="text-sm text-gray-600">
-                      Username: @{dbUser.telegram_username || telegramUser?.username || 'No data'}
-                    </p>
-                  </div>
-
-                  {/* Добавим отображение информации о рефералах в профиле пользователя */}
-                  <div className="mt-6 pt-4 border-t">
-                    <h3 className="font-medium mb-3 flex items-center">
-                      <Users className="h-4 w-4 text-purple-600 mr-2" />
-                      Referral Information
-                    </h3>
-                    
-                    {/* Отображаем информацию о реферере, если он есть */}
-                    {dbUser?.referrer_id && (
-                      <div className="flex justify-between items-center border-b pb-2 mb-2">
-                        <div className="flex items-center">
-                          <span className="text-sm">Referred by</span>
-                        </div>
-                        <span className="text-sm font-medium">ID: {dbUser.referrer_id}</span>
-                      </div>
-                    )}
-                    
-                    {/* Отображаем количество приглашенных пользователей */}
-                    <div className="flex justify-between items-center border-b pb-2 mb-2">
-                      <div className="flex items-center">
-                        <span className="text-sm">Referred Users</span>
-                      </div>
-                      <span className="text-sm font-medium">{dbUser?.paid_referrals || 0}</span>
-                    </div>
-                    
-                    {/* Информация о реферальной программе */}
-                    <p className="text-xs text-gray-500 mt-2">
-                      Invite friends through your referral link and earn bonuses
-                    </p>
-                  </div>
 
                   {/* Добавляем секцию с реферальной ссылкой */}
                   <ReferralLinkSection 
