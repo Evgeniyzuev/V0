@@ -448,18 +448,27 @@ export const UserProvider = ({ children }: { children: ReactNode }) => {
 
   // Add function to refresh tasks
   const refreshTasks = async () => {
-    if (!authUser?.id || !supabase) return;
+    if (!dbUser?.id || !supabase) {
+      console.log('refreshTasks: Missing dbUser.id or supabase client');
+      return;
+    }
     try {
+      console.log('Fetching tasks for user ID:', dbUser.id);
       const { data, error: fetchError } = await supabase
         .from('user_tasks')
         .select(`
           *,
           task:tasks(*)
         `)
-        .eq('user_id', authUser.id)
+        .eq('user_id', dbUser.id)
         .order('assigned_at', { ascending: false });
 
-      if (fetchError) throw fetchError;
+      if (fetchError) {
+        console.error('Error fetching tasks:', fetchError);
+        throw fetchError;
+      }
+
+      console.log('Fetched tasks:', data);
       setTasks(data);
     } catch (err) {
       console.error('Error refreshing tasks:', err);

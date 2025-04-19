@@ -66,6 +66,16 @@ export interface UserTask {
   progress_details: Record<string, any> | null; // JSON data
   notes: string | null;
 
+  // Transformed task fields
+  title?: string;
+  icon_url?: string | null;
+  due_date?: string | null;
+  reward?: number;
+  description?: string | null;
+  number?: number;
+  completion_condition?: string | null;
+  steps_total?: number;
+
   // Optional: Include related data when fetching with joins
   task?: Task;
   // user?: User;
