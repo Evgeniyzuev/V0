@@ -11,6 +11,7 @@ import { useToast } from "@/hooks/use-toast"
 import { useUser } from "@/components/UserContext"
 import { Avatar, AvatarFallback } from "@/components/ui/avatar"
 import { Progress } from "@/components/ui/progress"
+import { Input } from "@/components/ui/input"
 
 // Define level thresholds
 const levelThresholds = [
@@ -86,7 +87,27 @@ export default function FinanceTab() {
   const [userId, setUserId] = useState<string | null>(null)
   const [isTopUpModalOpen, setIsTopUpModalOpen] = useState(false)
   const [isTransferModalOpen, setIsTransferModalOpen] = useState(false)
+  const [reinvestPercentage, setReinvestPercentage] = useState(70)
   const { toast } = useToast()
+
+  // Daily APY rate (0.0633% per day = 26% APY)
+  const DAILY_RATE = 0.000633
+
+  // Calculate daily income
+  const calculateDailyIncome = (balance: number) => {
+    const dailyIncome = balance * DAILY_RATE
+    const toCore = dailyIncome * (reinvestPercentage / 100)
+    const toWallet = dailyIncome * ((100 - reinvestPercentage) / 100)
+    return { total: dailyIncome, toCore, toWallet }
+  }
+
+  // Handle reinvest percentage change
+  const handleReinvestChange = (value: string) => {
+    const num = parseInt(value)
+    if (!isNaN(num) && num >= 50 && num <= 100) {
+      setReinvestPercentage(num)
+    }
+  }
 
   // Обновляем балансы при изменении dbUser
   useEffect(() => {
@@ -222,6 +243,58 @@ export default function FinanceTab() {
             </div>
           )}
         </div>
+      </div>
+
+      {/* Daily Income Card */}
+      <div className="px-4 mt-2">
+        <Card className="w-full">
+          <CardContent className="p-4">
+            <div className="flex flex-col space-y-4">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center space-x-2">
+                  <div className="w-2 h-2 bg-green-400 rounded-full"></div>
+                  <span className="text-sm font-medium">Daily Income</span>
+                </div>
+                <span className="text-sm font-medium text-green-600">
+                  ${calculateDailyIncome(coreBalance).total.toFixed(8)}
+                </span>
+              </div>
+
+              <div className="space-y-2">
+                <div className="flex items-center justify-between">
+                  <span className="text-sm text-gray-500">Reinvest</span>
+                  <div className="flex items-center space-x-2">
+                    <Input
+                      type="number"
+                      value={reinvestPercentage}
+                      onChange={(e) => handleReinvestChange(e.target.value)}
+                      className="w-16 h-7 text-sm"
+                      min={50}
+                      max={100}
+                    />
+                    <span className="text-sm text-gray-500">%</span>
+                  </div>
+                </div>
+                <Progress value={reinvestPercentage} className="h-2" />
+              </div>
+
+              <div className="grid grid-cols-2 gap-4 pt-2">
+                <div className="flex flex-col">
+                  <span className="text-xs text-gray-500">To Core</span>
+                  <span className="text-sm font-medium text-green-600">
+                    ${calculateDailyIncome(coreBalance).toCore.toFixed(8)}
+                  </span>
+                </div>
+                <div className="flex flex-col">
+                  <span className="text-xs text-gray-500">To Wallet</span>
+                  <span className="text-sm font-medium text-green-600">
+                    ${calculateDailyIncome(coreBalance).toWallet.toFixed(8)}
+                  </span>
+                </div>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
       </div>
 
       {/* Action buttons - Wallet Tab */}
