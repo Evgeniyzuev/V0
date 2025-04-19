@@ -81,7 +81,7 @@ const calculateLevelProgress = (balance: number) => {
 
 export default function FinanceTab() {
   const { telegramUser, dbUser, isLoading: userLoading, refreshUser } = useUser()
-  const [activeTab, setActiveTab] = useState("wallet")
+  const [activeTab, setActiveTab] = useState<"wallet" | "core">("wallet")
   const [walletBalance, setWalletBalance] = useState(0)
   const [coreBalance, setCoreBalance] = useState(0)
   const [userId, setUserId] = useState<string | null>(null)
@@ -93,6 +93,8 @@ export default function FinanceTab() {
   const [startCore, setStartCore] = useState(0)
   const [dailyRewards, setDailyRewards] = useState(10)
   const [yearsToCalculate, setYearsToCalculate] = useState(30)
+  const [targetCoreAmount, setTargetCoreAmount] = useState<number>(0)
+  const [timeToTarget, setTimeToTarget] = useState<number | null>(null)
 
   // Daily APY rate (0.0633% per day = 26% APY)
   const DAILY_RATE = 0.000633
@@ -163,6 +165,62 @@ export default function FinanceTab() {
     const futureDailyRewards = dailyRewards * ((Math.pow(1 + dailyRate, daysToCalculate) - 1) / dailyRate)
     
     return futureInitialCore + futureDailyRewards
+  }
+
+  // Calculate core value at specific day
+  const calculateCoreAtDay = (days: number) => {
+    // Initial core with compound interest
+    const futureInitialCore = startCore * Math.pow(1 + DAILY_RATE, days)
+    
+    // Daily rewards with compound interest
+    const futureDailyRewards = dailyRewards * ((Math.pow(1 + DAILY_RATE, days) - 1) / DAILY_RATE)
+    
+    return futureInitialCore + futureDailyRewards
+  }
+
+  // Binary search to find days to target
+  const findDaysToTarget = (target: number) => {
+    let left = 0
+    let right = 36525 // 100 years in days as upper limit
+    
+    while (left < right - 1) {
+      const mid = Math.floor((left + right) / 2)
+      const midValue = calculateCoreAtDay(mid)
+      
+      if (Math.abs(midValue - target) < 0.01) {
+        return mid
+      }
+      
+      if (midValue < target) {
+        left = mid
+      } else {
+        right = mid
+      }
+    }
+    
+    return right
+  }
+
+  // Format number of days to readable format
+  const formatTimeToTarget = (days: number) => {
+    const years = Math.floor(days / 365.25)
+    const remainingDays = Math.round(days % 365.25)
+    
+    if (years === 0) {
+      return `${remainingDays} days`
+    } else if (remainingDays === 0) {
+      return `${years} year${years > 1 ? 's' : ''}`
+    } else {
+      return `${years} year${years > 1 ? 's' : ''} ${remainingDays} day${remainingDays > 1 ? 's' : ''}`
+    }
+  }
+
+  // Calculate time to target
+  const calculateTimeToTarget = () => {
+    if (!targetCoreAmount || targetCoreAmount <= coreBalance) return
+    
+    const days = findDaysToTarget(targetCoreAmount)
+    setTimeToTarget(days)
   }
 
   // Показываем индикатор загрузки
@@ -354,71 +412,123 @@ export default function FinanceTab() {
         </Card>
       </div>
 
-      {/* Core Growth Calculator Card - Only show in Core tab */}
+      {/* Core Growth Calculator Card */}
       {activeTab === "core" && (
-        <div className="px-3 mt-1">
-          <Card className="w-full">
-            <CardContent className="p-3">
-              <div className="flex flex-col space-y-3">
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center space-x-2">
-                    <div className="w-1.5 h-1.5 bg-blue-400 rounded-full"></div>
-                    <span className="text-sm font-medium">Core Growth Calculator</span>
+        <>
+          <div className="px-3 mt-1">
+            <Card className="w-full">
+              <CardContent className="p-3">
+                <div className="flex flex-col space-y-3">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center space-x-2">
+                      <div className="w-1.5 h-1.5 bg-blue-400 rounded-full"></div>
+                      <span className="text-sm font-medium">Core Growth Calculator</span>
+                    </div>
                   </div>
-                </div>
 
-                <div className="grid grid-cols-3 gap-2">
-                  <div>
-                    <label className="text-xs text-gray-500">Start Core $</label>
-                    <Input
-                      type="number"
-                      value={startCore}
-                      onChange={(e) => setStartCore(Number(e.target.value))}
-                      className="h-6 text-sm mt-1"
-                      min={0}
-                    />
+                  <div className="grid grid-cols-3 gap-2">
+                    <div>
+                      <label className="text-xs text-gray-500">Start Core $</label>
+                      <Input
+                        type="number"
+                        value={startCore}
+                        onChange={(e) => setStartCore(Number(e.target.value))}
+                        className="h-6 text-sm mt-1"
+                        min={0}
+                      />
+                    </div>
+                    <div>
+                      <label className="text-xs text-gray-500">Daily Rewards $/d</label>
+                      <Input
+                        type="number"
+                        value={dailyRewards}
+                        onChange={(e) => setDailyRewards(Number(e.target.value))}
+                        className="h-6 text-sm mt-1"
+                        min={0}
+                      />
+                    </div>
+                    <div>
+                      <label className="text-xs text-gray-500">Years</label>
+                      <Input
+                        type="number"
+                        value={yearsToCalculate}
+                        onChange={(e) => setYearsToCalculate(Number(e.target.value))}
+                        className="h-6 text-sm mt-1"
+                        min={1}
+                        max={100}
+                      />
+                    </div>
                   </div>
-                  <div>
-                    <label className="text-xs text-gray-500">Daily Rewards $/d</label>
-                    <Input
-                      type="number"
-                      value={dailyRewards}
-                      onChange={(e) => setDailyRewards(Number(e.target.value))}
-                      className="h-6 text-sm mt-1"
-                      min={0}
-                    />
-                  </div>
-                  <div>
-                    <label className="text-xs text-gray-500">Years</label>
-                    <Input
-                      type="number"
-                      value={yearsToCalculate}
-                      onChange={(e) => setYearsToCalculate(Number(e.target.value))}
-                      className="h-6 text-sm mt-1"
-                      min={1}
-                      max={100}
-                    />
-                  </div>
-                </div>
 
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center space-x-1">
-                    <span className="text-sm text-gray-500">Future Core Balance</span>
-                    <span className="text-sm font-medium text-blue-600">
-                      ${calculateFutureCore().toFixed(2)}
-                    </span>
-                  </div>
-                  <div className="flex items-center space-x-1">
-                    <span className="text-sm text-gray-500">Daily Income</span>
-                    <span className="text-sm font-medium text-green-600">
-                      ${(calculateFutureCore() * DAILY_RATE).toFixed(2)}
-                    </span>
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center space-x-1">
+                      <span className="text-sm text-gray-500">Future Core Balance</span>
+                      <span className="text-sm font-medium text-blue-600">
+                        ${calculateFutureCore().toFixed(2)}
+                      </span>
+                    </div>
+                    <div className="flex items-center space-x-1">
+                      <span className="text-sm text-gray-500">Daily Income</span>
+                      <span className="text-sm font-medium text-green-600">
+                        ${(calculateFutureCore() * DAILY_RATE).toFixed(2)}
+                      </span>
+                    </div>
                   </div>
                 </div>
-              </div>
-            </CardContent>
-          </Card>
-        </div>
+              </CardContent>
+            </Card>
+          </div>
+
+          {/* Time to Target Calculator Card */}
+          <div className="px-3 mt-1">
+            <Card className="w-full">
+              <CardContent className="p-3">
+                <div className="flex flex-col space-y-3">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center space-x-2">
+                      <div className="w-1.5 h-1.5 bg-purple-400 rounded-full"></div>
+                      <span className="text-sm font-medium">Time to Target</span>
+                    </div>
+                  </div>
+
+                  <div className="flex gap-2 items-end">
+                    <div className="flex-1">
+                      <label className="text-xs text-gray-500">Target Core Amount $</label>
+                      <Input
+                        type="number"
+                        value={targetCoreAmount}
+                        onChange={(e) => setTargetCoreAmount(Number(e.target.value))}
+                        className="h-6 text-sm mt-1"
+                        min={0}
+                      />
+                    </div>
+                    <Button 
+                      className="h-6 text-xs"
+                      onClick={calculateTimeToTarget}
+                      disabled={!targetCoreAmount || targetCoreAmount <= coreBalance}
+                    >
+                      Calculate
+                    </Button>
+                  </div>
+
+                  {timeToTarget !== null && (
+                    <div className="flex items-center justify-between text-sm">
+                      <div className="flex items-center space-x-1">
+                        <span className="text-gray-500">Estimated time:</span>
+                        <span className="font-medium">
+                          {formatTimeToTarget(timeToTarget)}
+                        </span>
+                      </div>
+                      <span className="text-xs text-gray-500">
+                        {new Date(Date.now() + timeToTarget * 24 * 60 * 60 * 1000).toLocaleDateString()}
+                      </span>
+                    </div>
+                  )}
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+        </>
       )}
 
       {/* Action buttons - Wallet Tab */}
