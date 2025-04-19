@@ -211,6 +211,9 @@ export default function AIAssistantTab() {
       timestamp: new Date().toISOString(),
     }
 
+    // Set flag for task verification
+    localStorage.setItem('hasInteractedWithAI', 'true');
+
     setChatHistory((prev) => [...prev, userMessage])
     setMessage("")
     setIsLoading(true)
