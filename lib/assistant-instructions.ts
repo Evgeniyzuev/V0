@@ -1,11 +1,12 @@
 import { AIAssistantContext } from "@/types/user-context";
 import type { UserGoal, UserTask } from '@/types/supabase';
 
-export function generateAssistantInstructions(dbUser: any, goals: any[] | null, tasks: UserTask[] | null): string {
-  const name = dbUser?.first_name || dbUser?.telegram_username || 'User';
-  const level = dbUser?.level || 1;
-  const skills = dbUser?.skills || [];
-  const interests = dbUser?.interests || [];
+export function generateAssistantInstructions(context: AIAssistantContext): string {
+  const { profile, goals, tasks } = context;
+  const name = profile.name;
+  const level = profile.level;
+  const skills = profile.skills;
+  const interests = profile.interests;
   
   return `You are a personal AI assistant focused on helping ${name} achieve their goals and complete tasks effectively. 
 
@@ -17,23 +18,20 @@ KEY INFORMATION ABOUT THE USER:
 
 DEBUG INFORMATION:
 (Debug: I see ${goals?.length || 0} goal(s) loaded.
-Goals: ${goals?.length ? goals.map(g => g.title || (g.goal && g.goal.title) || `Goal ${g.id}`).join(', ') : 'No goals found'})
+Goals: ${goals?.length ? goals.map(g => g.title || `Goal ${g.id}`).join(', ') : 'No goals found'})
 
 CURRENT GOALS:
 ${goals ? goals.map(goal => {
-  const title = goal.title || (goal.goal && goal.goal.title) || `Goal ${goal.id}`;
   const progress = goal.progress_percentage || 0;
-  const description = goal.notes || (goal.goal && goal.goal.description) || 'No description';
+  const description = goal.notes || 'No description';
   const status = goal.status ? ` [${goal.status.toUpperCase()}]` : '';
-  const steps = goal.steps || (goal.goal && goal.goal.steps) || [];
-  const stepsInfo = steps.length ? `\n    Steps: ${steps.join(', ')}` : '';
   
-  return `- ${title}${status} (Progress: ${progress}%): ${description}${stepsInfo}`;
+  return `- ${goal.title || `Goal ${goal.id}`}${status} (Progress: ${progress}%): ${description}`;
 }).join('\n') : 'No goals set yet'}
 
 ACTIVE TASKS:
-${tasks ? tasks.filter(task => task.status !== 'completed').map(task => 
-  `- [${task.status.toUpperCase()}] Task #${task.task_id}: ${task.notes || 'No description'}`
+${tasks ? tasks.filter(task => task.status !== 'DONE').map(task => 
+  `- [${task.status}] ${task.title}: ${task.description || 'No description'}`
 ).join('\n') : 'No active tasks'}
 
 INTERACTION GUIDELINES:
