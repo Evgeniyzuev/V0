@@ -440,7 +440,23 @@ const WishBoard: React.FC<WishBoardProps> = ({ showOnlyRecommendations }) => {
       ) : (
         // Personal Goals Section for authenticated users
         <div className="mb-4">
-          <h3 className="text-lg font-semibold mb-2">Your Personal Goals</h3>
+          <div className="flex items-center justify-between">
+            <h2 className="text-xl font-semibold">
+              Your Personal Goals: {userGoals.length}
+            </h2>
+            <Button
+              className="bg-purple-600 hover:bg-purple-700 text-white flex items-center gap-2 px-6"
+              onClick={() => {
+                const socialButton = document.querySelector('button[aria-label="Social"]');
+                if (socialButton instanceof HTMLElement) {
+                  socialButton.click();
+                }
+              }}
+            >
+              <User className="h-5 w-5" />
+              Go to Profile
+            </Button>
+          </div>
           <div className="grid grid-cols-3 gap-1">
             {userGoals.filter(Boolean).map((goal) => (
               <div

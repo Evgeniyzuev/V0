@@ -377,7 +377,7 @@ export default function TasksTab() {
             }`}
             onClick={() => setActiveTab("new")}
           >
-            New
+            New {activeTab === "new" && `(${filteredTasks().length})`}
           </button>
           <button
             className={`px-4 py-2 rounded-full text-sm font-medium ${
@@ -385,8 +385,13 @@ export default function TasksTab() {
             }`}
             onClick={() => setActiveTab("completed")}
           >
-            Completed
+            Completed {activeTab === "completed" && `(${filteredTasks().length})`}
           </button>
+          {tasks.find(t => t.number === 2) && (
+            <span className="ml-4 text-sm text-gray-600">
+              Current Goals: {goals?.length || 0}
+            </span>
+          )}
         </div>
         <TaskUpdater onUpdate={fetchTasks} />
       </div>
@@ -436,18 +441,12 @@ export default function TasksTab() {
                     variant="outline"
                     onClick={(e) => { 
                       e.stopPropagation();
-                      console.log('Passing goals to handleTaskVerification:', goals);
                       handleTaskVerification(task.number, goals);
                     }}
-                    disabled={verifying || (task.number === 2 && goals === null)}
+                    disabled={verifying}
                   >
                     {verifying ? (
                       <span className="animate-spin rounded-full h-4 w-4 border-b-2 border-gray-800 mr-2"></span>
-                    ) : task.number === 2 && goals === null ? (
-                      <>
-                        <span className="animate-spin rounded-full h-4 w-4 border-b-2 border-gray-800 mr-2"></span>
-                        Loading Goals...
-                      </>
                     ) : (
                       <>
                         <Check className="h-4 w-4 mr-2" />
