@@ -161,28 +161,29 @@ export default function FinanceTab() {
     }
   }
 
-  // Calculate future core value using compound interest with daily rewards
-  const calculateFutureCore = () => {
-    const daysToCalculate = yearsToCalculate * 365.25
-    const dailyRate = DAILY_RATE
+  // Calculate core value at specific day
+  const calculateCoreAtDay = (days: number) => {
+    const reinvestRate = DAILY_RATE * (reinvestPercentage / 100);
+    // Initial core with compound interest
+    const futureInitialCore = startCore * Math.pow(1 + reinvestRate, days)
     
-    // Calculate future value of initial core with compound interest
-    const futureInitialCore = startCore * Math.pow(1 + dailyRate, daysToCalculate)
-    
-    // Calculate future value of daily rewards with compound interest
-    // Using the formula for sum of geometric sequence with daily compounding
-    const futureDailyRewards = dailyRewards * ((Math.pow(1 + dailyRate, daysToCalculate) - 1) / dailyRate)
+    // Daily rewards with compound interest
+    const futureDailyRewards = dailyRewards * ((Math.pow(1 + reinvestRate, days) - 1) / reinvestRate)
     
     return futureInitialCore + futureDailyRewards
   }
 
-  // Calculate core value at specific day
-  const calculateCoreAtDay = (days: number) => {
-    // Initial core with compound interest
-    const futureInitialCore = startCore * Math.pow(1 + DAILY_RATE, days)
+  // Calculate future core value using compound interest with daily rewards
+  const calculateFutureCore = () => {
+    const daysToCalculate = yearsToCalculate * 365.25
+    const reinvestRate = DAILY_RATE * (reinvestPercentage / 100);
     
-    // Daily rewards with compound interest
-    const futureDailyRewards = dailyRewards * ((Math.pow(1 + DAILY_RATE, days) - 1) / DAILY_RATE)
+    // Calculate future value of initial core with compound interest
+    const futureInitialCore = startCore * Math.pow(1 + reinvestRate, daysToCalculate)
+    
+    // Calculate future value of daily rewards with compound interest
+    // Using the formula for sum of geometric sequence with daily compounding
+    const futureDailyRewards = dailyRewards * ((Math.pow(1 + reinvestRate, daysToCalculate) - 1) / reinvestRate)
     
     return futureInitialCore + futureDailyRewards
   }
