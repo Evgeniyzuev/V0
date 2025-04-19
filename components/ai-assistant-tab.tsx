@@ -229,7 +229,7 @@ export default function AIAssistantTab() {
     setIsLoading(true)
 
     try {
-      const systemInstructions = generateSystemInstructions();
+      const systemInstructions = generateSystemInstructions({ dbUser, goals, tasks });
       console.log("Sending to /api/chat with context:", { dbUser, goals, tasks }); // Log the context being sent
 
       // Call our server API endpoint

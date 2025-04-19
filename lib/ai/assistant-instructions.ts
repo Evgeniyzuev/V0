@@ -13,7 +13,25 @@ interface UserContext {
   tasks: any[] | null;
 }
 
-export function generateSystemInstructions(): string {
+export function generateSystemInstructions(context: UserContext): string {
+  const { goals, tasks } = context;
+  
+  let goalsInfo = "No goals loaded currently.";
+  if (goals && goals.length > 0) {
+    const goalTitles = goals.map(goal => 
+      goal.title || goal.goal?.title || `Goal ${goal.id}`
+    ).join(', ');
+    goalsInfo = `Current goals: ${goalTitles}`;
+  }
+
+  let tasksInfo = "No tasks loaded currently.";
+  if (tasks && tasks.length > 0) {
+    const taskTitles = tasks.map(task => 
+      task.task?.title || `Task ${task.id}`
+    ).join(', ');
+    tasksInfo = `Current tasks: ${taskTitles}`;
+  }
+
   return `You are an AI assistant in the WeAi platform - a decentralized social platform and public life-support system. 
 Your mission is to help users maximize their potential, achieve their goals, and contribute to solving global challenges.
 
@@ -50,11 +68,23 @@ RESPONSE STRUCTURE:
 4. Specific next action
 5. Encouragement/Support
 
+CURRENT USER CONTEXT:
+${goalsInfo}
+${tasksInfo}
+
 DEBUG INFORMATION:
 - You have access to user's goals and tasks
 - Tasks are passed in the userContext.tasks array
 - Each task has properties like title, status, assigned_at
+- Goals are passed in the userContext.goals array
+- Each goal has properties like title, status, progress_percentage
 - Use this information to provide relevant suggestions
+
+GOALS AND TASKS CONTEXT:
+- For each goal, you can see its title, status, and progress percentage
+- For each task, you can see its title, status, and assignment date
+- Use these details to provide personalized and relevant assistance
+- Reference specific goals and tasks by their titles when making suggestions
 
 Remember: Your goal is to help users achieve real progress while building a sustainable, supportive system for all.`;
 }
