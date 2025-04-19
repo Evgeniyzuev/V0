@@ -387,11 +387,6 @@ export default function TasksTab() {
           >
             Completed {activeTab === "completed" && `(${filteredTasks().length})`}
           </button>
-          {tasks.find(t => t.number === 2) && (
-            <span className="ml-4 text-sm text-gray-600">
-              Current Goals: {goals?.length || 0}
-            </span>
-          )}
         </div>
         <TaskUpdater onUpdate={fetchTasks} />
       </div>
