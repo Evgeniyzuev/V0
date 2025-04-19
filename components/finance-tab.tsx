@@ -79,6 +79,12 @@ const calculateLevelProgress = (balance: number) => {
   };
 };
 
+// Calculate minimum reinvest percentage based on level
+const calculateMinReinvest = (balance: number) => {
+  const { currentLevel } = calculateLevelProgress(balance);
+  return Math.max(0, 100 - (5 * currentLevel));
+};
+
 export default function FinanceTab() {
   const { telegramUser, dbUser, isLoading: userLoading, refreshUser } = useUser()
   const [activeTab, setActiveTab] = useState<"wallet" | "core">("wallet")
@@ -124,9 +130,12 @@ export default function FinanceTab() {
 
   // Handle reinvest percentage change
   const handleReinvestChange = (value: string) => {
-    const num = parseInt(value)
-    if (!isNaN(num) && num >= 50 && num <= 100) {
-      setReinvestPercentage(num)
+    const num = Number(value)
+    if (!isNaN(num)) {
+      const minReinvest = calculateMinReinvest(coreBalance);
+      // Allow any number during typing, but clamp between minReinvest-100
+      const clampedNum = Math.max(minReinvest, Math.min(100, num))
+      setReinvestPercentage(clampedNum)
       setIsReinvestChanged(true)
     }
   }
@@ -370,6 +379,14 @@ export default function FinanceTab() {
                   <div>
                     <label className="text-xs text-gray-500">Reinvest %</label>
                     <div className="flex items-center space-x-2">
+                      <Input
+                        type="number"
+                        value={reinvestPercentage}
+                        onChange={(e) => handleReinvestChange(e.target.value)}
+                        className="h-6 text-sm mt-1"
+                        min={calculateMinReinvest(coreBalance)}
+                        max={100}
+                      />
                       {isReinvestChanged && (
                         <Button
                           size="sm"
@@ -380,14 +397,6 @@ export default function FinanceTab() {
                           <Check className="h-3.5 w-3.5 text-green-500" />
                         </Button>
                       )}
-                      <Input
-                        type="number"
-                        value={reinvestPercentage}
-                        onChange={(e) => handleReinvestChange(e.target.value)}
-                        className="h-6 text-sm mt-1"
-                        min={50}
-                        max={100}
-                      />
                     </div>
                   </div>
                 </div>
