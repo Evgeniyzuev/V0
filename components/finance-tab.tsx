@@ -13,6 +13,7 @@ import { Avatar, AvatarFallback } from "@/components/ui/avatar"
 import { Progress } from "@/components/ui/progress"
 import { Input } from "@/components/ui/input"
 import { createClientSupabaseClient } from "@/lib/supabase"
+import { useTaskVerification } from '@/hooks/useTaskVerification'
 
 // Initialize Supabase client
 const supabase = createClientSupabaseClient()
@@ -90,7 +91,7 @@ const calculateMinReinvest = (balance: number) => {
 };
 
 export default function FinanceTab() {
-  const { telegramUser, dbUser, isLoading: userLoading, refreshUser } = useUser()
+  const { telegramUser, dbUser, isLoading: userLoading, refreshUser, goals } = useUser()
   const [activeTab, setActiveTab] = useState<"wallet" | "core">("wallet")
   const [walletBalance, setWalletBalance] = useState(0)
   const [coreBalance, setCoreBalance] = useState(0)
@@ -105,6 +106,20 @@ export default function FinanceTab() {
   const [yearsToCalculate, setYearsToCalculate] = useState(30)
   const [targetCoreAmount, setTargetCoreAmount] = useState<number>(0)
   const [timeToTarget, setTimeToTarget] = useState<number | null>(null)
+  const [hasCalculated, setHasCalculated] = useState(false)
+  const [statusMessage, setStatusMessage] = useState<{ type: 'success' | 'error', text: string } | null>(null)
+
+  const { verifying, handleTaskVerification } = useTaskVerification({
+    dbUser,
+    refreshUserData: refreshUser,
+    setStatusMessage,
+    onTaskComplete: (taskNumber, reward, oldCore, newCore) => {
+      toast({
+        title: "Task Completed!",
+        description: `You've earned ${reward} Core for completing task ${taskNumber}!`,
+      })
+    }
+  })
 
   // Daily APY rate (0.0633% per day = 26% APY)
   const DAILY_RATE = 0.000633
@@ -230,34 +245,29 @@ export default function FinanceTab() {
   }
 
   // Calculate time to target
-  const calculateTimeToTarget = async () => {
+  const calculateTimeToTarget = () => {
     if (!targetCoreAmount || targetCoreAmount <= coreBalance) return;
     
     const days = findDaysToTarget(targetCoreAmount);
     setTimeToTarget(days);
-
-    // Mark task as completed if exists
-    if (!dbUser?.id) return;
-
-    try {
-      const { data: userTask } = await supabase
-        .from('user_tasks')
-        .select('*')
-        .eq('user_id', dbUser.id)
-        .eq('task_id', 3) // Task number for Calculate Time to Target
-        .single();
-
-      if (userTask && userTask.status !== 'completed') {
-        await supabase
-          .from('user_tasks')
-          .update({ status: 'completed' })
-          .eq('user_id', dbUser.id)
-          .eq('task_id', 3);
-      }
-    } catch (error) {
-      console.error('Error updating task status:', error);
-    }
+    setHasCalculated(true);
   }
+
+  // Reset calculation state when target amount changes
+  useEffect(() => {
+    setHasCalculated(false);
+  }, [targetCoreAmount]);
+
+  // Expose calculation state for task verification
+  useEffect(() => {
+    if (window) {
+      // @ts-ignore
+      window.moneytron = {
+        ...window.moneytron,
+        hasUsedTimeToTargetCalculator: () => hasCalculated
+      };
+    }
+  }, [hasCalculated]);
 
   // Показываем индикатор загрузки
   if (userLoading) {
@@ -539,13 +549,30 @@ export default function FinanceTab() {
                         min={0}
                       />
                     </div>
-                    <Button 
-                      className="h-6 text-xs"
-                      onClick={calculateTimeToTarget}
-                      disabled={!targetCoreAmount || targetCoreAmount <= coreBalance}
-                    >
-                      Calculate
-                    </Button>
+                    <div className="flex gap-1">
+                      <Button 
+                        className="h-6 text-xs"
+                        onClick={calculateTimeToTarget}
+                        disabled={!targetCoreAmount || targetCoreAmount <= coreBalance}
+                      >
+                        Calculate
+                      </Button>
+                      {hasCalculated && (
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          className="h-6 text-xs"
+                          onClick={() => handleTaskVerification(3, goals)}
+                          disabled={verifying}
+                        >
+                          {verifying ? (
+                            <span className="animate-spin rounded-full h-3 w-3 border-b-2 border-gray-800"></span>
+                          ) : (
+                            <Check className="h-3 w-3" />
+                          )}
+                        </Button>
+                      )}
+                    </div>
                   </div>
 
                   {timeToTarget !== null && (

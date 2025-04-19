@@ -89,6 +89,14 @@ export function useTaskVerification({
         message = success
           ? `Задание ${taskNumber} выполнено! У вас ${goalsCount} целей.`
           : `Задание ${taskNumber} не выполнено. У вас ${goalsCount} целей, нужно больше одной цели.`;
+      } else if (taskNumber === 3) {
+        // Check if user has used the Time to Target calculator
+        // @ts-ignore
+        const hasUsedCalculator = window?.moneytron?.hasUsedTimeToTargetCalculator?.();
+        success = hasUsedCalculator;
+        message = success
+          ? `Задание ${taskNumber} выполнено! Вы успешно использовали калькулятор времени до цели.`
+          : `Задание ${taskNumber} не выполнено. Введите целевую сумму и нажмите Calculate.`;
       }
       // Add more task verifications here
       // --- End task verification logic ---
