@@ -17,10 +17,14 @@ KEY INFORMATION ABOUT THE USER:
 
 CURRENT GOALS:
 ${goals ? goals.map(goal => {
-  const title = goal.title || goal.goal?.title || `Goal ${goal.id}`;
+  const title = goal.title || (goal.goal && goal.goal.title) || `Goal ${goal.id}`;
   const progress = goal.progress_percentage || 0;
-  const notes = goal.notes || goal.goal?.description || 'No description';
-  return `- ${title} (Progress: ${progress}%): ${notes}`;
+  const description = goal.notes || (goal.goal && goal.goal.description) || 'No description';
+  const status = goal.status ? ` [${goal.status.toUpperCase()}]` : '';
+  const steps = goal.steps || (goal.goal && goal.goal.steps) || [];
+  const stepsInfo = steps.length ? `\n    Steps: ${steps.join(', ')}` : '';
+  
+  return `- ${title}${status} (Progress: ${progress}%): ${description}${stepsInfo}`;
 }).join('\n') : 'No goals set yet'}
 
 ACTIVE TASKS:
