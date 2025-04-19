@@ -436,6 +436,7 @@ export default function TasksTab() {
                     variant="outline"
                     onClick={(e) => { 
                       e.stopPropagation();
+                      console.log('Passing goals to handleTaskVerification:', goals);
                       handleTaskVerification(task.number, goals);
                     }}
                     disabled={verifying}
