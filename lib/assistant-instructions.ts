@@ -18,15 +18,16 @@ KEY INFORMATION ABOUT THE USER:
 
 DEBUG INFORMATION:
 (Debug: I see ${goals?.length || 0} goal(s) loaded.
-Goals: ${goals?.length ? goals.map(g => g.title || `Goal ${g.id}`).join(', ') : 'No goals found'})
+Goals: ${goals?.length ? goals.map(g => g.title || (g.goal?.title) || `Goal ${g.id}`).join(', ') : 'No goals found'})
 
 CURRENT GOALS:
 ${goals ? goals.map(goal => {
+  const title = goal.title || (goal.goal?.title) || `Goal ${goal.id}`;
   const progress = goal.progress_percentage || 0;
-  const description = goal.notes || 'No description';
+  const description = goal.notes || goal.goal?.description || 'No description';
   const status = goal.status ? ` [${goal.status.toUpperCase()}]` : '';
   
-  return `- ${goal.title || `Goal ${goal.id}`}${status} (Progress: ${progress}%): ${description}`;
+  return `- ${title}${status} (Progress: ${progress}%): ${description}`;
 }).join('\n') : 'No goals set yet'}
 
 ACTIVE TASKS:

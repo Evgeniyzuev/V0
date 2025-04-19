@@ -1,14 +1,17 @@
 // Define base types needed for AI Assistant context
+import type { Goal, GoalStatus } from './supabase';
+
 export interface UserGoal {
   id: number;
   user_id: string;
   goal_id: number | null;
-  title?: string;
-  notes?: string;
-  status: 'not_started' | 'in_progress' | 'completed' | 'archived';
+  title?: string | null;
+  notes?: string | null;
+  status: GoalStatus;
   progress_percentage: number;
   created_at: string;
   updated_at: string;
+  goal?: Goal;
 }
 
 export interface UserTask {
