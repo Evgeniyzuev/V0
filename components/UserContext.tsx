@@ -86,6 +86,8 @@ export type UserContextType = {
   refreshGoals: () => Promise<void>;
   refreshTasks: () => Promise<void>;
   refreshUser: () => Promise<void>;
+  showWelcomeModal: boolean;
+  closeWelcomeModal: () => void;
 };
 
 export const UserContext = createContext<UserContextType>({
@@ -100,6 +102,8 @@ export const UserContext = createContext<UserContextType>({
   refreshGoals: async () => {},
   refreshTasks: async () => {},
   refreshUser: async () => {},
+  showWelcomeModal: false,
+  closeWelcomeModal: () => {},
 });
 
 // Убираем инициализацию Supabase с верхнего уровня
@@ -114,6 +118,7 @@ export const UserProvider = ({ children }: { children: ReactNode }) => {
   const [session, setSession] = useState<Session | null>(null);
   const [tasks, setTasks] = useState<UserTask[] | null>(null);
   const [goals, setGoals] = useState<UserGoal[] | null>(null);
+  const [showWelcomeModal, setShowWelcomeModal] = useState(false);
   
   // Флаги для предотвращения повторных запросов
   const apiCalledRef = useRef(false);
@@ -174,12 +179,19 @@ export const UserProvider = ({ children }: { children: ReactNode }) => {
           console.log("User data loaded from DB by Telegram ID:", data);
           setDbUser(data);
           userLoadedRef.current = true;
+        } else {
+          // If no user found, show welcome modal
+          setShowWelcomeModal(true);
         }
       }
     } catch (err) {
       console.error('Error refreshing user data:', err);
       setError('Ошибка при обновлении данных пользователя');
     }
+  };
+
+  const closeWelcomeModal = () => {
+    setShowWelcomeModal(false);
   };
 
   // Функция для ручного обновления (публичная)
@@ -507,7 +519,9 @@ export const UserProvider = ({ children }: { children: ReactNode }) => {
     refreshGoals,
     refreshTasks,
     refreshUser,
-  }), [telegramUser, authUser, dbUser, isLoading, error, manualRefresh, goals, tasks]);
+    showWelcomeModal,
+    closeWelcomeModal,
+  }), [telegramUser, authUser, dbUser, isLoading, error, manualRefresh, goals, tasks, showWelcomeModal]);
 
   return (
     <UserContext.Provider value={contextValue}>
