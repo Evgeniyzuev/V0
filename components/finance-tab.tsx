@@ -252,38 +252,38 @@ export default function FinanceTab() {
       </div>
 
       {/* Balance card */}
-      <div className="p-4">
-        <div className="bg-gradient-to-r from-purple-500 to-blue-500 rounded-xl p-5 text-white">
+      <div className="p-3">
+        <div className="bg-gradient-to-r from-purple-500 to-blue-500 rounded-xl p-4 text-white">
           <div className="flex justify-between items-start">
             <div>
-              <p className="text-sm opacity-90">{activeTab === "wallet" ? "Wallet Balance" : "Core Balance"}</p>
-              <h1 className="text-4xl font-bold mt-1">
+              <p className="text-xs opacity-90">{activeTab === "wallet" ? "Wallet Balance" : "Core Balance"}</p>
+              <h1 className="text-2xl font-bold mt-0.5">
                 ${activeTab === "wallet" ? walletBalance.toFixed(2) : coreBalance.toFixed(2)}
               </h1>
             </div>
             <Button
               variant="outline"
               size="sm"
-              className="bg-white/20 text-white border-white/40 hover:bg-white/30"
+              className="bg-white/20 text-white border-white/40 hover:bg-white/30 h-7"
               onClick={() => window.location.reload()}
             >
-              <RefreshCw className="h-4 w-4 mr-1" />
+              <RefreshCw className="h-3.5 w-3.5 mr-1" />
               Refresh
             </Button>
           </div>
 
           {/* Level Progress - Only show in Core tab */}
           {activeTab === "core" && (
-            <div className="mt-6 space-y-2">
+            <div className="mt-4 space-y-1.5">
               {(() => {
                 const { currentLevel, nextLevelThreshold, progressPercentage } = calculateLevelProgress(coreBalance);
                 return (
                   <>
-                    <div className="flex justify-between text-sm">
+                    <div className="flex justify-between text-xs">
                       <span className="font-medium">Level {currentLevel}</span>
                       <span>${coreBalance.toFixed(2)} / ${nextLevelThreshold}</span>
                     </div>
-                    <Progress value={progressPercentage} className="h-2 bg-white/20" />
+                    <Progress value={progressPercentage} className="h-1.5 bg-white/20" />
                   </>
                 );
               })()}
@@ -293,13 +293,13 @@ export default function FinanceTab() {
       </div>
 
       {/* Daily Income Card */}
-      <div className="px-4 mt-2">
+      <div className="px-3 mt-1">
         <Card className="w-full">
-          <CardContent className="p-4">
-            <div className="flex flex-col space-y-4">
+          <CardContent className="p-3">
+            <div className="flex flex-col space-y-3">
               <div className="flex items-center justify-between">
                 <div className="flex items-center space-x-2">
-                  <div className="w-2 h-2 bg-green-400 rounded-full"></div>
+                  <div className="w-1.5 h-1.5 bg-green-400 rounded-full"></div>
                   <span className="text-sm font-medium">Daily Income</span>
                 </div>
                 <span className="text-sm font-medium text-green-600">
@@ -307,35 +307,35 @@ export default function FinanceTab() {
                 </span>
               </div>
 
-              <div className="space-y-2">
+              <div className="space-y-1.5">
                 <div className="flex items-center justify-between">
-                  <span className="text-sm text-gray-500">Reinvest</span>
+                  <span className="text-xs text-gray-500">Reinvest</span>
                   <div className="flex items-center space-x-2">
                     <Input
                       type="number"
                       value={reinvestPercentage}
                       onChange={(e) => handleReinvestChange(e.target.value)}
-                      className="w-16 h-7 text-sm text-right"
+                      className="w-14 h-6 text-sm text-right"
                       min={50}
                       max={100}
                     />
-                    <span className="text-sm text-gray-500">%</span>
+                    <span className="text-xs text-gray-500">%</span>
                     {isReinvestChanged && (
                       <Button
                         size="sm"
                         variant="ghost"
-                        className="h-7 w-7 p-0"
+                        className="h-6 w-6 p-0"
                         onClick={handleSaveReinvest}
                       >
-                        <Check className="h-4 w-4 text-green-500" />
+                        <Check className="h-3.5 w-3.5 text-green-500" />
                       </Button>
                     )}
                   </div>
                 </div>
-                <Progress value={reinvestPercentage} className="h-2" />
+                <Progress value={reinvestPercentage} className="h-1.5" />
               </div>
 
-              <div className="grid grid-cols-2 gap-4 pt-2">
+              <div className="grid grid-cols-2 gap-4 pt-1">
                 <div className="flex flex-col">
                   <span className="text-xs text-gray-500">To Core</span>
                   <span className="text-sm font-medium text-green-600">
@@ -356,13 +356,13 @@ export default function FinanceTab() {
 
       {/* Core Growth Calculator Card - Only show in Core tab */}
       {activeTab === "core" && (
-        <div className="px-4 mt-4">
+        <div className="px-3 mt-1">
           <Card className="w-full">
-            <CardContent className="p-4">
+            <CardContent className="p-3">
               <div className="flex flex-col space-y-3">
                 <div className="flex items-center justify-between">
                   <div className="flex items-center space-x-2">
-                    <div className="w-2 h-2 bg-blue-400 rounded-full"></div>
+                    <div className="w-1.5 h-1.5 bg-blue-400 rounded-full"></div>
                     <span className="text-sm font-medium">Core Growth Calculator</span>
                   </div>
                 </div>
@@ -374,7 +374,7 @@ export default function FinanceTab() {
                       type="number"
                       value={startCore}
                       onChange={(e) => setStartCore(Number(e.target.value))}
-                      className="h-7 text-sm mt-1"
+                      className="h-6 text-sm mt-1"
                       min={0}
                     />
                   </div>
@@ -384,7 +384,7 @@ export default function FinanceTab() {
                       type="number"
                       value={dailyRewards}
                       onChange={(e) => setDailyRewards(Number(e.target.value))}
-                      className="h-7 text-sm mt-1"
+                      className="h-6 text-sm mt-1"
                       min={0}
                     />
                   </div>
@@ -394,14 +394,14 @@ export default function FinanceTab() {
                       type="number"
                       value={yearsToCalculate}
                       onChange={(e) => setYearsToCalculate(Number(e.target.value))}
-                      className="h-7 text-sm mt-1"
+                      className="h-6 text-sm mt-1"
                       min={1}
                       max={100}
                     />
                   </div>
                 </div>
 
-                <div className="flex items-center justify-between pt-1">
+                <div className="flex items-center justify-between">
                   <div className="flex items-center space-x-1">
                     <span className="text-sm text-gray-500">Future Core Balance</span>
                     <span className="text-sm font-medium text-blue-600">
@@ -423,16 +423,16 @@ export default function FinanceTab() {
 
       {/* Action buttons - Wallet Tab */}
       {activeTab === "wallet" && (
-        <div className="px-4 grid grid-cols-2 gap-4 mb-4">
+        <div className="px-3 grid grid-cols-2 gap-2 mt-1 mb-2">
           <Card>
-            <CardContent className="p-4 flex flex-col items-center justify-center">
+            <CardContent className="p-3 flex flex-col items-center justify-center">
               <button
-                className="w-full h-full flex flex-col items-center py-2"
+                className="w-full h-full flex flex-col items-center py-1.5"
                 onClick={() => setIsTopUpModalOpen(true)}
                 disabled={!userId}
               >
-                <div className="w-10 h-10 bg-blue-100 rounded-full flex items-center justify-center mb-2">
-                  <Plus className="h-5 w-5 text-blue-500" />
+                <div className="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center mb-1.5">
+                  <Plus className="h-4 w-4 text-blue-500" />
                 </div>
                 <p className="text-sm font-medium">Top Up</p>
               </button>
@@ -440,14 +440,14 @@ export default function FinanceTab() {
           </Card>
 
           <Card>
-            <CardContent className="p-4 flex flex-col items-center justify-center">
+            <CardContent className="p-3 flex flex-col items-center justify-center">
               <button
-                className="w-full h-full flex flex-col items-center py-2"
+                className="w-full h-full flex flex-col items-center py-1.5"
                 onClick={() => setIsTransferModalOpen(true)}
                 disabled={!userId}
               >
-                <div className="w-10 h-10 bg-green-100 rounded-full flex items-center justify-center mb-2">
-                  <ArrowRight className="h-5 w-5 text-green-500" />
+                <div className="w-8 h-8 bg-green-100 rounded-full flex items-center justify-center mb-1.5">
+                  <ArrowRight className="h-4 w-4 text-green-500" />
                 </div>
                 <p className="text-sm font-medium">Transfer to Core</p>
               </button>
@@ -458,20 +458,20 @@ export default function FinanceTab() {
 
       {/* Additional Wallet Actions */}
       {activeTab === "wallet" && (
-        <div className="px-4 grid grid-cols-2 gap-4">
+        <div className="px-3 grid grid-cols-2 gap-2">
           <Card>
-            <CardContent className="p-4 flex flex-col items-center justify-center">
-              <div className="w-10 h-10 bg-blue-100 rounded-full flex items-center justify-center mb-2">
-                <Send className="h-5 w-5 text-blue-500" />
+            <CardContent className="p-3 flex flex-col items-center justify-center">
+              <div className="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center mb-1.5">
+                <Send className="h-4 w-4 text-blue-500" />
               </div>
               <p className="text-sm font-medium">Send</p>
             </CardContent>
           </Card>
 
           <Card>
-            <CardContent className="p-4 flex flex-col items-center justify-center">
-              <div className="w-10 h-10 bg-green-100 rounded-full flex items-center justify-center mb-2">
-                <ArrowDown className="h-5 w-5 text-green-500" />
+            <CardContent className="p-3 flex flex-col items-center justify-center">
+              <div className="w-8 h-8 bg-green-100 rounded-full flex items-center justify-center mb-1.5">
+                <ArrowDown className="h-4 w-4 text-green-500" />
               </div>
               <p className="text-sm font-medium">Receive</p>
             </CardContent>
@@ -481,16 +481,16 @@ export default function FinanceTab() {
 
       {/* Core Tab Content */}
       {activeTab === "core" && (
-        <div className="px-4 space-y-4">
+        <div className="px-3 mt-1">
           <Card>
-            <CardContent className="p-4 flex flex-col items-center justify-center">
+            <CardContent className="p-3 flex flex-col items-center justify-center">
               <button
-                className="w-full h-full flex flex-col items-center py-2"
+                className="w-full h-full flex flex-col items-center py-1.5"
                 onClick={() => setIsTransferModalOpen(true)}
                 disabled={!userId}
               >
-                <div className="w-10 h-10 bg-green-100 rounded-full flex items-center justify-center mb-2">
-                  <ArrowRight className="h-5 w-5 text-green-500" />
+                <div className="w-8 h-8 bg-green-100 rounded-full flex items-center justify-center mb-1.5">
+                  <ArrowRight className="h-4 w-4 text-green-500" />
                 </div>
                 <p className="text-sm font-medium">Transfer from Wallet</p>
               </button>
