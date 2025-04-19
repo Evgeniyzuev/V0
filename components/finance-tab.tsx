@@ -203,6 +203,24 @@ export default function FinanceTab() {
               Refresh
             </Button>
           </div>
+
+          {/* Level Progress - Only show in Core tab */}
+          {activeTab === "core" && (
+            <div className="mt-6 space-y-2">
+              {(() => {
+                const { currentLevel, nextLevelThreshold, progressPercentage } = calculateLevelProgress(coreBalance);
+                return (
+                  <>
+                    <div className="flex justify-between text-sm">
+                      <span className="font-medium">Level {currentLevel}</span>
+                      <span>${coreBalance.toFixed(2)} / ${nextLevelThreshold}</span>
+                    </div>
+                    <Progress value={progressPercentage} className="h-2 bg-white/20" />
+                  </>
+                );
+              })()}
+            </div>
+          )}
         </div>
       </div>
 
@@ -267,37 +285,6 @@ export default function FinanceTab() {
       {/* Core Tab Content */}
       {activeTab === "core" && (
         <div className="px-4 space-y-4">
-          <Card className="w-full">
-            <CardContent className="p-4">
-              <div className="flex flex-col items-center justify-center">
-                <div className="w-10 h-10 bg-purple-100 rounded-full flex items-center justify-center mb-2">
-                  <Wallet className="h-5 w-5 text-purple-500" />
-                </div>
-                <p className="text-sm font-medium">Core Balance</p>
-                <p className="text-lg font-bold mt-1">${coreBalance.toFixed(2)}</p>
-                
-                {/* Level Progress */}
-                <div className="w-full mt-4 space-y-2">
-                  {(() => {
-                    const { currentLevel, nextLevelThreshold, progressToNext, totalNeeded, progressPercentage } = calculateLevelProgress(coreBalance);
-                    return (
-                      <>
-                        <div className="flex justify-between text-sm">
-                          <span className="text-purple-600 font-medium">Level {currentLevel}</span>
-                          <span className="text-gray-500">${progressToNext.toFixed(2)} / ${totalNeeded.toFixed(2)}</span>
-                        </div>
-                        <Progress value={progressPercentage} className="h-2" />
-                        <p className="text-xs text-gray-500 text-center">
-                          Next level at ${nextLevelThreshold} Core
-                        </p>
-                      </>
-                    );
-                  })()}
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-
           <Card>
             <CardContent className="p-4 flex flex-col items-center justify-center">
               <button
