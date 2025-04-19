@@ -367,27 +367,28 @@ export default function FinanceTab() {
 
               <div className="space-y-1.5">
                 <div className="flex items-center justify-between">
-                  <span className="text-xs text-gray-500">Reinvest</span>
-                  <div className="flex items-center space-x-2">
-                    <Input
-                      type="number"
-                      value={reinvestPercentage}
-                      onChange={(e) => handleReinvestChange(e.target.value)}
-                      className="w-20 h-6 text-sm text-right"
-                      min={50}
-                      max={100}
-                    />
-                    <span className="text-xs text-gray-500">%</span>
-                    {isReinvestChanged && (
-                      <Button
-                        size="sm"
-                        variant="ghost"
-                        className="h-6 w-6 p-0"
-                        onClick={handleSaveReinvest}
-                      >
-                        <Check className="h-3.5 w-3.5 text-green-500" />
-                      </Button>
-                    )}
+                  <div>
+                    <label className="text-xs text-gray-500">Reinvest %</label>
+                    <div className="flex items-center space-x-2">
+                      {isReinvestChanged && (
+                        <Button
+                          size="sm"
+                          variant="ghost"
+                          className="h-6 w-6 p-0 mt-1"
+                          onClick={handleSaveReinvest}
+                        >
+                          <Check className="h-3.5 w-3.5 text-green-500" />
+                        </Button>
+                      )}
+                      <Input
+                        type="number"
+                        value={reinvestPercentage}
+                        onChange={(e) => handleReinvestChange(e.target.value)}
+                        className="h-6 text-sm mt-1"
+                        min={50}
+                        max={100}
+                      />
+                    </div>
                   </div>
                 </div>
                 <Progress value={reinvestPercentage} className="h-1.5" />
