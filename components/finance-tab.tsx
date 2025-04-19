@@ -90,6 +90,9 @@ export default function FinanceTab() {
   const [reinvestPercentage, setReinvestPercentage] = useState(100)
   const [isReinvestChanged, setIsReinvestChanged] = useState(false)
   const { toast } = useToast()
+  const [startCore, setStartCore] = useState(0)
+  const [dailyRewards, setDailyRewards] = useState(10)
+  const [yearsToCalculate, setYearsToCalculate] = useState(30)
 
   // Daily APY rate (0.0633% per day = 26% APY)
   const DAILY_RATE = 0.000633
@@ -103,6 +106,11 @@ export default function FinanceTab() {
       setUserId(dbUser.id)
     }
   }, [dbUser])
+
+  // Update startCore when coreBalance changes
+  useEffect(() => {
+    setStartCore(coreBalance)
+  }, [coreBalance])
 
   // Calculate daily income
   const calculateDailyIncome = (balance: number) => {
@@ -140,6 +148,21 @@ export default function FinanceTab() {
         variant: "destructive",
       })
     }
+  }
+
+  // Calculate future core value using compound interest with daily rewards
+  const calculateFutureCore = () => {
+    const daysToCalculate = yearsToCalculate * 365
+    const dailyRate = DAILY_RATE
+    
+    // Calculate future value of initial core with compound interest
+    const futureInitialCore = startCore * Math.pow(1 + dailyRate, daysToCalculate)
+    
+    // Calculate future value of daily rewards with compound interest
+    // Using the formula for sum of geometric sequence with daily compounding
+    const futureDailyRewards = dailyRewards * ((Math.pow(1 + dailyRate, daysToCalculate) - 1) / dailyRate)
+    
+    return futureInitialCore + futureDailyRewards
   }
 
   // Показываем индикатор загрузки
@@ -330,6 +353,76 @@ export default function FinanceTab() {
           </CardContent>
         </Card>
       </div>
+
+      {/* Core Growth Calculator Card - Only show in Core tab */}
+      {activeTab === "core" && (
+        <div className="px-4 mt-4">
+          <Card className="w-full">
+            <CardContent className="p-4">
+              <div className="flex flex-col space-y-4">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center space-x-2">
+                    <div className="w-2 h-2 bg-blue-400 rounded-full"></div>
+                    <span className="text-sm font-medium">Core Growth Calculator</span>
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <label className="text-sm text-gray-500">Start Core $</label>
+                    <Input
+                      type="number"
+                      value={startCore}
+                      onChange={(e) => setStartCore(Number(e.target.value))}
+                      className="h-8 text-sm"
+                      min={0}
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <label className="text-sm text-gray-500">Daily Rewards $/d</label>
+                    <Input
+                      type="number"
+                      value={dailyRewards}
+                      onChange={(e) => setDailyRewards(Number(e.target.value))}
+                      className="h-8 text-sm"
+                      min={0}
+                    />
+                  </div>
+                </div>
+
+                <div className="space-y-2">
+                  <div className="flex items-center justify-between">
+                    <label className="text-sm text-gray-500">Core in years</label>
+                    <Input
+                      type="number"
+                      value={yearsToCalculate}
+                      onChange={(e) => setYearsToCalculate(Number(e.target.value))}
+                      className="w-20 h-8 text-sm text-right"
+                      min={1}
+                      max={100}
+                    />
+                  </div>
+                </div>
+
+                <div className="pt-2 space-y-4">
+                  <div className="flex flex-col">
+                    <span className="text-xs text-gray-500">Future Core Balance</span>
+                    <span className="text-lg font-medium text-blue-600">
+                      ${calculateFutureCore().toFixed(2)}
+                    </span>
+                  </div>
+                  <div className="flex flex-col">
+                    <span className="text-xs text-gray-500">Future Daily Income</span>
+                    <span className="text-lg font-medium text-green-600">
+                      ${(calculateFutureCore() * DAILY_RATE).toFixed(2)}
+                    </span>
+                  </div>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+      )}
 
       {/* Action buttons - Wallet Tab */}
       {activeTab === "wallet" && (
