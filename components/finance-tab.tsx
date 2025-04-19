@@ -10,6 +10,73 @@ import TransferModal from "@/components/finance/transfer-modal"
 import { useToast } from "@/hooks/use-toast"
 import { useUser } from "@/components/UserContext"
 import { Avatar, AvatarFallback } from "@/components/ui/avatar"
+import { Progress } from "@/components/ui/progress"
+
+// Define level thresholds
+const levelThresholds = [
+  { level: 1, core: 2 },
+  { level: 2, core: 4 },
+  { level: 3, core: 8 },
+  { level: 4, core: 16 },
+  { level: 5, core: 32 },
+  { level: 6, core: 64 },
+  { level: 7, core: 125 },
+  { level: 8, core: 250 },
+  { level: 9, core: 500 },
+  { level: 10, core: 1000 },
+  { level: 11, core: 2000 },
+  { level: 12, core: 4000 },
+  { level: 13, core: 8000 },
+  { level: 14, core: 16000 },
+  { level: 15, core: 32000 },
+  { level: 16, core: 64000 },
+  { level: 17, core: 125000 },
+  { level: 18, core: 250000 },
+  { level: 19, core: 500000 },
+  { level: 20, core: 1000000 },
+  { level: 21, core: 2000000 },
+  { level: 22, core: 4000000 },
+  { level: 23, core: 8000000 },
+  { level: 24, core: 16000000 },
+  { level: 25, core: 32000000 },
+  { level: 26, core: 64000000 },
+  { level: 27, core: 125000000 },
+  { level: 28, core: 250000000 },
+  { level: 29, core: 500000000 },
+  { level: 30, core: 1000000000 },
+];
+
+// Calculate level and progress
+const calculateLevelProgress = (balance: number) => {
+  // Find current level and next level threshold
+  let currentLevel = 0;
+  let nextLevelThreshold = levelThresholds[0].core;
+  
+  for (let i = levelThresholds.length - 1; i >= 0; i--) {
+    if (balance >= levelThresholds[i].core) {
+      currentLevel = levelThresholds[i].level;
+      nextLevelThreshold = levelThresholds[i + 1]?.core || levelThresholds[i].core * 2;
+      break;
+    }
+  }
+
+  // Calculate progress to next level
+  const currentLevelThreshold = currentLevel > 0 
+    ? levelThresholds.find(t => t.level === currentLevel)?.core || 0 
+    : 0;
+  
+  const progressToNext = balance - currentLevelThreshold;
+  const totalNeeded = nextLevelThreshold - currentLevelThreshold;
+  const progressPercentage = (progressToNext / totalNeeded) * 100;
+
+  return {
+    currentLevel,
+    nextLevelThreshold,
+    progressToNext,
+    totalNeeded,
+    progressPercentage: Math.min(progressPercentage, 100)
+  };
+};
 
 export default function FinanceTab() {
   const { telegramUser, dbUser, isLoading: userLoading } = useUser()
@@ -199,14 +266,35 @@ export default function FinanceTab() {
 
       {/* Core Tab Content */}
       {activeTab === "core" && (
-        <div className="px-4 grid grid-cols-2 gap-4">
-          <Card>
-            <CardContent className="p-4 flex flex-col items-center justify-center">
-              <div className="w-10 h-10 bg-purple-100 rounded-full flex items-center justify-center mb-2">
-                <Wallet className="h-5 w-5 text-purple-500" />
+        <div className="px-4 space-y-4">
+          <Card className="w-full">
+            <CardContent className="p-4">
+              <div className="flex flex-col items-center justify-center">
+                <div className="w-10 h-10 bg-purple-100 rounded-full flex items-center justify-center mb-2">
+                  <Wallet className="h-5 w-5 text-purple-500" />
+                </div>
+                <p className="text-sm font-medium">Core Balance</p>
+                <p className="text-lg font-bold mt-1">${coreBalance.toFixed(2)}</p>
+                
+                {/* Level Progress */}
+                <div className="w-full mt-4 space-y-2">
+                  {(() => {
+                    const { currentLevel, nextLevelThreshold, progressToNext, totalNeeded, progressPercentage } = calculateLevelProgress(coreBalance);
+                    return (
+                      <>
+                        <div className="flex justify-between text-sm">
+                          <span className="text-purple-600 font-medium">Level {currentLevel}</span>
+                          <span className="text-gray-500">${progressToNext.toFixed(2)} / ${totalNeeded.toFixed(2)}</span>
+                        </div>
+                        <Progress value={progressPercentage} className="h-2" />
+                        <p className="text-xs text-gray-500 text-center">
+                          Next level at ${nextLevelThreshold} Core
+                        </p>
+                      </>
+                    );
+                  })()}
+                </div>
               </div>
-              <p className="text-sm font-medium">Core Balance</p>
-              <p className="text-lg font-bold mt-1">${coreBalance.toFixed(2)}</p>
             </CardContent>
           </Card>
 

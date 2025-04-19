@@ -25,7 +25,25 @@ const levelThresholds = [
   { level: 9, core: 500 },
   { level: 10, core: 1000 },
   { level: 11, core: 2000 },
-  // Add more levels as needed following the doubling pattern (or adjust)
+  { level: 12, core: 4000 },
+  { level: 13, core: 8000 },
+  { level: 14, core: 16000 },
+  { level: 15, core: 32000 },
+  { level: 16, core: 64000 },
+  { level: 17, core: 125000 },
+  { level: 18, core: 250000 },
+  { level: 19, core: 500000 },
+  { level: 20, core: 1000000 },
+  { level: 21, core: 2000000 },
+  { level: 22, core: 4000000 },
+  { level: 23, core: 8000000 },
+  { level: 24, core: 16000000 },
+  { level: 25, core: 32000000 },
+  { level: 26, core: 64000000 },
+  { level: 27, core: 125000000 },
+  { level: 28, core: 250000000 },
+  { level: 29, core: 500000000 },
+  { level: 30, core: 1000000000 },
 ];
 
 // Function to calculate level based on core
