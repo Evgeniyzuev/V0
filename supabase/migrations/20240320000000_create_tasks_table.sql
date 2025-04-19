@@ -9,6 +9,14 @@ VALUES (
   'Choose your first wish from the list of available wishes.',
   NULL,
   'Choose your first wish from the list of available wishes.'
-);
+)
+ON CONFLICT (number) 
+DO UPDATE SET 
+  title = EXCLUDED.title,
+  reward = EXCLUDED.reward,
+  icon_url = EXCLUDED.icon_url,
+  description = EXCLUDED.description,
+  due_date = EXCLUDED.due_date,
+  notes = EXCLUDED.notes;
 
  
