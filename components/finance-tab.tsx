@@ -320,7 +320,7 @@ export default function FinanceTab() {
 
       {/* Balance card */}
       <div className="p-2">
-        <div className="bg-gradient-to-r from-purple-500 to-blue-500 rounded-xl p-4 text-white">
+        <div className="bg-gradient-to-r from-purple-500 to-blue-500 rounded-xl p-2 text-white">
           <div className="flex justify-between items-start">
             <div>
               <p className="text-xs opacity-90">{activeTab === "wallet" ? "Wallet Balance" : "Core Balance"}</p>
@@ -341,7 +341,7 @@ export default function FinanceTab() {
 
           {/* Level Progress - Only show in Core tab */}
           {activeTab === "core" && (
-            <div className="mt-4 space-y-1.5">
+            <div className="mt-2 space-y-1.5">
               {(() => {
                 const { currentLevel, nextLevelThreshold, progressPercentage } = calculateLevelProgress(coreBalance);
                 return (
@@ -376,22 +376,22 @@ export default function FinanceTab() {
 
               <div className="space-y-1.5">
                 <div className="flex items-center justify-between">
-                  <div>
-                    <label className="text-xs text-gray-500">Reinvest %</label>
-                    <div className="flex items-center space-x-2">
-                      <Input
-                        type="number"
-                        value={reinvestPercentage}
-                        onChange={(e) => handleReinvestChange(e.target.value)}
-                        className="h-6 text-sm mt-1"
-                        min={calculateMinReinvest(coreBalance)}
-                        max={100}
-                      />
+                  <span className="text-xs text-gray-500 w-16">Reinvest %</span>
+                  <div className="flex items-center">
+                    <Input
+                      type="number"
+                      value={reinvestPercentage}
+                      onChange={(e) => handleReinvestChange(e.target.value)}
+                      className="h-6 text-sm w-20"
+                      min={calculateMinReinvest(coreBalance)}
+                      max={100}
+                    />
+                    <div className="w-8 flex justify-center">
                       {isReinvestChanged && (
                         <Button
                           size="sm"
                           variant="ghost"
-                          className="h-6 w-6 p-0 mt-1"
+                          className="h-6 w-6 p-0"
                           onClick={handleSaveReinvest}
                         >
                           <Check className="h-3.5 w-3.5 text-green-500" />
