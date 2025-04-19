@@ -1,4 +1,4 @@
--- Create function to count referrals for a user
+-- First, create the counting function
 CREATE OR REPLACE FUNCTION count_user_referrals(p_telegram_id INTEGER)
 RETURNS INTEGER AS $$
 DECLARE
@@ -12,16 +12,7 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql;
 
--- Create function to update paid_referrals for all users
-CREATE OR REPLACE FUNCTION update_all_referral_counts()
-RETURNS void AS $$
-BEGIN
-    UPDATE users u
-    SET paid_referrals = count_user_referrals(u.telegram_id);
-END;
-$$ LANGUAGE plpgsql;
-
--- Create trigger to update referral count when referrer_id changes
+-- Then create the trigger function that uses count_user_referrals
 CREATE OR REPLACE FUNCTION update_referral_count_on_change()
 RETURNS TRIGGER AS $$
 BEGIN
@@ -46,12 +37,17 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql;
 
--- Create trigger
+-- Create the trigger
 DROP TRIGGER IF EXISTS update_referral_count ON users;
 CREATE TRIGGER update_referral_count
     AFTER INSERT OR UPDATE OF referrer_id ON users
     FOR EACH ROW
     EXECUTE FUNCTION update_referral_count_on_change();
 
--- Update all existing referral counts
-SELECT update_all_referral_counts(); 
+-- Finally, update all existing counts
+UPDATE users u
+SET paid_referrals = (
+    SELECT COUNT(*)
+    FROM users r
+    WHERE r.referrer_id = u.telegram_id
+); 
