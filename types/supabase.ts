@@ -122,16 +122,14 @@ export interface Database {
  * Represents a predefined goal template.
  */
 export interface Goal {
-  id: number; // Primary Key
-  created_at: string; // timestamp with time zone default now()
-  title: string; // Text, not null
-  description: string | null; // Text
-  image_url: string | null; // Text, stores URL
-  estimated_cost: string | null; // Text, e.g., "$5,000", "10 hours"
-  steps: string[] | null; // Array of strings, stored as jsonb
-  difficulty_level: number | null; // Added: e.g., 1 (easy) to 5 (hard)
-  // Potential future additions:
-  // category: string | null;
+  id: number;
+  created_at: string;
+  title: string | null;
+  description: string | null;
+  image_url: string | null;
+  estimated_cost: string | null;
+  steps: string[] | null;
+  difficulty_level: number | null;
 }
 
 /**

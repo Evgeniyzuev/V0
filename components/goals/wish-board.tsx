@@ -272,30 +272,21 @@ interface WishBoardProps {
 }
 
 const WishBoard: React.FC<WishBoardProps> = ({ showOnlyRecommendations }) => {
-  const { dbUser } = useUser()
+  const { dbUser, goals: userGoals, refreshGoals } = useUser()
   const queryClient = useQueryClient()
   
-  // Fetch goals from the database
+  // Fetch goals from the database (only template goals)
   const { data: goals = [], isLoading: isLoadingGoals, error: goalsError } = useQuery({
     queryKey: ['goals'],
     queryFn: fetchGoals
-  })
-
-  // Fetch user goals from the database, passing the user ID
-  const { data: userGoals = [], isLoading: isLoadingUserGoals, error: userGoalsError } = useQuery({
-    // Query key теперь включает userId, чтобы запрос перезагружался при смене пользователя
-    queryKey: ['user-goals', dbUser?.id], 
-    // Передаем userId в функцию запроса
-    queryFn: () => fetchUserGoals(dbUser?.id), 
-    // Запрос активен только если есть dbUser.id
-    enabled: !!dbUser?.id 
   })
 
   const goalUpdaterRef = useRef<GoalUpdaterRef>(null);
   const goalUpdater = dbUser?.id ? (
     <GoalUpdater 
       ref={goalUpdaterRef} 
-      goals={goals} 
+      goals={goals}
+      onGoalAdded={refreshGoals} // Add callback to refresh goals in context
     />
   ) : null;
 
@@ -325,7 +316,7 @@ const WishBoard: React.FC<WishBoardProps> = ({ showOnlyRecommendations }) => {
 
   const handleWishClick = (wish: Goal) => {
     setSelectedWish(wish);
-    setEditedTitle(wish.title);
+    setEditedTitle(wish.title ?? '');
     setEditedDescription(wish.description || '');
     setEditedSteps(wish.steps || []);
     setEditedEstimatedCost(wish.estimated_cost || '');
@@ -394,12 +385,12 @@ const WishBoard: React.FC<WishBoardProps> = ({ showOnlyRecommendations }) => {
     }
   };
 
-  if (isLoadingGoals || isLoadingUserGoals) {
+  if (isLoadingGoals || !userGoals) {
     return <div className="p-4">Loading goals...</div>;
   }
 
-  if (goalsError || userGoalsError) {
-    return <div className="p-4 text-red-500">Error loading goals: {(goalsError || userGoalsError)?.message}</div>;
+  if (goalsError) {
+    return <div className="p-4 text-red-500">Error loading goals: {goalsError.message}</div>;
   }
 
   return (
@@ -530,7 +521,7 @@ const WishBoard: React.FC<WishBoardProps> = ({ showOnlyRecommendations }) => {
               <div className="relative">
                 <img
                   src={selectedWish.image_url || ''}
-                  alt={selectedWish.title}
+                  alt={selectedWish.title ?? 'Goal image'}
                   className="w-full h-48 object-cover"
                 />
                 <button

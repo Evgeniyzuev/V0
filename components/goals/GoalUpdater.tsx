@@ -7,13 +7,14 @@ import { toast } from 'sonner'
 
 interface GoalUpdaterProps {
   goals: Goal[]
+  onGoalAdded?: () => Promise<void>
 }
 
 export interface GoalUpdaterRef {
   addGoalToUserGoals: (goal: Goal) => Promise<void>
 }
 
-const GoalUpdater = forwardRef<GoalUpdaterRef, GoalUpdaterProps>(({ goals }, ref) => {
+const GoalUpdater = forwardRef<GoalUpdaterRef, GoalUpdaterProps>(({ goals, onGoalAdded }, ref) => {
   const { dbUser } = useUser()
   const queryClient = useQueryClient()
   const supabase = createClientSupabaseClient()
@@ -64,6 +65,11 @@ const GoalUpdater = forwardRef<GoalUpdaterRef, GoalUpdaterProps>(({ goals }, ref
 
     // Invalidate and refetch user goals
     await queryClient.invalidateQueries({ queryKey: ['user-goals'] })
+    
+    // Call the callback if provided
+    if (onGoalAdded) {
+      await onGoalAdded()
+    }
   }
 
   useImperativeHandle(ref, () => ({
