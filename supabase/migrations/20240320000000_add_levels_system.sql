@@ -4,18 +4,6 @@ CREATE TABLE IF NOT EXISTS level_thresholds (
     core_requirement DECIMAL NOT NULL
 );
 
--- Add level column to users if not exists
-DO $$ 
-BEGIN
-    IF NOT EXISTS (
-        SELECT 1 
-        FROM information_schema.columns 
-        WHERE table_name = 'users' 
-        AND column_name = 'level'
-    ) THEN
-        ALTER TABLE users ADD COLUMN level INTEGER DEFAULT 0;
-    END IF;
-END $$;
 
 -- Insert level thresholds
 INSERT INTO level_thresholds (level, core_requirement)
