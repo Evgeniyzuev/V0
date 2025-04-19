@@ -17,7 +17,7 @@ KEY INFORMATION ABOUT THE USER:
 
 DEBUG INFORMATION:
 (Debug: I see ${goals?.length || 0} goal(s) loaded.
-Goals: ${goals?.length ? goals.map(goal => goal.title || goal.goal?.title || `Goal ${goal.id}`).join(', ') : 'No goals found'})
+Goals: ${goals?.length ? goals.map(g => g.title || (g.goal && g.goal.title) || `Goal ${g.id}`).join(', ') : 'No goals found'})
 
 CURRENT GOALS:
 ${goals ? goals.map(goal => {
