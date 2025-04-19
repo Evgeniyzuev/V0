@@ -9,6 +9,7 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { topUpWalletBalance } from "@/app/actions/finance-actions"
 
+// Стабильный билд
 // Обновим интерфейс TopUpModalProps
 interface TopUpModalProps {
   isOpen: boolean
