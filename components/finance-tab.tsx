@@ -330,7 +330,7 @@ export default function FinanceTab() {
               variant="outline"
               size="sm"
               className="bg-white/20 text-white border-white/40 hover:bg-white/30 h-7"
-              onClick={() => window.location.reload()}
+              onClick={refreshUser}
             >
               <RefreshCw className="h-3.5 w-3.5 mr-1" />
               Refresh
