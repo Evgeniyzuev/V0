@@ -33,7 +33,7 @@ export function useTaskVerification({
   const [verifying, setVerifying] = useState(false);
 
   // Wrap handleTaskVerification in useCallback
-  const handleTaskVerification = useCallback(async (taskNumber: number, currentGoals: any[] | null) => {
+  const handleTaskVerification = useCallback(async (taskNumber: number, currentGoals: any[] | null, taskState?: any) => {
     // Check dbUser?.id inside the callback where it has the latest value
     if (verifying || !dbUser?.id) return;
     setVerifying(true);
@@ -91,9 +91,7 @@ export function useTaskVerification({
           : `Задание ${taskNumber} не выполнено. У вас ${goalsCount} целей, нужно больше одной цели.`;
       } else if (taskNumber === 3) {
         // Check if user has used the Time to Target calculator
-        // @ts-ignore
-        const hasUsedCalculator = window?.moneytron?.hasUsedTimeToTargetCalculator?.();
-        success = hasUsedCalculator;
+        success = taskState?.hasCalculated === true;
         message = success
           ? `Задание ${taskNumber} выполнено! Вы успешно использовали калькулятор времени до цели.`
           : `Задание ${taskNumber} не выполнено. Введите целевую сумму и нажмите Calculate.`;
@@ -164,5 +162,5 @@ export function useTaskVerification({
     onTaskComplete
   ]);
 
-  return { verifying, handleTaskVerification: handleTaskVerification as (taskNumber: number, currentGoals: any[] | null) => Promise<void> };
+  return { verifying, handleTaskVerification: handleTaskVerification as (taskNumber: number, currentGoals: any[] | null, taskState?: any) => Promise<void> };
 }

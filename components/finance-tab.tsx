@@ -258,17 +258,6 @@ export default function FinanceTab() {
     setHasCalculated(false);
   }, [targetCoreAmount]);
 
-  // Expose calculation state for task verification
-  useEffect(() => {
-    if (window) {
-      // @ts-ignore
-      window.moneytron = {
-        ...window.moneytron,
-        hasUsedTimeToTargetCalculator: () => hasCalculated
-      };
-    }
-  }, [hasCalculated]);
-
   // Показываем индикатор загрузки
   if (userLoading) {
     return (
@@ -562,7 +551,7 @@ export default function FinanceTab() {
                           size="sm"
                           variant="outline"
                           className="h-6 text-xs"
-                          onClick={() => handleTaskVerification(3, goals)}
+                          onClick={() => handleTaskVerification(3, goals, { hasCalculated })}
                           disabled={verifying}
                         >
                           {verifying ? (
