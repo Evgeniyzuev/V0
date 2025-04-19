@@ -51,7 +51,7 @@ interface TelegramUser {
   is_premium?: boolean; // Добавим поле
 }
 
-interface DbUser {
+export type DbUser = {
   id: string;
   user_id?: string;
   telegram_id: number;
@@ -71,9 +71,10 @@ interface DbUser {
   // Добавляем поле для реферальной системы
   referrer_id?: number;
   // Добавьте другие поля из вашей таблицы users
-}
+  reinvest: number;
+};
 
-interface UserContextType {
+export type UserContextType = {
   telegramUser: TelegramUser | null;
   authUser: User | null;
   dbUser: DbUser | null;
@@ -84,9 +85,22 @@ interface UserContextType {
   tasks: UserTask[] | null;
   refreshGoals: () => Promise<void>;
   refreshTasks: () => Promise<void>;
-}
+  refreshUser: () => Promise<void>;
+};
 
-const UserContext = createContext<UserContextType | undefined>(undefined);
+export const UserContext = createContext<UserContextType>({
+  telegramUser: null,
+  authUser: null,
+  dbUser: null,
+  isLoading: true,
+  error: null,
+  refreshUserData: async () => {},
+  goals: null,
+  tasks: null,
+  refreshGoals: async () => {},
+  refreshTasks: async () => {},
+  refreshUser: async () => {},
+});
 
 // Убираем инициализацию Supabase с верхнего уровня
 
@@ -461,6 +475,16 @@ export const UserProvider = ({ children }: { children: ReactNode }) => {
     }
   }, [dbUser?.id]);
 
+  const refreshUser = async () => {
+    try {
+      const response = await fetch('/api/user')
+      const data = await response.json()
+      setDbUser(data.user)
+    } catch (error) {
+      console.error('Error refreshing user:', error)
+    }
+  }
+
   // Формируем значение контекста
   const contextValue = useMemo(() => ({
     telegramUser,
@@ -473,6 +497,7 @@ export const UserProvider = ({ children }: { children: ReactNode }) => {
     tasks,
     refreshGoals,
     refreshTasks,
+    refreshUser,
   }), [telegramUser, authUser, dbUser, isLoading, error, manualRefresh, goals, tasks]);
 
   return (

@@ -1,10 +1,10 @@
 "use client"
 
 import { useState, useEffect } from "react"
-import { ArrowDown, RefreshCw, Plus, ArrowRight, Send, Wallet, User } from "lucide-react"
+import { ArrowDown, RefreshCw, Plus, ArrowRight, Send, Wallet, User, Check } from "lucide-react"
 import { Card, CardContent } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
-import { getUserBalances } from "@/app/actions/finance-actions"
+import { getUserBalances, updateUserReinvest } from "@/app/actions/finance-actions"
 import TopUpModal from "@/components/finance/top-up-modal"
 import TransferModal from "@/components/finance/transfer-modal"
 import { useToast } from "@/hooks/use-toast"
@@ -80,18 +80,29 @@ const calculateLevelProgress = (balance: number) => {
 };
 
 export default function FinanceTab() {
-  const { telegramUser, dbUser, isLoading: userLoading } = useUser()
+  const { telegramUser, dbUser, isLoading: userLoading, refreshUser } = useUser()
   const [activeTab, setActiveTab] = useState("wallet")
   const [walletBalance, setWalletBalance] = useState(0)
   const [coreBalance, setCoreBalance] = useState(0)
   const [userId, setUserId] = useState<string | null>(null)
   const [isTopUpModalOpen, setIsTopUpModalOpen] = useState(false)
   const [isTransferModalOpen, setIsTransferModalOpen] = useState(false)
-  const [reinvestPercentage, setReinvestPercentage] = useState(70)
+  const [reinvestPercentage, setReinvestPercentage] = useState(100)
+  const [isReinvestChanged, setIsReinvestChanged] = useState(false)
   const { toast } = useToast()
 
   // Daily APY rate (0.0633% per day = 26% APY)
   const DAILY_RATE = 0.000633
+
+  // Update local state when dbUser changes
+  useEffect(() => {
+    if (dbUser) {
+      setWalletBalance(dbUser.wallet_balance || 0)
+      setCoreBalance(dbUser.aicore_balance || 0)
+      setReinvestPercentage(dbUser.reinvest || 100)
+      setUserId(dbUser.id)
+    }
+  }, [dbUser])
 
   // Calculate daily income
   const calculateDailyIncome = (balance: number) => {
@@ -106,17 +117,30 @@ export default function FinanceTab() {
     const num = parseInt(value)
     if (!isNaN(num) && num >= 50 && num <= 100) {
       setReinvestPercentage(num)
+      setIsReinvestChanged(true)
     }
   }
 
-  // Обновляем балансы при изменении dbUser
-  useEffect(() => {
-    if (dbUser) {
-      setWalletBalance(dbUser.wallet_balance || 0)
-      setCoreBalance(dbUser.aicore_balance || 0)
-      setUserId(dbUser.id)
+  // Save reinvest percentage
+  const handleSaveReinvest = async () => {
+    if (!userId) return
+
+    try {
+      await updateUserReinvest(userId, reinvestPercentage)
+      await refreshUser()
+      setIsReinvestChanged(false)
+      toast({
+        title: "Success",
+        description: "Reinvest percentage updated successfully",
+      })
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: "Failed to update reinvest percentage",
+        variant: "destructive",
+      })
     }
-  }, [dbUser])
+  }
 
   // Показываем индикатор загрузки
   if (userLoading) {
@@ -268,11 +292,21 @@ export default function FinanceTab() {
                       type="number"
                       value={reinvestPercentage}
                       onChange={(e) => handleReinvestChange(e.target.value)}
-                      className="w-16 h-7 text-sm"
+                      className="w-16 h-7 text-sm text-right"
                       min={50}
                       max={100}
                     />
                     <span className="text-sm text-gray-500">%</span>
+                    {isReinvestChanged && (
+                      <Button
+                        size="sm"
+                        variant="ghost"
+                        className="h-7 w-7 p-0"
+                        onClick={handleSaveReinvest}
+                      >
+                        <Check className="h-4 w-4 text-green-500" />
+                      </Button>
+                    )}
                   </div>
                 </div>
                 <Progress value={reinvestPercentage} className="h-2" />

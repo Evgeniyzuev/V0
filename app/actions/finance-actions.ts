@@ -3,6 +3,13 @@
 import { createServerSupabaseClient } from "@/lib/supabase"
 import { revalidatePath } from "next/cache"
 
+const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!
+const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY!
+
+if (!supabaseUrl || !supabaseServiceKey) {
+  throw new Error('Missing Supabase environment variables')
+}
+
 // Функция для получения балансов пользователя
 // Если указан userId, используем его, иначе получаем первого пользователя
 export async function getUserBalances(userId?: string) {
@@ -136,6 +143,28 @@ export async function transferToCore(amount: number, userId: string) {
   } catch (error) {
     console.error("Error in transferToCore:", error)
     return { success: false, error: "Failed to transfer to core" }
+  }
+}
+
+export async function updateUserReinvest(userId: string, reinvestPercentage: number) {
+  try {
+    if (reinvestPercentage < 50 || reinvestPercentage > 100) {
+      throw new Error('Reinvest percentage must be between 50 and 100')
+    }
+
+    const supabase = createServerSupabaseClient()
+    const { error } = await supabase
+      .from('users')
+      .update({ reinvest: reinvestPercentage })
+      .eq('id', userId)
+
+    if (error) throw error
+
+    revalidatePath('/finance')
+    return { success: true }
+  } catch (error) {
+    console.error('Error updating reinvest percentage:', error)
+    throw error
   }
 }
 
