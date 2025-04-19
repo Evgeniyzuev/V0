@@ -439,14 +439,21 @@ export default function TasksTab() {
                       console.log('Passing goals to handleTaskVerification:', goals);
                       handleTaskVerification(task.number, goals);
                     }}
-                    disabled={verifying}
+                    disabled={verifying || (task.number === 2 && goals === null)}
                   >
                     {verifying ? (
                       <span className="animate-spin rounded-full h-4 w-4 border-b-2 border-gray-800 mr-2"></span>
+                    ) : task.number === 2 && goals === null ? (
+                      <>
+                        <span className="animate-spin rounded-full h-4 w-4 border-b-2 border-gray-800 mr-2"></span>
+                        Loading Goals...
+                      </>
                     ) : (
-                      <Check className="h-4 w-4 mr-2" />
+                      <>
+                        <Check className="h-4 w-4 mr-2" />
+                        Check
+                      </>
                     )}
-                    Check
                   </Button>
                 )}
                 <div onClick={() => toggleTaskExpansion(task.number)} style={{ cursor: 'pointer' }}>

@@ -10,6 +10,7 @@ import { createClientSupabaseClient } from "@/lib/supabase"
 import { addUserGoal, fetchUserGoals } from '@/lib/api/goals' // Import fetchUserGoals
 import { User, Session } from "@supabase/supabase-js";
 import type { UserGoal, UserTask } from '@/types/supabase'; // Import types
+import { useQueryClient, useQuery } from '@tanstack/react-query'
 
 // Интерфейс для WebApp для TypeScript
 interface TelegramWebApp {
@@ -98,9 +99,17 @@ export const UserProvider = ({ children }: { children: ReactNode }) => {
   const [error, setError] = useState<string | null>(null);
   const [webApp, setWebApp] = useState<TelegramWebApp | null>(null);
   const [session, setSession] = useState<Session | null>(null);
-  const [goals, setGoals] = useState<any[] | null>(null);  // Change type to any[]
   const [tasks, setTasks] = useState<UserTask[] | null>(null);
   
+  const queryClient = useQueryClient();
+
+  // Use React Query for goals
+  const { data: goals = null } = useQuery({
+    queryKey: ['user-goals', authUser?.id],
+    queryFn: () => fetchUserGoals(authUser?.id),
+    enabled: !!authUser?.id
+  });
+
   // Флаги для предотвращения повторных запросов
   const apiCalledRef = useRef(false);
   const userLoadedRef = useRef(false);
@@ -419,12 +428,11 @@ export const UserProvider = ({ children }: { children: ReactNode }) => {
     }
   }, [telegramUser, authUser]);
 
-  // Add function to refresh goals
+  // Add function to refresh goals using React Query
   const refreshGoals = async () => {
     if (!authUser?.id) return;
     try {
-      const userGoals = await fetchUserGoals(authUser.id);
-      setGoals(userGoals);
+      await queryClient.invalidateQueries({ queryKey: ['user-goals', authUser.id] });
     } catch (err) {
       console.error('Error refreshing goals:', err);
       setError('Ошибка при обновлении целей');
