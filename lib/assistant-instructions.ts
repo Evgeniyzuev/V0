@@ -16,8 +16,8 @@ KEY INFORMATION ABOUT THE USER:
 - Interests: ${interests.join(', ') || 'Not specified'}
 
 DEBUG INFORMATION:
-(Debug: I see ${goals?.length || 0} goal(s) loaded.)
-Goal titles: ${goals ? goals.map(goal => goal.title || goal.goal?.title || `Goal ${goal.id}`).join(', ') : 'None'}
+(Debug: I see ${goals?.length || 0} goal(s) loaded.
+Goals: ${goals?.length ? goals.map(goal => goal.title || goal.goal?.title || `Goal ${goal.id}`).join(', ') : 'No goals found'})
 
 CURRENT GOALS:
 ${goals ? goals.map(goal => {
