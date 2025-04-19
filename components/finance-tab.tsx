@@ -152,7 +152,7 @@ export default function FinanceTab() {
 
   // Calculate future core value using compound interest with daily rewards
   const calculateFutureCore = () => {
-    const daysToCalculate = yearsToCalculate * 365
+    const daysToCalculate = yearsToCalculate * 365.25
     const dailyRate = DAILY_RATE
     
     // Calculate future value of initial core with compound interest
