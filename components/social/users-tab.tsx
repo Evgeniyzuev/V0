@@ -10,7 +10,7 @@ import { User } from "@supabase/supabase-js"
 type Referral = {
   id: string
   created_at: string
-  username?: string
+  first_name?: string
   level: number
   avatar_url?: string
 }
@@ -32,7 +32,7 @@ export default function UsersTab() {
 
       const { data, error } = await supabase
         .from("users")
-        .select("id, created_at, username, level, avatar_url")
+        .select("id, created_at, first_name, level, avatar_url")
         .eq("referrer_id", telegramUser.id)
         .order("created_at", { ascending: false })
 
@@ -68,11 +68,11 @@ export default function UsersTab() {
           <Card key={referral.id}>
             <CardHeader className="flex flex-row items-center gap-4">
               <Avatar className="h-10 w-10">
-                <AvatarImage src={referral.avatar_url || undefined} alt={referral.username || "User"} />
-                <AvatarFallback>{referral.username ? referral.username.charAt(0).toUpperCase() : 'U'}</AvatarFallback>
+                <AvatarImage src={referral.avatar_url || undefined} alt={referral.first_name || "User"} />
+                <AvatarFallback>{referral.first_name ? referral.first_name.charAt(0).toUpperCase() : 'U'}</AvatarFallback>
               </Avatar>
               <div className="grid gap-1">
-                <CardTitle>{referral.username || `User ${referral.id.substring(0, 6)}`}</CardTitle>
+                <CardTitle>{referral.first_name || `User ${referral.id.substring(0, 6)}`}</CardTitle>
                 <p className="text-sm text-muted-foreground">Level {referral.level}</p>
               </div>
             </CardHeader>
