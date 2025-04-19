@@ -6,7 +6,7 @@ CREATE TABLE IF NOT EXISTS level_thresholds (
 );
 
 
--- Insert level thresholds
+-- Insert level thresholds!
 INSERT INTO level_thresholds (level, core_requirement)
 VALUES
     (1, 2),
