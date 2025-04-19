@@ -21,7 +21,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "
 const supabase = createClientSupabaseClient()
 
 export default function FinanceTab() {
-  const { telegramUser, dbUser, isLoading: userLoading, refreshUser, goals } = useUser()
+  const { telegramUser, dbUser, isLoading: userLoading, refreshUserData, goals } = useUser()
   const { levelUpModal, handleLevelUpModalClose, levelThresholds } = useLevelCheck()
   const [activeTab, setActiveTab] = useState<"wallet" | "core">("wallet")
   const [walletBalance, setWalletBalance] = useState(0)
@@ -42,7 +42,7 @@ export default function FinanceTab() {
 
   const { verifying, handleTaskVerification } = useTaskVerification({
     dbUser,
-    refreshUserData: refreshUser,
+    refreshUserData,
     setStatusMessage,
     onTaskComplete: (taskNumber, reward, oldCore, newCore) => {
       toast({
@@ -96,7 +96,7 @@ export default function FinanceTab() {
 
     try {
       await updateUserReinvest(userId, reinvestPercentage)
-      await refreshUser()
+      await refreshUserData()
       setIsReinvestChanged(false)
       toast({
         title: "Success",
@@ -330,7 +330,7 @@ export default function FinanceTab() {
               variant="outline"
               size="sm"
               className="bg-white/20 text-white border-white/40 hover:bg-white/30 h-7"
-              onClick={refreshUser}
+              onClick={refreshUserData}
             >
               <RefreshCw className="h-3.5 w-3.5 mr-1" />
               Refresh
