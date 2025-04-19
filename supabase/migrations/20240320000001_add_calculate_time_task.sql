@@ -1,4 +1,4 @@
--- Add new task for calculating time to target
+-- Add new task for calculating time to target2
 INSERT INTO tasks (number, title, reward, icon_url, description, completion_condition, steps_total)
 VALUES (
     3, -- Adjust number if needed

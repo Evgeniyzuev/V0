@@ -244,7 +244,7 @@ export default function FinanceTab() {
         .from('user_tasks')
         .select('*')
         .eq('user_id', dbUser.id)
-        .eq('task_id', 12) // Task number for Calculate Time to Target
+        .eq('task_id', 3) // Task number for Calculate Time to Target
         .single();
 
       if (userTask && userTask.status !== 'completed') {
@@ -252,7 +252,7 @@ export default function FinanceTab() {
           .from('user_tasks')
           .update({ status: 'completed' })
           .eq('user_id', dbUser.id)
-          .eq('task_id', 12);
+          .eq('task_id', 3);
       }
     } catch (error) {
       console.error('Error updating task status:', error);
