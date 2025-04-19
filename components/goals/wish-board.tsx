@@ -329,6 +329,20 @@ const WishBoard: React.FC<WishBoardProps> = ({ showOnlyRecommendations }) => {
     setIsEditing(false);
   };
 
+  // Add new state to track which section the goal is from
+  const [isFromPersonalGoals, setIsFromPersonalGoals] = useState(false);
+
+  // Modify click handlers to set the source section
+  const handlePersonalGoalClick = (goal: Goal) => {
+    setIsFromPersonalGoals(true);
+    handleWishClick(goal);
+  };
+
+  const handleAvailableGoalClick = (goal: Goal) => {
+    setIsFromPersonalGoals(false);
+    handleWishClick(goal);
+  };
+
   const closeModal = () => {
     setSelectedWish(null);
     setIsEditing(false);
@@ -496,7 +510,7 @@ const WishBoard: React.FC<WishBoardProps> = ({ showOnlyRecommendations }) => {
                 <div
                   key={goal?.id || Math.random()}
                   className="image-item animate-fade-in rounded-lg overflow-hidden shadow-md aspect-square cursor-pointer"
-                  onClick={() => goal && handleWishClick(goal)}
+                  onClick={() => goal && handlePersonalGoalClick(goal)}
                 >
                   <div className="relative w-full h-full">
                     <img
@@ -530,7 +544,7 @@ const WishBoard: React.FC<WishBoardProps> = ({ showOnlyRecommendations }) => {
                 <div
                   key={goal.id}
                   className="image-item animate-fade-in rounded-lg overflow-hidden shadow-md aspect-square cursor-pointer"
-                  onClick={() => handleWishClick(goal)}
+                  onClick={() => handleAvailableGoalClick(goal)}
                 >
                   <div className="relative w-full h-full">
                     <img
@@ -684,23 +698,27 @@ const WishBoard: React.FC<WishBoardProps> = ({ showOnlyRecommendations }) => {
                       </div>
                       <div className="flex gap-2">
                         {dbUser?.id && selectedWish && (
-                          <button
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              if (isGoalInPersonalGoals(selectedWish.id)) {
+                          isFromPersonalGoals ? (
+                            <button
+                              onClick={(e) => {
+                                e.stopPropagation();
                                 handleRemoveFromPersonalGoals(selectedWish);
-                              } else {
+                              }}
+                              className="px-4 py-2 text-white rounded hover:opacity-90 transition-colors bg-red-600 hover:bg-red-700"
+                            >
+                              Remove from Personal Goals
+                            </button>
+                          ) : !isGoalInPersonalGoals(selectedWish.id) && (
+                            <button
+                              onClick={(e) => {
+                                e.stopPropagation();
                                 handleAddToPersonalGoals(selectedWish);
-                              }
-                            }}
-                            className={`px-4 py-2 text-white rounded hover:opacity-90 transition-colors ${
-                              isGoalInPersonalGoals(selectedWish.id) 
-                                ? 'bg-red-600 hover:bg-red-700' 
-                                : 'bg-purple-600 hover:bg-purple-700'
-                            }`}
-                          >
-                            {isGoalInPersonalGoals(selectedWish.id) ? 'Remove from Personal Goals' : 'Add to Personal Goals'}
-                          </button>
+                              }}
+                              className="px-4 py-2 text-white rounded hover:opacity-90 transition-colors bg-purple-600 hover:bg-purple-700"
+                            >
+                              Add to Personal Goals
+                            </button>
+                          )
                         )}
                         <button
                           onClick={(e) => {
