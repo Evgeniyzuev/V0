@@ -100,6 +100,13 @@ export function useTaskVerification({
         message = success
           ? `Задание ${taskNumber} выполнено! Вы успешно использовали калькулятор времени до цели.`
           : `Задание ${taskNumber} не выполнено. Перейдите на вкладку Core, введите целевую сумму и нажмите Calculate.`;
+      } else if (taskNumber === 4) {
+        // Check if user has sent a message to AI Assistant
+        const hasInteractedWithAI = localStorage.getItem('hasInteractedWithAI') === 'true';
+        success = hasInteractedWithAI;
+        message = success
+          ? `Задание ${taskNumber} выполнено! Вы успешно начали диалог с ИИ ассистентом.`
+          : `Задание ${taskNumber} не выполнено. Отправьте сообщение ИИ ассистенту.`;
       }
       // Add more task verifications here
       // --- End task verification logic ---
