@@ -421,9 +421,9 @@ export const UserProvider = ({ children }: { children: ReactNode }) => {
 
   // Simplify goals refresh
   const refreshGoals = async () => {
-    if (!authUser?.id) return;
+    if (!dbUser?.id) return;
     try {
-      const userGoals = await fetchUserGoals(authUser.id);
+      const userGoals = await fetchUserGoals(dbUser.id);
       console.log('Goals loaded:', userGoals?.length || 0);
       setGoals(userGoals);
     } catch (err) {
@@ -455,11 +455,11 @@ export const UserProvider = ({ children }: { children: ReactNode }) => {
 
   // Load goals and tasks when user is authenticated
   useEffect(() => {
-    if (authUser?.id) {
+    if (dbUser?.id) {
       refreshGoals();
       refreshTasks();
     }
-  }, [authUser?.id]);
+  }, [dbUser?.id]);
 
   // Формируем значение контекста
   const contextValue = useMemo(() => ({
