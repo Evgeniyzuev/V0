@@ -129,25 +129,25 @@ export default function AIAssistantTab() {
       }
     }
 
-    // Add debugging info about goals with titles
-    if (userGoals.length > 0) {
-      const goalTitles = userGoals.map(goal => 
-        goal.title || goal.goal?.title || `Goal ${goal.id}`
-      ).join(', ');
-      baseMessage += `\n\n(Debug: I see ${userGoals.length} goal(s) loaded: ${goalTitles})`;
-    } else {
-      baseMessage += `\n\n(Debug: I don't see any goals loaded currently.)`;
-    }
+    // // Add debugging info about goals with titles
+    // if (userGoals.length > 0) {
+    //   const goalTitles = userGoals.map(goal => 
+    //     goal.title || goal.goal?.title || `Goal ${goal.id}`
+    //   ).join(', ');
+    //   baseMessage += `\n\n(Debug: I see ${userGoals.length} goal(s) loaded: ${goalTitles})`;
+    // } else {
+    //   baseMessage += `\n\n(Debug: I don't see any goals loaded currently.)`;
+    // }
 
-    // Add debugging info about tasks
-    if (userTasks.length > 0) {
-      const taskTitles = userTasks.map(task => 
-        task.task?.title || `Task ${task.id}`
-      ).join(', ');
-      baseMessage += `\n\n(Debug: I see ${userTasks.length} task(s) loaded: ${taskTitles})`;
-    } else {
-      baseMessage += `\n\n(Debug: I don't see any tasks loaded currently.)`;
-    }
+    // // Add debugging info about tasks
+    // if (userTasks.length > 0) {
+    //   const taskTitles = userTasks.map(task => 
+    //     task.task?.title || `Task ${task.id}`
+    //   ).join(', ');
+    //   baseMessage += `\n\n(Debug: I see ${userTasks.length} task(s) loaded: ${taskTitles})`;
+    // } else {
+    //   baseMessage += `\n\n(Debug: I don't see any tasks loaded currently.)`;
+    // }
 
     return baseMessage;
   };
