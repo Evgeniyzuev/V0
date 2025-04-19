@@ -15,6 +15,10 @@ KEY INFORMATION ABOUT THE USER:
 - Key Skills: ${skills.join(', ') || 'Not specified'}
 - Interests: ${interests.join(', ') || 'Not specified'}
 
+DEBUG INFORMATION:
+(Debug: I see ${goals?.length || 0} goal(s) loaded.)
+Goal titles: ${goals ? goals.map(goal => goal.title || goal.goal?.title || `Goal ${goal.id}`).join(', ') : 'None'}
+
 CURRENT GOALS:
 ${goals ? goals.map(goal => {
   const title = goal.title || (goal.goal && goal.goal.title) || `Goal ${goal.id}`;
