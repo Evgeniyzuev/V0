@@ -385,11 +385,11 @@ const WishBoard: React.FC<WishBoardProps> = ({ showOnlyRecommendations }) => {
     }
   };
 
-  if (isLoadingGoals || !userGoals) {
+  if (dbUser?.id && (isLoadingGoals || !userGoals)) {
     return <div className="p-4">Loading goals...</div>;
   }
 
-  if (goalsError) {
+  if (dbUser?.id && goalsError) {
     return <div className="p-4 text-red-500">Error loading goals: {goalsError.message}</div>;
   }
 
@@ -397,113 +397,137 @@ const WishBoard: React.FC<WishBoardProps> = ({ showOnlyRecommendations }) => {
     <div className="p-4 space-y-2">
       {goalUpdater}
       {!dbUser?.id ? (
-        // Auth UI for unauthenticated users
-        <div className="mb-2">
-          <Card>
-            <CardContent className="pt-6">
-              <div className="text-center flex flex-col items-center gap-4">
-                <h3 className="text-lg font-medium">Access to Personal Goals</h3>
-                <p className="text-gray-500 mb-4">To access your personal goals, please log in to the system</p>
-                <Avatar className="h-20 w-20 mx-auto mb-2">
-                  <AvatarFallback>
-                    <User className="h-10 w-10 text-gray-400" />
-                  </AvatarFallback>
-                </Avatar>
-                <Button
-                  className="bg-purple-600 hover:bg-purple-700 text-white flex items-center gap-2 px-6"
-                  onClick={() => {
-                    const socialButton = document.querySelector('button[aria-label="Social"]');
-                    if (socialButton instanceof HTMLElement) {
-                      socialButton.click();
-                    }
-                  }}
-                >
-                  <User className="h-5 w-5" />
-                  Go to Profile
-                </Button>
-                <p className="text-xs text-gray-400 mt-4">
-                  After logging in, you will get access to all application features
-                </p>
-              </div>
-            </CardContent>
-          </Card>
-        </div>
-      ) : (
-        // Personal Goals Section for authenticated users
-        <div className="mb-4">
-          <div className="flex items-center justify-between">
-            <h2 className="text-xl font-semibold">
-              Your Personal Goals: {userGoals.length}
-            </h2>
-          </div>
-          <div className="grid grid-cols-3 gap-1">
-            {userGoals.filter(Boolean).map((goal) => (
-              <div
-                key={goal?.id || Math.random()}
-                className="image-item animate-fade-in rounded-lg overflow-hidden shadow-md aspect-square cursor-pointer"
-                onClick={() => goal && handleWishClick(goal)}
-              >
-                <div className="relative w-full h-full">
-                  <img
-                    src={goal?.image_url || (goal?.goal?.image_url || '')}
-                    alt={goal?.title || (goal?.goal?.title || '')}
-                    className="w-full h-full object-cover"
-                    loading="lazy"
-                  />
-                  <div className="absolute inset-0 bg-gradient-to-t from-black/50 to-transparent opacity-0 hover:opacity-100 transition-opacity duration-300 flex items-end">
-                    <div className="p-3 text-white">
-                      <div className="text-sm font-medium">{goal?.title || goal?.goal?.title}</div>
-                      {goal?.status && (
-                        <div className="text-xs mt-1">Status: {goal.status}</div>
-                      )}
-                      {goal?.progress_percentage !== null && (
-                        <div className="text-xs">Progress: {goal.progress_percentage}%</div>
-                      )}
-                    </div>
-                  </div>
+        <>
+          {/* Auth UI for unauthenticated users */}
+          <div className="mb-2">
+            <Card>
+              <CardContent className="pt-6">
+                <div className="text-center flex flex-col items-center gap-4">
+                  <h3 className="text-lg font-medium">Access to Personal Goals</h3>
+                  <p className="text-gray-500 mb-4">To access your personal goals, please log in to the system</p>
+                  <Avatar className="h-20 w-20 mx-auto mb-2">
+                    <AvatarFallback>
+                      <User className="h-10 w-10 text-gray-400" />
+                    </AvatarFallback>
+                  </Avatar>
+                  <Button
+                    className="bg-purple-600 hover:bg-purple-700 text-white flex items-center gap-2 px-6"
+                    onClick={() => {
+                      const socialButton = document.querySelector('button[aria-label="Social"]');
+                      if (socialButton instanceof HTMLElement) {
+                        socialButton.click();
+                      }
+                    }}
+                  >
+                    <User className="h-5 w-5" />
+                    Go to Profile
+                  </Button>
+                  <p className="text-xs text-gray-400 mt-4">
+                    After logging in, you will get access to all application features
+                  </p>
                 </div>
-              </div>
-            ))}
+              </CardContent>
+            </Card>
           </div>
-        </div>
-      )}
 
-      {/* Show Available Goals section only for authenticated users or when showOnlyRecommendations is true */}
-      {(dbUser?.id || showOnlyRecommendations) && (
-        <div>
-          <h3 className="text-lg font-semibold mb-2">
-            {dbUser?.id ? 'Available Goals' : 'Recommended Goals'}
-          </h3>
-          <div className="grid grid-cols-3 gap-1">
-            {goals.map((goal) => (
-              <div
-                key={goal.id}
-                className="image-item animate-fade-in rounded-lg overflow-hidden shadow-md aspect-square cursor-pointer"
-                onClick={() => handleWishClick(goal)}
-              >
-                <div className="relative w-full h-full">
-                  <img
-                    src={goal.image_url || (goal.goal?.image_url || '')}
-                    alt={goal.title || (goal.goal?.title || '')}
-                    className="w-full h-full object-cover"
-                    loading="lazy"
-                  />
-                  <div className="absolute inset-0 bg-gradient-to-t from-black/50 to-transparent opacity-0 hover:opacity-100 transition-opacity duration-300 flex items-end">
-                    <div className="p-3 text-white">
-                      <div className="text-sm font-medium">{goal.title || goal.goal?.title}</div>
-                      {goal.status && (
-                        <div className="text-xs mt-1">Status: {goal.status}</div>
-                      )}
-                      {goal.progress_percentage !== null && (
-                        <div className="text-xs">Progress: {goal.progress_percentage}%</div>
-                      )}
+          {/* Show recommendations for unauthorized users */}
+          {showOnlyRecommendations && !isLoadingGoals && (
+            <div>
+              <h3 className="text-lg font-semibold mb-2">Recommended Goals</h3>
+              <div className="grid grid-cols-3 gap-1">
+                {goals.map((goal) => (
+                  <div
+                    key={goal.id}
+                    className="image-item animate-fade-in rounded-lg overflow-hidden shadow-md aspect-square cursor-pointer"
+                    onClick={() => handleWishClick(goal)}
+                  >
+                    <div className="relative w-full h-full">
+                      <img
+                        src={goal.image_url || ''}
+                        alt={goal.title ?? 'Goal image'}
+                        className="w-full h-full object-cover"
+                        loading="lazy"
+                      />
+                      <div className="absolute inset-0 bg-gradient-to-t from-black/50 to-transparent opacity-0 hover:opacity-100 transition-opacity duration-300 flex items-end">
+                        <div className="p-3 text-white">
+                          <div className="text-sm font-medium">{goal.title}</div>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+        </>
+      ) : (
+        <>
+          {/* Personal Goals Section for authenticated users */}
+          <div className="mb-4">
+            <div className="flex items-center justify-between">
+              <h2 className="text-xl font-semibold">
+                Your Personal Goals: {userGoals?.length || 0}
+              </h2>
+            </div>
+            <div className="grid grid-cols-3 gap-1">
+              {(userGoals || []).filter(Boolean).map((goal) => (
+                <div
+                  key={goal?.id || Math.random()}
+                  className="image-item animate-fade-in rounded-lg overflow-hidden shadow-md aspect-square cursor-pointer"
+                  onClick={() => goal && handleWishClick(goal)}
+                >
+                  <div className="relative w-full h-full">
+                    <img
+                      src={goal?.image_url || (goal?.goal?.image_url || '')}
+                      alt={goal?.title || (goal?.goal?.title || '')}
+                      className="w-full h-full object-cover"
+                      loading="lazy"
+                    />
+                    <div className="absolute inset-0 bg-gradient-to-t from-black/50 to-transparent opacity-0 hover:opacity-100 transition-opacity duration-300 flex items-end">
+                      <div className="p-3 text-white">
+                        <div className="text-sm font-medium">{goal?.title || goal?.goal?.title}</div>
+                        {goal?.status && (
+                          <div className="text-xs mt-1">Status: {goal.status}</div>
+                        )}
+                        {goal?.progress_percentage !== null && (
+                          <div className="text-xs">Progress: {goal.progress_percentage}%</div>
+                        )}
+                      </div>
                     </div>
                   </div>
                 </div>
-              </div>
-            ))}
+              ))}
+            </div>
           </div>
-        </div>
+
+          {/* Available Goals section for authenticated users */}
+          <div>
+            <h3 className="text-lg font-semibold mb-2">Available Goals</h3>
+            <div className="grid grid-cols-3 gap-1">
+              {goals.map((goal) => (
+                <div
+                  key={goal.id}
+                  className="image-item animate-fade-in rounded-lg overflow-hidden shadow-md aspect-square cursor-pointer"
+                  onClick={() => handleWishClick(goal)}
+                >
+                  <div className="relative w-full h-full">
+                    <img
+                      src={goal.image_url || ''}
+                      alt={goal.title ?? 'Goal image'}
+                      className="w-full h-full object-cover"
+                      loading="lazy"
+                    />
+                    <div className="absolute inset-0 bg-gradient-to-t from-black/50 to-transparent opacity-0 hover:opacity-100 transition-opacity duration-300 flex items-end">
+                      <div className="p-3 text-white">
+                        <div className="text-sm font-medium">{goal.title}</div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        </>
       )}
 
       {/* Goal Detail Modal */}
