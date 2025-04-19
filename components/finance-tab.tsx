@@ -1,7 +1,7 @@
 "use client"
 
 import { useState, useEffect } from "react"
-import { ArrowDown, RefreshCw, Plus, ArrowRight, Send, Wallet, User, Check } from "lucide-react"
+import { ArrowDown, RefreshCw, Plus, ArrowRight, Send, Wallet, User, Check, Trophy } from "lucide-react"
 import { Card, CardContent } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { getUserBalances, updateUserReinvest } from "@/app/actions/finance-actions"
@@ -14,84 +14,15 @@ import { Progress } from "@/components/ui/progress"
 import { Input } from "@/components/ui/input"
 import { createClientSupabaseClient } from "@/lib/supabase"
 import { useTaskVerification } from '@/hooks/useTaskVerification'
+import { useLevelCheck } from '@/hooks/useLevelCheck'
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog"
 
 // Initialize Supabase client
 const supabase = createClientSupabaseClient()
 
-// Define level thresholds
-const levelThresholds = [
-  { level: 1, core: 2 },
-  { level: 2, core: 4 },
-  { level: 3, core: 8 },
-  { level: 4, core: 16 },
-  { level: 5, core: 32 },
-  { level: 6, core: 64 },
-  { level: 7, core: 125 },
-  { level: 8, core: 250 },
-  { level: 9, core: 500 },
-  { level: 10, core: 1000 },
-  { level: 11, core: 2000 },
-  { level: 12, core: 4000 },
-  { level: 13, core: 8000 },
-  { level: 14, core: 16000 },
-  { level: 15, core: 32000 },
-  { level: 16, core: 64000 },
-  { level: 17, core: 125000 },
-  { level: 18, core: 250000 },
-  { level: 19, core: 500000 },
-  { level: 20, core: 1000000 },
-  { level: 21, core: 2000000 },
-  { level: 22, core: 4000000 },
-  { level: 23, core: 8000000 },
-  { level: 24, core: 16000000 },
-  { level: 25, core: 32000000 },
-  { level: 26, core: 64000000 },
-  { level: 27, core: 125000000 },
-  { level: 28, core: 250000000 },
-  { level: 29, core: 500000000 },
-  { level: 30, core: 1000000000 },
-];
-
-// Calculate level and progress
-const calculateLevelProgress = (balance: number) => {
-  // Find current level and next level threshold
-  let currentLevel = 0;
-  let nextLevelThreshold = levelThresholds[0].core;
-  
-  for (let i = levelThresholds.length - 1; i >= 0; i--) {
-    if (balance >= levelThresholds[i].core) {
-      currentLevel = levelThresholds[i].level;
-      nextLevelThreshold = levelThresholds[i + 1]?.core || levelThresholds[i].core * 2;
-      break;
-    }
-  }
-
-  // Calculate progress to next level
-  const currentLevelThreshold = currentLevel > 0 
-    ? levelThresholds.find(t => t.level === currentLevel)?.core || 0 
-    : 0;
-  
-  const progressToNext = balance - currentLevelThreshold;
-  const totalNeeded = nextLevelThreshold - currentLevelThreshold;
-  const progressPercentage = (progressToNext / totalNeeded) * 100;
-
-  return {
-    currentLevel,
-    nextLevelThreshold,
-    progressToNext,
-    totalNeeded,
-    progressPercentage: Math.min(progressPercentage, 100)
-  };
-};
-
-// Calculate minimum reinvest percentage based on level
-const calculateMinReinvest = (balance: number) => {
-  const { currentLevel } = calculateLevelProgress(balance);
-  return Math.max(0, 100 - (5 * currentLevel));
-};
-
 export default function FinanceTab() {
   const { telegramUser, dbUser, isLoading: userLoading, refreshUser, goals } = useUser()
+  const { levelUpModal, handleLevelUpModalClose, levelThresholds } = useLevelCheck()
   const [activeTab, setActiveTab] = useState<"wallet" | "core">("wallet")
   const [walletBalance, setWalletBalance] = useState(0)
   const [coreBalance, setCoreBalance] = useState(0)
@@ -260,6 +191,44 @@ export default function FinanceTab() {
     setHasCalculated(false);
     localStorage.removeItem('timeToTargetCalculated');
   }, [targetCoreAmount]);
+
+  // Calculate level and progress using levelThresholds from useLevelCheck
+  const calculateLevelProgress = (balance: number) => {
+    // Find current level and next level threshold
+    let currentLevel = 0;
+    let nextLevelThreshold = levelThresholds[0].core;
+    
+    for (let i = levelThresholds.length - 1; i >= 0; i--) {
+      if (balance >= levelThresholds[i].core) {
+        currentLevel = levelThresholds[i].level;
+        nextLevelThreshold = levelThresholds[i + 1]?.core || levelThresholds[i].core * 2;
+        break;
+      }
+    }
+
+    // Calculate progress to next level
+    const currentLevelThreshold = currentLevel > 0 
+      ? levelThresholds.find(t => t.level === currentLevel)?.core || 0 
+      : 0;
+    
+    const progressToNext = balance - currentLevelThreshold;
+    const totalNeeded = nextLevelThreshold - currentLevelThreshold;
+    const progressPercentage = (progressToNext / totalNeeded) * 100;
+
+    return {
+      currentLevel,
+      nextLevelThreshold,
+      progressToNext,
+      totalNeeded,
+      progressPercentage: Math.min(progressPercentage, 100)
+    };
+  };
+
+  // Calculate minimum reinvest percentage based on level
+  const calculateMinReinvest = (balance: number) => {
+    const { currentLevel } = calculateLevelProgress(balance);
+    return Math.max(0, 100 - (5 * currentLevel));
+  };
 
   // Показываем индикатор загрузки
   if (userLoading) {
@@ -667,6 +636,46 @@ export default function FinanceTab() {
           />
         </>
       )}
+
+      {/* Level Up Modal */}
+      <Dialog open={levelUpModal?.isOpen} onOpenChange={(open) => {
+        if (!open) {
+          handleLevelUpModalClose();
+        }
+      }}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle className="text-center flex items-center justify-center gap-2">
+              <Trophy className="h-6 w-6 text-yellow-500" />
+              Level Up!
+            </DialogTitle>
+          </DialogHeader>
+          <div className="py-6">
+            <div className="text-center space-y-4">
+              <p className="text-lg font-medium">Congratulations!</p>
+              <p className="text-gray-600">
+                You've reached Level <span className="font-bold text-purple-600">{levelUpModal?.newLevel}</span>!
+              </p>
+              <div className="bg-purple-50 p-4 rounded-lg">
+                 <p className="text-sm text-purple-700 mb-2">Keep growing your Core!</p>
+                 {levelUpModal?.newLevel && levelUpModal.newLevel < levelThresholds.length && (
+                    <p className="text-xs text-purple-600">
+                        Next level at ${levelThresholds[levelUpModal.newLevel].core} Core.
+                    </p>
+                 )}
+              </div>
+            </div>
+          </div>
+          <DialogFooter>
+            <Button
+              className="w-full"
+              onClick={handleLevelUpModalClose}
+            >
+              Awesome!
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   )
 }

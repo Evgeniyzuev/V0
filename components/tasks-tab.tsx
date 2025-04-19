@@ -11,52 +11,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "
 import Link from "next/link"
 import TaskUpdater from "@/components/TaskUpdater"
 import { useTaskVerification } from '@/hooks/useTaskVerification'
-
-// Define level thresholds (adjust if needed)
-const levelThresholds = [
-  { level: 1, core: 2 },
-  { level: 2, core: 4 },
-  { level: 3, core: 8 },
-  { level: 4, core: 16 },
-  { level: 5, core: 32 },
-  { level: 6, core: 64 },
-  { level: 7, core: 125 },
-  { level: 8, core: 250 },
-  { level: 9, core: 500 },
-  { level: 10, core: 1000 },
-  { level: 11, core: 2000 },
-  { level: 12, core: 4000 },
-  { level: 13, core: 8000 },
-  { level: 14, core: 16000 },
-  { level: 15, core: 32000 },
-  { level: 16, core: 64000 },
-  { level: 17, core: 125000 },
-  { level: 18, core: 250000 },
-  { level: 19, core: 500000 },
-  { level: 20, core: 1000000 },
-  { level: 21, core: 2000000 },
-  { level: 22, core: 4000000 },
-  { level: 23, core: 8000000 },
-  { level: 24, core: 16000000 },
-  { level: 25, core: 32000000 },
-  { level: 26, core: 64000000 },
-  { level: 27, core: 125000000 },
-  { level: 28, core: 250000000 },
-  { level: 29, core: 500000000 },
-  { level: 30, core: 1000000000 },
-];
-
-// Function to calculate level based on core
-const calculateLevel = (core: number): number => {
-  let calculatedLevel = 0;
-  for (let i = levelThresholds.length - 1; i >= 0; i--) {
-    if (core >= levelThresholds[i].core) {
-      calculatedLevel = levelThresholds[i].level;
-      break; // Found the highest applicable level
-    }
-  }
-  return calculatedLevel; // Return 0 if core is below the first threshold
-};
+import { useLevelCheck } from '@/hooks/useLevelCheck'
 
 // Initialize Supabase client
 const supabase = createClientSupabaseClient();
@@ -79,6 +34,7 @@ type Task = {
 
 export default function TasksTab() {
   const { dbUser, isLoading: isUserLoading, refreshUserData, goals } = useUser()
+  const { levelUpModal, handleLevelUpModalClose, levelThresholds } = useLevelCheck()
 
   const [activeTab, setActiveTab] = useState("new")
   const [expandedTaskId, setExpandedTaskId] = useState<number | null>(null)
@@ -93,12 +49,6 @@ export default function TasksTab() {
     oldCore?: number;
     newCore?: number;
   } | null>(null)
-  const [levelUpModal, setLevelUpModal] = useState<{
-    isOpen: boolean;
-    newLevel: number | null;
-    oldLevel: number | null; // Optional: To show the transition
-  } | null>(null);
-  const [isUpdatingLevel, setIsUpdatingLevel] = useState(false); // To prevent multiple updates
 
   const { verifying, handleTaskVerification, verifyTask }: { verifying: boolean; handleTaskVerification: (taskNumber: number, currentGoals: any[] | null) => Promise<void>; verifyTask: (taskNumber: number) => void } = useTaskVerification({
     dbUser,
@@ -122,54 +72,6 @@ export default function TasksTab() {
       setLoading(false)
     }
   }, [dbUser?.id, isUserLoading])
-
-  // Effect to check for level up
-  useEffect(() => {
-    if (dbUser && !isUserLoading && !isUpdatingLevel) {
-      const currentAiCoreBalance = dbUser.aicore_balance || 0;
-      const currentLevel = dbUser.level || 0; // Assuming dbUser has a 'level' field
-      const calculatedLevel = calculateLevel(currentAiCoreBalance);
-
-      console.log(`Checking level: AICoreBalance=${currentAiCoreBalance}, CurrentLevel=${currentLevel}, CalculatedLevel=${calculatedLevel}`); // Update log
-
-      if (calculatedLevel > currentLevel) {
-        console.log(`Level up detected! ${currentLevel} -> ${calculatedLevel}`); // Debug log
-        setIsUpdatingLevel(true); // Lock to prevent race conditions
-
-        // Update level in Supabase
-        const updateUserLevel = async () => {
-          try {
-            const { error } = await supabase
-              .from('users') // Make sure 'users' table name is correct
-              .update({ level: calculatedLevel }) // Make sure 'level' column name is correct
-              .eq('id', dbUser.id);
-
-            if (error) {
-              console.error("Error updating user level:", error);
-              setStatusMessage({ type: 'error', text: `Failed to update level: ${error.message}` });
-              setIsUpdatingLevel(false); // Unlock on error
-            } else {
-              console.log(`User level updated successfully to ${calculatedLevel}`); // Debug log
-              // Show level up modal AFTER db update is successful
-              setLevelUpModal({
-                isOpen: true,
-                newLevel: calculatedLevel,
-                oldLevel: currentLevel
-              });
-              // Refresh user data to get the updated level from DB *after* modal is closed
-              // No need to set isUpdatingLevel back immediately, let the modal close handle it
-            }
-          } catch (err) {
-            console.error("Unexpected error updating level:", err);
-            setStatusMessage({ type: 'error', text: 'An unexpected error occurred while updating level.' });
-            setIsUpdatingLevel(false); // Unlock on unexpected error
-          }
-        };
-
-        updateUserLevel();
-      }
-    }
-  }, [dbUser?.aicore_balance, dbUser?.level, isUserLoading, isUpdatingLevel, dbUser?.id, refreshUserData, setStatusMessage]); // Update dependency
 
   const fetchTasks = async () => {
     if (!dbUser?.id) return;
@@ -342,9 +244,7 @@ export default function TasksTab() {
       {/* Level Up Modal */}
       <Dialog open={levelUpModal?.isOpen} onOpenChange={(open) => {
         if (!open) {
-          setLevelUpModal(null);
-          setIsUpdatingLevel(false); // Unlock when modal closes
-          refreshUserData(); // Refresh user data to ensure UI consistency
+          handleLevelUpModalClose();
         }
       }}>
         <DialogContent className="sm:max-w-md">
@@ -362,7 +262,6 @@ export default function TasksTab() {
               </p>
               <div className="bg-purple-50 p-4 rounded-lg">
                  <p className="text-sm text-purple-700 mb-2">Keep growing your Core!</p>
-                 {/* You could add the next level's requirement here */}
                  {levelUpModal?.newLevel && levelUpModal.newLevel < levelThresholds.length && (
                     <p className="text-xs text-purple-600">
                         Next level at ${levelThresholds[levelUpModal.newLevel].core} Core.
@@ -374,11 +273,7 @@ export default function TasksTab() {
           <DialogFooter>
             <Button
               className="w-full"
-              onClick={() => {
-                setLevelUpModal(null);
-                setIsUpdatingLevel(false); // Unlock when modal closes
-                refreshUserData(); // Refresh user data
-              }}
+              onClick={handleLevelUpModalClose}
             >
               Awesome!
             </Button>

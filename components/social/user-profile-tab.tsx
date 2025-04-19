@@ -3,9 +3,11 @@
 import { useState, useEffect } from "react"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
-import { RefreshCw, User, Wallet, Award, Users, Calendar, Phone, MessageCircle, Link, Copy, Check, Send, Share2 } from "lucide-react"
+import { RefreshCw, User, Wallet, Award, Users, Calendar, Phone, MessageCircle, Link, Copy, Check, Send, Share2, Trophy } from "lucide-react"
 import { useUser } from "@/components/UserContext"
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar"
+import { useLevelCheck } from '@/hooks/useLevelCheck'
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog"
 
 // Добавляем интерфейс для utils
 interface TelegramUtils {
@@ -153,6 +155,7 @@ function ReferralLinkSection({ userId, telegramId }: { userId?: string, telegram
 
 export default function UserProfileTab() {
   const { telegramUser, dbUser, isLoading, error, refreshUserData } = useUser()
+  const { levelUpModal, handleLevelUpModalClose, levelThresholds } = useLevelCheck()
   const [isRefreshing, setIsRefreshing] = useState(false)
   const [refreshMessage, setRefreshMessage] = useState<string | null>(null)
 
@@ -336,200 +339,242 @@ export default function UserProfileTab() {
   }
 
   return (
-    <div className="p-4">
-      <Card>
-        <CardHeader className="flex flex-row items-center justify-between p-4">
-          <CardTitle className="text-sm">User Profile</CardTitle>
-          <div className="flex items-center gap-2">
-            {refreshMessage && (
-              <span className="text-xs text-green-600 animate-fade-in-out">
-                {refreshMessage}
-              </span>
-            )}
-            <Button
-              variant="outline"
-              size="icon"
-              onClick={handleRefresh}
-              disabled={isRefreshing}
-              aria-label="Refresh user data"
-            >
-              <RefreshCw className={`h-4 w-4 ${isRefreshing ? "animate-spin" : ""}`} />
-            </Button>
-          </div>
-        </CardHeader>
-        <CardContent className="p-4 pt-0">
-          <div className="flex flex-col items-center mb-6">
-            <Avatar className="w-20 h-20 mb-3">
-              <AvatarImage src={telegramUser?.photo_url} />
-              <AvatarFallback className="bg-purple-100">
-                <User className="h-10 w-10 text-purple-600" />
-              </AvatarFallback>
-            </Avatar>
-            <h2 className="text-xl font-semibold">
-              {dbUser?.first_name || telegramUser?.first_name} {dbUser?.last_name || telegramUser?.last_name}
-            </h2>
-            <p className="text-gray-500">@{dbUser?.telegram_username || telegramUser?.username || "username"}</p>
-            {telegramUser && (
-              <p className="text-sm text-purple-600 mt-1">
-                Telegram ID: {telegramUser.id}
-              </p>
-            )}
-            
-            {/* Добавляем кнопку "Пригласить друга" */}
-            <Button 
-              variant="secondary" 
-              className="mt-4 bg-purple-100 hover:bg-purple-200 text-purple-800"
-              onClick={handleInviteFriend}
-              disabled={!dbUser && !telegramUser}
-            >
-              <Share2 className="h-4 w-4 mr-2" />
-              Invite a friend
-            </Button>
-          </div>
-
-          {dbUser && (
-            <>
-              {/* Показываем данные баланса только если они есть в dbUser */}
-              {(typeof dbUser.wallet_balance === 'number' || typeof dbUser.aicore_balance === 'number') && (
-                <div className="grid grid-cols-2 gap-3 mb-6">
-                  {typeof dbUser.wallet_balance === 'number' && (
-                    <div className="bg-gray-50 p-3 rounded-lg">
-                      <div className="flex items-center mb-1">
-                        <Wallet className="h-4 w-4 text-purple-600 mr-2" />
-                        <span className="text-xs text-gray-500">Wallet Balance</span>
-                      </div>
-                      <p className="text-lg font-semibold">${dbUser.wallet_balance.toFixed(2)}</p>
-                    </div>
-                  )}
-                  
-                  {typeof dbUser.aicore_balance === 'number' && (
-                    <div className="bg-gray-50 p-3 rounded-lg">
-                      <div className="flex items-center mb-1">
-                        <Award className="h-4 w-4 text-purple-600 mr-2" />
-                        <span className="text-xs text-gray-500">AICore Balance</span>
-                      </div>
-                      <p className="text-lg font-semibold">${dbUser.aicore_balance.toFixed(2)}</p>
-                    </div>
-                  )}
-                </div>
+    <div className="flex flex-col h-full bg-gray-50">
+      <div className="p-4">
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between p-4">
+            <CardTitle className="text-sm">User Profile</CardTitle>
+            <div className="flex items-center gap-2">
+              {refreshMessage && (
+                <span className="text-xs text-green-600 animate-fade-in-out">
+                  {refreshMessage}
+                </span>
               )}
-
-              <div className="space-y-4">
-                {dbUser.phone_number && (
-                  <div className="flex justify-between items-center border-b pb-2">
-                    <div className="flex items-center">
-                      <Phone className="h-4 w-4 text-purple-600 mr-2" />
-                      <span className="text-sm">Phone</span>
-                    </div>
-                    <span className="font-medium">{dbUser.phone_number}</span>
-                  </div>
-                )}
-
-                {typeof dbUser.level === 'number' && (
-                  <div className="flex justify-between items-center border-b pb-2">
-                    <div className="flex items-center">
-                      <Award className="h-4 w-4 text-purple-600 mr-2" />
-                      <span className="text-sm">Level</span>
-                    </div>
-                    <span className="font-medium">{dbUser.level}</span>
-                  </div>
-                )}
-
-                {typeof dbUser.paid_referrals === 'number' && (
-                  <div className="flex justify-between items-center border-b pb-2">
-                    <div className="flex items-center">
-                      <Users className="h-4 w-4 text-purple-600 mr-2" />
-                      <span className="text-sm">Paid Referrals</span>
-                    </div>
-                    <span className="font-medium">{dbUser.paid_referrals}</span>
-                  </div>
-                )}
-
-                {typeof dbUser.reinvest_setup === 'number' && (
-                  <div className="flex justify-between items-center border-b pb-2">
-                    <div className="flex items-center">
-                      <Calendar className="h-4 w-4 text-purple-600 mr-2" />
-                      <span className="text-sm">Reinvestment Setup</span>
-                    </div>
-                    <span className="font-medium">{dbUser.reinvest_setup}%</span>
-                  </div>
-                )}
-
-                {dbUser.created_at && (
-                  <div className="flex justify-between items-center border-b pb-2">
-                    <div className="flex items-center">
-                      <Calendar className="h-4 w-4 text-purple-600 mr-2" />
-                      <span className="text-sm">Member Since</span>
-                    </div>
-                    <span className="font-medium text-sm">{new Date(dbUser.created_at).toLocaleDateString()}</span>
-                  </div>
-                )}
-
-                {/* Telegram Data Section */}
-                <div className="mt-6 pt-4 border-t">
-                  <h3 className="font-medium mb-3 flex items-center">
-                    <MessageCircle className="h-4 w-4 text-purple-600 mr-2" />
-                    Telegram Data
-                  </h3>
-                  <p className="text-sm text-gray-600">
-                    ID: {dbUser.telegram_id || telegramUser?.id || 'No data'}
-                  </p>
-                  <p className="text-sm text-gray-600">
-                    Username: @{dbUser.telegram_username || telegramUser?.username || 'No data'}
-                  </p>
-                </div>
-
-                {/* Добавим отображение информации о рефералах в профиле пользователя */}
-                <div className="mt-6 pt-4 border-t">
-                  <h3 className="font-medium mb-3 flex items-center">
-                    <Users className="h-4 w-4 text-purple-600 mr-2" />
-                    Referral Information
-                  </h3>
-                  
-                  {/* Отображаем информацию о реферере, если он есть */}
-                  {dbUser?.referrer_id && (
-                    <div className="flex justify-between items-center border-b pb-2 mb-2">
-                      <div className="flex items-center">
-                        <span className="text-sm">Referred by</span>
-                      </div>
-                      <span className="text-sm font-medium">ID: {dbUser.referrer_id}</span>
-                    </div>
-                  )}
-                  
-                  {/* Отображаем количество приглашенных пользователей */}
-                  <div className="flex justify-between items-center border-b pb-2 mb-2">
-                    <div className="flex items-center">
-                      <span className="text-sm">Referred Users</span>
-                    </div>
-                    <span className="text-sm font-medium">{dbUser?.paid_referrals || 0}</span>
-                  </div>
-                  
-                  {/* Информация о реферальной программе */}
-                  <p className="text-xs text-gray-500 mt-2">
-                    Invite friends through your referral link and earn bonuses
-                  </p>
-                </div>
-
-                {/* Добавляем секцию с реферальной ссылкой */}
-                <ReferralLinkSection 
-                  userId={dbUser.id}
-                  telegramId={dbUser.telegram_id}
-                />
-              </div>
-            </>
-          )}
-
-          {/* Если есть только telegramUser, но нет dbUser */}
-          {telegramUser && !dbUser && (
-            <div className="text-center mt-4">
-              <p>Информация загружается из Telegram...</p>
-              <Button className="mt-4" onClick={handleRefresh}>
-                Обновить
+              <Button
+                variant="outline"
+                size="icon"
+                onClick={handleRefresh}
+                disabled={isRefreshing}
+                aria-label="Refresh user data"
+              >
+                <RefreshCw className={`h-4 w-4 ${isRefreshing ? "animate-spin" : ""}`} />
               </Button>
             </div>
-          )}
-        </CardContent>
-      </Card>
+          </CardHeader>
+          <CardContent className="p-4 pt-0">
+            <div className="flex flex-col items-center mb-6">
+              <Avatar className="w-20 h-20 mb-3">
+                <AvatarImage src={telegramUser?.photo_url} />
+                <AvatarFallback className="bg-purple-100">
+                  <User className="h-10 w-10 text-purple-600" />
+                </AvatarFallback>
+              </Avatar>
+              <h2 className="text-xl font-semibold">
+                {dbUser?.first_name || telegramUser?.first_name} {dbUser?.last_name || telegramUser?.last_name}
+              </h2>
+              <p className="text-gray-500">@{dbUser?.telegram_username || telegramUser?.username || "username"}</p>
+              {telegramUser && (
+                <p className="text-sm text-purple-600 mt-1">
+                  Telegram ID: {telegramUser.id}
+                </p>
+              )}
+              
+              {/* Добавляем кнопку "Пригласить друга" */}
+              <Button 
+                variant="secondary" 
+                className="mt-4 bg-purple-100 hover:bg-purple-200 text-purple-800"
+                onClick={handleInviteFriend}
+                disabled={!dbUser && !telegramUser}
+              >
+                <Share2 className="h-4 w-4 mr-2" />
+                Invite a friend
+              </Button>
+            </div>
+
+            {dbUser && (
+              <>
+                {/* Показываем данные баланса только если они есть в dbUser */}
+                {(typeof dbUser.wallet_balance === 'number' || typeof dbUser.aicore_balance === 'number') && (
+                  <div className="grid grid-cols-2 gap-3 mb-6">
+                    {typeof dbUser.wallet_balance === 'number' && (
+                      <div className="bg-gray-50 p-3 rounded-lg">
+                        <div className="flex items-center mb-1">
+                          <Wallet className="h-4 w-4 text-purple-600 mr-2" />
+                          <span className="text-xs text-gray-500">Wallet Balance</span>
+                        </div>
+                        <p className="text-lg font-semibold">${dbUser.wallet_balance.toFixed(2)}</p>
+                      </div>
+                    )}
+                    
+                    {typeof dbUser.aicore_balance === 'number' && (
+                      <div className="bg-gray-50 p-3 rounded-lg">
+                        <div className="flex items-center mb-1">
+                          <Award className="h-4 w-4 text-purple-600 mr-2" />
+                          <span className="text-xs text-gray-500">AICore Balance</span>
+                        </div>
+                        <p className="text-lg font-semibold">${dbUser.aicore_balance.toFixed(2)}</p>
+                      </div>
+                    )}
+                  </div>
+                )}
+
+                <div className="space-y-4">
+                  {dbUser.phone_number && (
+                    <div className="flex justify-between items-center border-b pb-2">
+                      <div className="flex items-center">
+                        <Phone className="h-4 w-4 text-purple-600 mr-2" />
+                        <span className="text-sm">Phone</span>
+                      </div>
+                      <span className="font-medium">{dbUser.phone_number}</span>
+                    </div>
+                  )}
+
+                  {typeof dbUser.level === 'number' && (
+                    <div className="flex justify-between items-center border-b pb-2">
+                      <div className="flex items-center">
+                        <Award className="h-4 w-4 text-purple-600 mr-2" />
+                        <span className="text-sm">Level</span>
+                      </div>
+                      <span className="font-medium">{dbUser.level}</span>
+                    </div>
+                  )}
+
+                  {typeof dbUser.paid_referrals === 'number' && (
+                    <div className="flex justify-between items-center border-b pb-2">
+                      <div className="flex items-center">
+                        <Users className="h-4 w-4 text-purple-600 mr-2" />
+                        <span className="text-sm">Paid Referrals</span>
+                      </div>
+                      <span className="font-medium">{dbUser.paid_referrals}</span>
+                    </div>
+                  )}
+
+                  {typeof dbUser.reinvest_setup === 'number' && (
+                    <div className="flex justify-between items-center border-b pb-2">
+                      <div className="flex items-center">
+                        <Calendar className="h-4 w-4 text-purple-600 mr-2" />
+                        <span className="text-sm">Reinvestment Setup</span>
+                      </div>
+                      <span className="font-medium">{dbUser.reinvest_setup}%</span>
+                    </div>
+                  )}
+
+                  {dbUser.created_at && (
+                    <div className="flex justify-between items-center border-b pb-2">
+                      <div className="flex items-center">
+                        <Calendar className="h-4 w-4 text-purple-600 mr-2" />
+                        <span className="text-sm">Member Since</span>
+                      </div>
+                      <span className="font-medium text-sm">{new Date(dbUser.created_at).toLocaleDateString()}</span>
+                    </div>
+                  )}
+
+                  {/* Telegram Data Section */}
+                  <div className="mt-6 pt-4 border-t">
+                    <h3 className="font-medium mb-3 flex items-center">
+                      <MessageCircle className="h-4 w-4 text-purple-600 mr-2" />
+                      Telegram Data
+                    </h3>
+                    <p className="text-sm text-gray-600">
+                      ID: {dbUser.telegram_id || telegramUser?.id || 'No data'}
+                    </p>
+                    <p className="text-sm text-gray-600">
+                      Username: @{dbUser.telegram_username || telegramUser?.username || 'No data'}
+                    </p>
+                  </div>
+
+                  {/* Добавим отображение информации о рефералах в профиле пользователя */}
+                  <div className="mt-6 pt-4 border-t">
+                    <h3 className="font-medium mb-3 flex items-center">
+                      <Users className="h-4 w-4 text-purple-600 mr-2" />
+                      Referral Information
+                    </h3>
+                    
+                    {/* Отображаем информацию о реферере, если он есть */}
+                    {dbUser?.referrer_id && (
+                      <div className="flex justify-between items-center border-b pb-2 mb-2">
+                        <div className="flex items-center">
+                          <span className="text-sm">Referred by</span>
+                        </div>
+                        <span className="text-sm font-medium">ID: {dbUser.referrer_id}</span>
+                      </div>
+                    )}
+                    
+                    {/* Отображаем количество приглашенных пользователей */}
+                    <div className="flex justify-between items-center border-b pb-2 mb-2">
+                      <div className="flex items-center">
+                        <span className="text-sm">Referred Users</span>
+                      </div>
+                      <span className="text-sm font-medium">{dbUser?.paid_referrals || 0}</span>
+                    </div>
+                    
+                    {/* Информация о реферальной программе */}
+                    <p className="text-xs text-gray-500 mt-2">
+                      Invite friends through your referral link and earn bonuses
+                    </p>
+                  </div>
+
+                  {/* Добавляем секцию с реферальной ссылкой */}
+                  <ReferralLinkSection 
+                    userId={dbUser.id}
+                    telegramId={dbUser.telegram_id}
+                  />
+                </div>
+              </>
+            )}
+
+            {/* Если есть только telegramUser, но нет dbUser */}
+            {telegramUser && !dbUser && (
+              <div className="text-center mt-4">
+                <p>Информация загружается из Telegram...</p>
+                <Button className="mt-4" onClick={handleRefresh}>
+                  Обновить
+                </Button>
+              </div>
+            )}
+          </CardContent>
+        </Card>
+      </div>
+
+      {/* Level Up Modal */}
+      <Dialog open={levelUpModal?.isOpen} onOpenChange={(open) => {
+        if (!open) {
+          handleLevelUpModalClose();
+        }
+      }}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle className="text-center flex items-center justify-center gap-2">
+              <Trophy className="h-6 w-6 text-yellow-500" />
+              Level Up!
+            </DialogTitle>
+          </DialogHeader>
+          <div className="py-6">
+            <div className="text-center space-y-4">
+              <p className="text-lg font-medium">Congratulations!</p>
+              <p className="text-gray-600">
+                You've reached Level <span className="font-bold text-purple-600">{levelUpModal?.newLevel}</span>!
+              </p>
+              <div className="bg-purple-50 p-4 rounded-lg">
+                 <p className="text-sm text-purple-700 mb-2">Keep growing your Core!</p>
+                 {levelUpModal?.newLevel && levelUpModal.newLevel < levelThresholds.length && (
+                    <p className="text-xs text-purple-600">
+                        Next level at ${levelThresholds[levelUpModal.newLevel].core} Core.
+                    </p>
+                 )}
+              </div>
+            </div>
+          </div>
+          <DialogFooter>
+            <Button
+              className="w-full"
+              onClick={handleLevelUpModalClose}
+            >
+              Awesome!
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   )
 }
