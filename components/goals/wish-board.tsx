@@ -435,18 +435,6 @@ const WishBoard: React.FC<WishBoardProps> = ({ showOnlyRecommendations }) => {
             <h2 className="text-xl font-semibold">
               Your Personal Goals: {userGoals.length}
             </h2>
-            <Button
-              className="bg-purple-600 hover:bg-purple-700 text-white flex items-center gap-2 px-6"
-              onClick={() => {
-                const socialButton = document.querySelector('button[aria-label="Social"]');
-                if (socialButton instanceof HTMLElement) {
-                  socialButton.click();
-                }
-              }}
-            >
-              <User className="h-5 w-5" />
-              Go to Profile
-            </Button>
           </div>
           <div className="grid grid-cols-3 gap-1">
             {userGoals.filter(Boolean).map((goal) => (
@@ -480,38 +468,43 @@ const WishBoard: React.FC<WishBoardProps> = ({ showOnlyRecommendations }) => {
         </div>
       )}
 
-      <div>
-        <h3 className="text-lg font-semibold mb-2">Available Goals</h3>
-        <div className="grid grid-cols-3 gap-1">
-          {goals.map((goal) => (
-            <div
-              key={goal.id}
-              className="image-item animate-fade-in rounded-lg overflow-hidden shadow-md aspect-square cursor-pointer"
-              onClick={() => handleWishClick(goal)}
-            >
-              <div className="relative w-full h-full">
-                <img
-                  src={goal.image_url || (goal.goal?.image_url || '')}
-                  alt={goal.title || (goal.goal?.title || '')}
-                  className="w-full h-full object-cover"
-                  loading="lazy"
-                />
-                <div className="absolute inset-0 bg-gradient-to-t from-black/50 to-transparent opacity-0 hover:opacity-100 transition-opacity duration-300 flex items-end">
-                  <div className="p-3 text-white">
-                    <div className="text-sm font-medium">{goal.title || goal.goal?.title}</div>
-                    {goal.status && (
-                      <div className="text-xs mt-1">Status: {goal.status}</div>
-                    )}
-                    {goal.progress_percentage !== null && (
-                      <div className="text-xs">Progress: {goal.progress_percentage}%</div>
-                    )}
+      {/* Show Available Goals section only for authenticated users or when showOnlyRecommendations is true */}
+      {(dbUser?.id || showOnlyRecommendations) && (
+        <div>
+          <h3 className="text-lg font-semibold mb-2">
+            {dbUser?.id ? 'Available Goals' : 'Recommended Goals'}
+          </h3>
+          <div className="grid grid-cols-3 gap-1">
+            {goals.map((goal) => (
+              <div
+                key={goal.id}
+                className="image-item animate-fade-in rounded-lg overflow-hidden shadow-md aspect-square cursor-pointer"
+                onClick={() => handleWishClick(goal)}
+              >
+                <div className="relative w-full h-full">
+                  <img
+                    src={goal.image_url || (goal.goal?.image_url || '')}
+                    alt={goal.title || (goal.goal?.title || '')}
+                    className="w-full h-full object-cover"
+                    loading="lazy"
+                  />
+                  <div className="absolute inset-0 bg-gradient-to-t from-black/50 to-transparent opacity-0 hover:opacity-100 transition-opacity duration-300 flex items-end">
+                    <div className="p-3 text-white">
+                      <div className="text-sm font-medium">{goal.title || goal.goal?.title}</div>
+                      {goal.status && (
+                        <div className="text-xs mt-1">Status: {goal.status}</div>
+                      )}
+                      {goal.progress_percentage !== null && (
+                        <div className="text-xs">Progress: {goal.progress_percentage}%</div>
+                      )}
+                    </div>
                   </div>
                 </div>
               </div>
-            </div>
-          ))}
+            ))}
+          </div>
         </div>
-      </div>
+      )}
 
       {/* Goal Detail Modal */}
       {selectedWish && (
