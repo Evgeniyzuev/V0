@@ -91,22 +91,22 @@ export function useTaskVerification({
         const goalsCount = currentGoals?.length || 0;
         success = goalsCount > 1;
         message = success
-          ? `Задание ${taskNumber} выполнено! У вас ${goalsCount} целей.`
-          : `Задание ${taskNumber} не выполнено. У вас ${goalsCount} целей, нужно больше одной цели.`;
+          ? `Task ${taskNumber} completed! You have ${goalsCount} goals.`
+          : `Task ${taskNumber} not completed. You have ${goalsCount} goals, you need more than one goal.`;
       } else if (taskNumber === 3) {
         // Check if user has used the Time to Target calculator
         const hasCalculated = localStorage.getItem('timeToTargetCalculated') === 'true';
         success = hasCalculated;
         message = success
-          ? `Задание ${taskNumber} выполнено! Вы успешно использовали калькулятор времени до цели.`
-          : `Задание ${taskNumber} не выполнено. Перейдите на вкладку Core, введите целевую сумму и нажмите Calculate.`;
+          ? `Task ${taskNumber} completed! You have successfully used the Time to Target calculator.`
+          : `Task ${taskNumber} not completed. Go to the Core tab, enter the target amount and click Calculate.`;
       } else if (taskNumber === 4) {
         // Check if user has sent a message to AI Assistant
         const hasInteractedWithAI = localStorage.getItem('hasInteractedWithAI') === 'true';
         success = hasInteractedWithAI;
         message = success
-          ? `Задание ${taskNumber} выполнено! Вы успешно начали диалог с ИИ ассистентом.`
-          : `Задание ${taskNumber} не выполнено. Отправьте сообщение ИИ ассистенту.`;
+          ? `Task ${taskNumber} completed! You have successfully started a conversation with the AI Assistant.`
+          : `Task ${taskNumber} not completed. Send a message to the AI Assistant.`;
       }
       // Add more task verifications here
       // --- End task verification logic ---
