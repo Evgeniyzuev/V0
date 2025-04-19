@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
 import { Avatar, AvatarFallback } from "@/components/ui/avatar"
 import { useUser } from "@/components/UserContext"
-import { fetchGoals, fetchUserGoals, updateGoal } from '@/lib/api/goals'
+import { fetchGoals, fetchUserGoals, updateGoal, removeUserGoal } from '@/lib/api/goals'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import type { Goal } from '@/types/supabase'
 import { toast } from 'sonner'
@@ -300,6 +300,11 @@ const WishBoard: React.FC<WishBoardProps> = ({ showOnlyRecommendations }) => {
   const [editedProgress, setEditedProgress] = useState(0);
   const [editedDifficultyLevel, setEditedDifficultyLevel] = useState(0);
 
+  // Check if a goal is in user's personal goals
+  const isGoalInPersonalGoals = (goalId: number) => {
+    return userGoals?.some(userGoal => userGoal.goal_id === goalId) ?? false;
+  };
+
   // Update goal mutation
   const updateGoalMutation = useMutation({
     mutationFn: ({ id, updates }: { id: number; updates: Partial<Goal> }) => 
@@ -382,6 +387,23 @@ const WishBoard: React.FC<WishBoardProps> = ({ showOnlyRecommendations }) => {
     } catch (error) {
       console.error('Error adding goal:', error)
       toast.error('Failed to add goal: ' + (error as Error).message)
+    }
+  };
+
+  const handleRemoveFromPersonalGoals = async (goal: Goal) => {
+    if (!dbUser?.id) {
+      toast.error('Please log in to remove goals')
+      return
+    }
+    
+    try {
+      await removeUserGoal(dbUser.id, goal.id);
+      await refreshGoals();
+      closeModal();
+      toast.success('Goal removed from personal goals');
+    } catch (error) {
+      console.error('Error removing goal:', error)
+      toast.error('Failed to remove goal: ' + (error as Error).message)
     }
   };
 
@@ -661,15 +683,23 @@ const WishBoard: React.FC<WishBoardProps> = ({ showOnlyRecommendations }) => {
                         <p className="text-gray-600">{selectedWish.description}</p>
                       </div>
                       <div className="flex gap-2">
-                        {dbUser?.id && (
+                        {dbUser?.id && selectedWish && (
                           <button
                             onClick={(e) => {
                               e.stopPropagation();
-                              handleAddToPersonalGoals(selectedWish);
+                              if (isGoalInPersonalGoals(selectedWish.id)) {
+                                handleRemoveFromPersonalGoals(selectedWish);
+                              } else {
+                                handleAddToPersonalGoals(selectedWish);
+                              }
                             }}
-                            className="px-4 py-2 bg-purple-600 text-white rounded hover:bg-purple-700 transition-colors"
+                            className={`px-4 py-2 text-white rounded hover:opacity-90 transition-colors ${
+                              isGoalInPersonalGoals(selectedWish.id) 
+                                ? 'bg-red-600 hover:bg-red-700' 
+                                : 'bg-purple-600 hover:bg-purple-700'
+                            }`}
                           >
-                            Add to Personal Goals
+                            {isGoalInPersonalGoals(selectedWish.id) ? 'Remove from Personal Goals' : 'Add to Personal Goals'}
                           </button>
                         )}
                         <button

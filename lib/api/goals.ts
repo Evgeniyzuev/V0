@@ -140,4 +140,21 @@ export const addUserGoal = async (userId: string, goalId: number): Promise<UserG
   console.log('Successfully added/found user goal:', data)
   // No toast success here, let the caller decide based on context
   return data
-} 
+}
+
+export const removeUserGoal = async (userId: string, goalId: number): Promise<void> => {
+  const supabase = createClientSupabaseClient()
+
+  const { error } = await supabase
+    .from('user_goals')
+    .delete()
+    .match({ user_id: userId, goal_id: goalId })
+
+  if (error) {
+    console.error('Error removing user goal:', error)
+    toast.error('Failed to remove goal: ' + error.message)
+    throw error
+  }
+
+  console.log('Successfully removed user goal')
+}
