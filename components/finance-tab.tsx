@@ -360,10 +360,10 @@ export default function FinanceTab() {
       </div>
 
       {/* Daily Income Card */}
-      <div className="px-2 mt-1">
+      <div className="px-2">
         <Card className="w-full bg-gradient-to-r from-purple-500/10 to-blue-500/10">
-          <CardContent className="p-3">
-            <div className="flex flex-col space-y-3">
+          <CardContent className="p-2">
+            <div className="flex flex-col space-y-2">
               <div className="flex items-center justify-between">
                 <div className="flex items-center space-x-2">
                   <div className="w-1.5 h-1.5 bg-green-400 rounded-full"></div>
@@ -374,7 +374,7 @@ export default function FinanceTab() {
                 </span>
               </div>
 
-              <div className="space-y-1.5">
+              <div className="space-y-1">
                 <div className="flex items-center justify-between">
                   <span className="text-xs text-gray-500 w-16">Reinvest %</span>
                   <div className="flex items-center">
@@ -425,10 +425,10 @@ export default function FinanceTab() {
       {/* Core Growth Calculator Card */}
       {activeTab === "core" && (
         <>
-          <div className="px-2 mt-1">
+          <div className="px-2">
             <Card className="w-full bg-gradient-to-r from-purple-500/10 to-blue-500/10">
-              <CardContent className="p-3">
-                <div className="flex flex-col space-y-3">
+              <CardContent className="p-2">
+                <div className="flex flex-col space-y-2">
                   <div className="flex items-center justify-between">
                     <div className="flex items-center space-x-2">
                       <div className="w-1.5 h-1.5 bg-blue-400 rounded-full"></div>
@@ -436,7 +436,7 @@ export default function FinanceTab() {
                     </div>
                   </div>
 
-                  <div className="grid grid-cols-3 gap-2">
+                  <div className="grid grid-cols-3 gap-1">
                     <div>
                       <label className="text-xs text-gray-500">Start Core $</label>
                       <Input
@@ -490,10 +490,10 @@ export default function FinanceTab() {
           </div>
 
           {/* Time to Target Calculator Card */}
-          <div className="px-2 mt-1">
+          <div className="px-2">
             <Card className="w-full bg-gradient-to-r from-purple-500/10 to-blue-500/10">
-              <CardContent className="p-3">
-                <div className="flex flex-col space-y-3">
+              <CardContent className="p-2">
+                <div className="flex flex-col space-y-2">
                   <div className="flex items-center justify-between">
                     <div className="flex items-center space-x-2">
                       <div className="w-1.5 h-1.5 bg-purple-400 rounded-full"></div>
@@ -543,9 +543,9 @@ export default function FinanceTab() {
 
       {/* Action buttons - Wallet Tab */}
       {activeTab === "wallet" && (
-        <div className="px-2 grid grid-cols-2 gap-2 mt-1 mb-2">
+        <div className="px-2 grid grid-cols-2 gap-1">
           <Card className="bg-gradient-to-r from-purple-500/10 to-blue-500/10">
-            <CardContent className="p-3 flex flex-col items-center justify-center">
+            <CardContent className="p-2 flex flex-col items-center justify-center">
               <button
                 className="w-full h-full flex flex-col items-center py-1.5"
                 onClick={() => setIsTopUpModalOpen(true)}
@@ -560,7 +560,7 @@ export default function FinanceTab() {
           </Card>
 
           <Card className="bg-gradient-to-r from-purple-500/10 to-blue-500/10">
-            <CardContent className="p-3 flex flex-col items-center justify-center">
+            <CardContent className="p-2 flex flex-col items-center justify-center">
               <button
                 className="w-full h-full flex flex-col items-center py-1.5"
                 onClick={() => setIsTransferModalOpen(true)}
@@ -578,9 +578,9 @@ export default function FinanceTab() {
 
       {/* Additional Wallet Actions */}
       {activeTab === "wallet" && (
-        <div className="px-2 grid grid-cols-2 gap-2">
+        <div className="px-2 grid grid-cols-2 gap-1">
           <Card className="bg-gradient-to-r from-purple-500/10 to-blue-500/10">
-            <CardContent className="p-3 flex flex-col items-center justify-center">
+            <CardContent className="p-2 flex flex-col items-center justify-center">
               <div className="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center mb-1.5">
                 <Send className="h-4 w-4 text-blue-500" />
               </div>
@@ -589,7 +589,7 @@ export default function FinanceTab() {
           </Card>
 
           <Card className="bg-gradient-to-r from-purple-500/10 to-blue-500/10">
-            <CardContent className="p-3 flex flex-col items-center justify-center">
+            <CardContent className="p-2 flex flex-col items-center justify-center">
               <div className="w-8 h-8 bg-green-100 rounded-full flex items-center justify-center mb-1.5">
                 <ArrowDown className="h-4 w-4 text-green-500" />
               </div>
@@ -601,9 +601,9 @@ export default function FinanceTab() {
 
       {/* Core Tab Content */}
       {activeTab === "core" && (
-        <div className="px-2 mt-1">
+        <div className="px-2">
           <Card className="bg-gradient-to-r from-purple-500/10 to-blue-500/10">
-            <CardContent className="p-3 flex flex-col items-center justify-center">
+            <CardContent className="p-2 flex flex-col items-center justify-center">
               <button
                 className="w-full h-full flex flex-col items-center py-1.5"
                 onClick={() => setIsTransferModalOpen(true)}
