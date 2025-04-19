@@ -110,8 +110,10 @@ export default function AIAssistantTab() {
       if (userGoals.length > 0) {
         const activeGoals = userGoals.filter(goal => goal.status !== 'completed');
         if (activeGoals.length > 0) {
-          const goalTitle = activeGoals[0].title || activeGoals[0].goal?.title || `Goal ${activeGoals[0].id}`;
-          baseMessage = `Hi ${name}! I see you're working on "${goalTitle}". How can I help you make progress on this goal today?`;
+          const goalTitles = activeGoals.map(goal => 
+            `"${goal.title || goal.goal?.title || `Goal ${goal.id}`}"`
+          ).join(', ');
+          baseMessage = `Hi ${name}! You're working on these goals: ${goalTitles}. How can I help you make progress on them today?`;
         }
       }
 
@@ -127,9 +129,12 @@ export default function AIAssistantTab() {
       }
     }
 
-    // Add debugging info about goals
+    // Add debugging info about goals with titles
     if (userGoals.length > 0) {
-      baseMessage += `\n\n(Debug: I see ${userGoals.length} goal(s) loaded.)`;
+      const goalTitles = userGoals.map(goal => 
+        goal.title || goal.goal?.title || `Goal ${goal.id}`
+      ).join(', ');
+      baseMessage += `\n\n(Debug: I see ${userGoals.length} goal(s) loaded: ${goalTitles})`;
     } else {
       baseMessage += `\n\n(Debug: I don't see any goals loaded currently.)`;
     }
