@@ -1,4 +1,5 @@
--- Create level_thresholds table
+-- Create level_thresholds table 
+-- 20240320000000_add_levels_system.sql
 CREATE TABLE IF NOT EXISTS level_thresholds (
     level INTEGER PRIMARY KEY,
     core_requirement DECIMAL NOT NULL
