@@ -12,6 +12,10 @@ import { useUser } from "@/components/UserContext"
 import { Avatar, AvatarFallback } from "@/components/ui/avatar"
 import { Progress } from "@/components/ui/progress"
 import { Input } from "@/components/ui/input"
+import { createClientSupabaseClient } from "@/lib/supabase"
+
+// Initialize Supabase client
+const supabase = createClientSupabaseClient()
 
 // Define level thresholds
 const levelThresholds = [
@@ -226,11 +230,33 @@ export default function FinanceTab() {
   }
 
   // Calculate time to target
-  const calculateTimeToTarget = () => {
-    if (!targetCoreAmount || targetCoreAmount <= coreBalance) return
+  const calculateTimeToTarget = async () => {
+    if (!targetCoreAmount || targetCoreAmount <= coreBalance) return;
     
-    const days = findDaysToTarget(targetCoreAmount)
-    setTimeToTarget(days)
+    const days = findDaysToTarget(targetCoreAmount);
+    setTimeToTarget(days);
+
+    // Mark task as completed if exists
+    if (!dbUser?.id) return;
+
+    try {
+      const { data: userTask } = await supabase
+        .from('user_tasks')
+        .select('*')
+        .eq('user_id', dbUser.id)
+        .eq('task_id', 12) // Task number for Calculate Time to Target
+        .single();
+
+      if (userTask && userTask.status !== 'completed') {
+        await supabase
+          .from('user_tasks')
+          .update({ status: 'completed' })
+          .eq('user_id', dbUser.id)
+          .eq('task_id', 12);
+      }
+    } catch (error) {
+      console.error('Error updating task status:', error);
+    }
   }
 
   // Показываем индикатор загрузки
