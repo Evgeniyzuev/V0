@@ -83,10 +83,12 @@ export function useTaskVerification({
           ? `Task ${taskNumber}: Congratulations! Task completed successfully.`
           : `Task ${taskNumber}: Task not completed. You must be logged in.`;
       } else if (taskNumber === 2) {
-        success = currentGoals ? currentGoals.length > 1 : false;
+        // Четкое сообщение о количестве целей
+        const goalsCount = currentGoals?.length || 0;
+        success = goalsCount > 1;
         message = success
-          ? `Task ${taskNumber}: Congratulations! You have more than one goal.`
-          : `Task ${taskNumber}: Task not completed. You need to have more than one personal goal.`;
+          ? `Задание ${taskNumber} выполнено! У вас ${goalsCount} целей.`
+          : `Задание ${taskNumber} не выполнено. У вас ${goalsCount} целей, нужно больше одной цели.`;
       }
       // Add more task verifications here
       // --- End task verification logic ---

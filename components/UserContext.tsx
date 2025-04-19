@@ -10,7 +10,6 @@ import { createClientSupabaseClient } from "@/lib/supabase"
 import { addUserGoal, fetchUserGoals } from '@/lib/api/goals' // Import fetchUserGoals
 import { User, Session } from "@supabase/supabase-js";
 import type { UserGoal, UserTask } from '@/types/supabase'; // Import types
-import { useQueryClient, useQuery } from '@tanstack/react-query'
 
 // Интерфейс для WebApp для TypeScript
 interface TelegramWebApp {
@@ -81,7 +80,7 @@ interface UserContextType {
   isLoading: boolean;
   error: string | null;
   refreshUserData: () => Promise<void>;
-  goals: any[] | null;  // Change type to any[] temporarily until we can properly type the response
+  goals: UserGoal[] | null;
   tasks: UserTask[] | null;
   refreshGoals: () => Promise<void>;
   refreshTasks: () => Promise<void>;
@@ -100,16 +99,8 @@ export const UserProvider = ({ children }: { children: ReactNode }) => {
   const [webApp, setWebApp] = useState<TelegramWebApp | null>(null);
   const [session, setSession] = useState<Session | null>(null);
   const [tasks, setTasks] = useState<UserTask[] | null>(null);
+  const [goals, setGoals] = useState<UserGoal[] | null>(null);
   
-  const queryClient = useQueryClient();
-
-  // Use React Query for goals
-  const { data: goals = null } = useQuery({
-    queryKey: ['user-goals', authUser?.id],
-    queryFn: () => fetchUserGoals(authUser?.id),
-    enabled: !!authUser?.id
-  });
-
   // Флаги для предотвращения повторных запросов
   const apiCalledRef = useRef(false);
   const userLoadedRef = useRef(false);
@@ -428,11 +419,13 @@ export const UserProvider = ({ children }: { children: ReactNode }) => {
     }
   }, [telegramUser, authUser]);
 
-  // Add function to refresh goals using React Query
+  // Simplify goals refresh
   const refreshGoals = async () => {
     if (!authUser?.id) return;
     try {
-      await queryClient.invalidateQueries({ queryKey: ['user-goals', authUser.id] });
+      const userGoals = await fetchUserGoals(authUser.id);
+      console.log('Goals loaded:', userGoals?.length || 0);
+      setGoals(userGoals);
     } catch (err) {
       console.error('Error refreshing goals:', err);
       setError('Ошибка при обновлении целей');
