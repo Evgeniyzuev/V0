@@ -67,7 +67,7 @@ export interface UserTask {
   notes: string | null;
 
   // Optional: Include related data when fetching with joins
-  // task?: Task;
+  task?: Task;
   // user?: User;
 }
 

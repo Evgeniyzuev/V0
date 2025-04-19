@@ -139,6 +139,16 @@ export default function AIAssistantTab() {
       baseMessage += `\n\n(Debug: I don't see any goals loaded currently.)`;
     }
 
+    // Add debugging info about tasks
+    if (userTasks.length > 0) {
+      const taskTitles = userTasks.map(task => 
+        task.task?.title || `Task ${task.id}`
+      ).join(', ');
+      baseMessage += `\n\n(Debug: I see ${userTasks.length} task(s) loaded: ${taskTitles})`;
+    } else {
+      baseMessage += `\n\n(Debug: I don't see any tasks loaded currently.)`;
+    }
+
     return baseMessage;
   };
 
