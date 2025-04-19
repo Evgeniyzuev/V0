@@ -359,7 +359,7 @@ export default function FinanceTab() {
         <div className="px-4 mt-4">
           <Card className="w-full">
             <CardContent className="p-4">
-              <div className="flex flex-col space-y-4">
+              <div className="flex flex-col space-y-3">
                 <div className="flex items-center justify-between">
                   <div className="flex items-center space-x-2">
                     <div className="w-2 h-2 bg-blue-400 rounded-full"></div>
@@ -367,53 +367,50 @@ export default function FinanceTab() {
                   </div>
                 </div>
 
-                <div className="grid grid-cols-2 gap-4">
-                  <div className="space-y-2">
-                    <label className="text-sm text-gray-500">Start Core $</label>
+                <div className="grid grid-cols-3 gap-2">
+                  <div>
+                    <label className="text-xs text-gray-500">Start Core $</label>
                     <Input
                       type="number"
                       value={startCore}
                       onChange={(e) => setStartCore(Number(e.target.value))}
-                      className="h-8 text-sm"
+                      className="h-7 text-sm mt-1"
                       min={0}
                     />
                   </div>
-                  <div className="space-y-2">
-                    <label className="text-sm text-gray-500">Daily Rewards $/d</label>
+                  <div>
+                    <label className="text-xs text-gray-500">Daily Rewards $/d</label>
                     <Input
                       type="number"
                       value={dailyRewards}
                       onChange={(e) => setDailyRewards(Number(e.target.value))}
-                      className="h-8 text-sm"
+                      className="h-7 text-sm mt-1"
                       min={0}
                     />
                   </div>
-                </div>
-
-                <div className="space-y-2">
-                  <div className="flex items-center justify-between">
-                    <label className="text-sm text-gray-500">Core in years</label>
+                  <div>
+                    <label className="text-xs text-gray-500">Years</label>
                     <Input
                       type="number"
                       value={yearsToCalculate}
                       onChange={(e) => setYearsToCalculate(Number(e.target.value))}
-                      className="w-20 h-8 text-sm text-right"
+                      className="h-7 text-sm mt-1"
                       min={1}
                       max={100}
                     />
                   </div>
                 </div>
 
-                <div className="pt-2 space-y-4">
-                  <div className="flex flex-col">
-                    <span className="text-xs text-gray-500">Future Core Balance</span>
-                    <span className="text-lg font-medium text-blue-600">
+                <div className="flex items-center justify-between pt-1">
+                  <div className="flex items-center space-x-1">
+                    <span className="text-sm text-gray-500">Future Core Balance</span>
+                    <span className="text-sm font-medium text-blue-600">
                       ${calculateFutureCore().toFixed(2)}
                     </span>
                   </div>
-                  <div className="flex flex-col">
-                    <span className="text-xs text-gray-500">Future Daily Income</span>
-                    <span className="text-lg font-medium text-green-600">
+                  <div className="flex items-center space-x-1">
+                    <span className="text-sm text-gray-500">Daily Income</span>
+                    <span className="text-sm font-medium text-green-600">
                       ${(calculateFutureCore() * DAILY_RATE).toFixed(2)}
                     </span>
                   </div>
