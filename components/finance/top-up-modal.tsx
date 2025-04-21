@@ -29,7 +29,7 @@ export default function TopUpModal({ isOpen, onClose, onSuccess, userId }: TopUp
   const [error, setError] = useState<string | null>(null)
   const [tonConnectUI] = useTonConnectUI()
   const { transactionStatus, startChecking } = useTransactionStatus()
-  const { convertUsdToTon } = useTonPrice()
+  const { convertUsdToTon, tonPrice } = useTonPrice()
 
   const handleTonPayment = async () => {
     if (!amount || isNaN(Number(amount)) || Number(amount) <= 0) {
@@ -38,22 +38,44 @@ export default function TopUpModal({ isOpen, onClose, onSuccess, userId }: TopUp
     }
 
     try {
+      setIsSubmitting(true)
+      setError(null)
+
       const tonAmount = convertUsdToTon(Number(amount))
       if (!tonAmount) {
         setError("Unable to convert USD to TON. Please try again later.")
         return
       }
 
+      console.log('Converting USD to TON:', {
+        usdAmount: amount,
+        tonAmount,
+        tonPrice: tonPrice
+      })
+
       const amountInNanotons = toNano(tonAmount.toString()).toString()
       
+      console.log('Transaction details:', {
+        amountInNanotons,
+        destinationAddress: process.env.NEXT_PUBLIC_DESTINATION_ADDRESS
+      })
+
+      if (!process.env.NEXT_PUBLIC_DESTINATION_ADDRESS) {
+        throw new Error('Destination address is not configured')
+      }
+
       const transaction = {
         validUntil: Math.floor(Date.now() / 1000) + 60, // Valid for 60 seconds
         messages: [
           {
-            address: process.env.NEXT_PUBLIC_DESTINATION_ADDRESS || "",
+            address: process.env.NEXT_PUBLIC_DESTINATION_ADDRESS,
             amount: amountInNanotons,
           },
         ],
+      }
+
+      if (!tonConnectUI.connected) {
+        throw new Error('TON wallet is not connected')
       }
 
       const result = await tonConnectUI.sendTransaction(transaction)
@@ -64,7 +86,9 @@ export default function TopUpModal({ isOpen, onClose, onSuccess, userId }: TopUp
 
     } catch (error) {
       console.error("TON payment error:", error)
-      setError("Failed to process TON payment")
+      setError(error instanceof Error ? error.message : "Failed to process TON payment")
+    } finally {
+      setIsSubmitting(false)
     }
   }
 
