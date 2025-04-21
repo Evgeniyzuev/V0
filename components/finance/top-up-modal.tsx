@@ -67,29 +67,44 @@ export default function TopUpModal({ isOpen, onClose, onSuccess, userId }: TopUp
         throw new Error('Destination address is not configured')
       }
 
+      if (!tonConnectUI.connected) {
+        throw new Error('TON wallet is not connected')
+      }
+
       const transaction = {
         validUntil: Math.floor(Date.now() / 1000) + 60, // Valid for 60 seconds
         messages: [
           {
             address: process.env.NEXT_PUBLIC_DESTINATION_ADDRESS,
             amount: amountInNanotons,
+            payload: '', // Add empty payload
           },
         ],
       }
 
-      if (!tonConnectUI.connected) {
-        throw new Error('TON wallet is not connected')
-      }
+      console.log('Sending transaction:', transaction)
 
       const result = await tonConnectUI.sendTransaction(transaction)
       console.log("Transaction sent:", result)
+
+      if (!result?.boc) {
+        throw new Error('Transaction was not sent successfully')
+      }
 
       // Start checking transaction status
       startChecking(result.boc)
 
     } catch (error) {
       console.error("TON payment error:", error)
-      setError(error instanceof Error ? error.message : "Failed to process TON payment")
+      if (error instanceof Error) {
+        if (error.message.includes('TON_CONNECT_SDK_ERROR')) {
+          setError('Failed to send transaction. Please check your wallet connection and try again.')
+        } else {
+          setError(error.message)
+        }
+      } else {
+        setError("Failed to process TON payment")
+      }
     } finally {
       setIsSubmitting(false)
     }
