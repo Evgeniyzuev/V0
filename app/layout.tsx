@@ -22,7 +22,7 @@ export default function RootLayout({
     <html lang="en">
       <body>
         <TonConnectUIProvider 
-          manifestUrl="/tonconnect-manifest.json"
+          manifestUrl="https://blush-keen-constrictor-906.mypinata.cloud/ipfs/QmSBEGs7dqLGi5SAWGYfQpmp7uW8bWjy2KpiBiWSviWHRZ"
           actionsConfiguration={{
             returnStrategy: 'back',
             twaReturnUrl: 'https://t.me/V0_aiassist_bot/V0app'
