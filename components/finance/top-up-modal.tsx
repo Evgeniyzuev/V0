@@ -11,6 +11,7 @@ import { topUpWalletBalance } from "@/app/actions/finance-actions"
 import { useTonConnectUI } from '@tonconnect/ui-react'
 import { toNano } from '@ton/core'
 import { useTransactionStatus } from '../../hooks/useTransactionStatus'
+import { useTonPrice } from "@/contexts/TonPriceContext"
 
 // Стабильный билд
 // Обновим интерфейс TopUpModalProps
@@ -28,6 +29,7 @@ export default function TopUpModal({ isOpen, onClose, onSuccess, userId }: TopUp
   const [error, setError] = useState<string | null>(null)
   const [tonConnectUI] = useTonConnectUI()
   const { transactionStatus, startChecking } = useTransactionStatus()
+  const { convertUsdToTon } = useTonPrice()
 
   const handleTonPayment = async () => {
     if (!amount || isNaN(Number(amount)) || Number(amount) <= 0) {
@@ -36,7 +38,13 @@ export default function TopUpModal({ isOpen, onClose, onSuccess, userId }: TopUp
     }
 
     try {
-      const amountInNanotons = toNano(amount).toString()
+      const tonAmount = convertUsdToTon(Number(amount))
+      if (!tonAmount) {
+        setError("Unable to convert USD to TON. Please try again later.")
+        return
+      }
+
+      const amountInNanotons = toNano(tonAmount.toString()).toString()
       
       const transaction = {
         validUntil: Math.floor(Date.now() / 1000) + 60, // Valid for 60 seconds
