@@ -60,6 +60,11 @@ export default function TopUpModal({ isOpen, onClose, onSuccess, userId }: TopUp
       return
     }
 
+    if (!tonConnectUI) {
+      setError("TON Connect is not initialized")
+      return
+    }
+
     if (!tonConnectUI.connected) {
       setError("Please connect your TON wallet first")
       return
@@ -81,7 +86,7 @@ export default function TopUpModal({ isOpen, onClose, onSuccess, userId }: TopUp
         validUntil: Math.floor(Date.now() / 1000) + 60, // 60 seconds
         messages: [
           {
-            address: PROJECT_WALLET_ADDRESS as string, // We can safely assert this as we check it at the top
+            address: PROJECT_WALLET_ADDRESS as string,
             amount: amountInNanotons.toString(),
           }
         ]

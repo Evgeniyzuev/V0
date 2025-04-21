@@ -1,7 +1,7 @@
 {
-  "url": "https://v0.dev",
-  "name": "v0 App",
-  "iconUrl": "https://v0.dev/favicon.ico",
-  "termsOfUseUrl": "https://v0.dev/terms",
-  "privacyPolicyUrl": "https://v0.dev/privacy"
+  "url": "http://localhost:3000",
+  "name": "V0 AI Assistant",
+  "iconUrl": "http://localhost:3000/favicon.ico",
+  "termsOfUseUrl": "http://localhost:3000/terms",
+  "privacyPolicyUrl": "http://localhost:3000/privacy"
 } 
