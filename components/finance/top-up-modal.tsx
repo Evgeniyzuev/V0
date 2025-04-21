@@ -8,6 +8,7 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { topUpWalletBalance } from "@/app/actions/finance-actions"
+import { TonConnectButton } from '@tonconnect/ui-react'
 
 // Стабильный билд
 // Обновим интерфейс TopUpModalProps
@@ -106,6 +107,10 @@ export default function TopUpModal({ isOpen, onClose, onSuccess, userId }: TopUp
             </svg>
             Apple Pay
           </Button>
+
+          <div className="flex justify-center"> 
+            <TonConnectButton />
+          </div>
 
           <DialogFooter>
             <Button type="button" variant="outline" onClick={onClose} disabled={isSubmitting}>
