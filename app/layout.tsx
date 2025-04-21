@@ -22,7 +22,8 @@ export default function RootLayout({
     <html lang="en">
       <body>
         <TonConnectUIProvider 
-          manifestUrl="https://blush-keen-constrictor-906.mypinata.cloud/ipfs/QmSBEGs7dqLGi5SAWGYfQpmp7uW8bWjy2KpiBiWSviWHRZ"
+          // manifestUrl="https://blush-keen-constrictor-906.mypinata.cloud/ipfs/QmSBEGs7dqLGi5SAWGYfQpmp7uW8bWjy2KpiBiWSviWHRZ"
+          manifestUrl="https://v0-psi-one.vercel.app/tonconnect-manifest.json"
           actionsConfiguration={{
             returnStrategy: 'back',
             twaReturnUrl: 'https://t.me/V0_aiassist_bot/V0app'
