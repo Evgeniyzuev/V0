@@ -11,6 +11,7 @@ import { topUpWalletBalance } from "@/app/actions/finance-actions"
 import { useTonConnectUI } from '@tonconnect/ui-react'
 import { toNano } from '@ton/core'
 import { useTransactionStatus } from '../../hooks/useTransactionStatus'
+import { useTonPrice } from '../../contexts/TonPriceContext'
 
 // Стабильный билд
 // Обновим интерфейс TopUpModalProps
@@ -28,6 +29,7 @@ export default function TopUpModal({ isOpen, onClose, onSuccess, userId }: TopUp
   const [error, setError] = useState<string | null>(null)
   const [tonConnectUI] = useTonConnectUI()
   const { transactionStatus, startChecking } = useTransactionStatus()
+  const { tonPrice } = useTonPrice()
 
   const handleTonPayment = async () => {
     if (!amount || isNaN(Number(amount)) || Number(amount) <= 0) {
@@ -35,15 +37,22 @@ export default function TopUpModal({ isOpen, onClose, onSuccess, userId }: TopUp
       return
     }
 
+    if (!tonPrice) {
+      setError("Unable to get TON price. Please try again later.")
+      return
+    }
+
     try {
-      const amountInNanotons = toNano(amount).toString()
+      // Convert USD to TON
+      const amountInTon = Number(amount) / tonPrice
+      const amountInNanotons = toNano(amountInTon.toString())
       
       const transaction = {
         validUntil: Math.floor(Date.now() / 1000) + 60, // Valid for 60 seconds
         messages: [
           {
             address: process.env.NEXT_PUBLIC_DESTINATION_ADDRESS || "",
-            amount: amountInNanotons,
+            amount: amountInNanotons.toString(),
           },
         ],
       }
@@ -97,7 +106,7 @@ export default function TopUpModal({ isOpen, onClose, onSuccess, userId }: TopUp
 
         <form onSubmit={(e) => e.preventDefault()} className="space-y-4">
           <div className="space-y-2">
-            <Label htmlFor="amount">Amount</Label>
+            <Label htmlFor="amount">Amount (USD)</Label>
             <div className="relative">
               <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500">$</span>
               <Input
@@ -111,6 +120,11 @@ export default function TopUpModal({ isOpen, onClose, onSuccess, userId }: TopUp
                 className="pl-8"
               />
             </div>
+            {tonPrice && amount && !isNaN(Number(amount)) && (
+              <p className="text-sm text-gray-500">
+                ≈ {(Number(amount) / tonPrice).toFixed(4)} TON
+              </p>
+            )}
             {error && <p className="text-sm text-red-500">{error}</p>}
             {transactionStatus === 'checking' && (
               <p className="text-sm text-blue-500">Checking transaction status...</p>

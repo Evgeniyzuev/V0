@@ -5,6 +5,7 @@ import './globals.css'
 import { Providers } from '@/components/Providers'
 import { Toaster } from "@/components/ui/sonner"
 import { TonConnectUIProvider } from '@tonconnect/ui-react'
+import { TonPriceProvider } from '../contexts/TonPriceContext'
 
 // Metadata export removed as this is now a client component
 // export const metadata: Metadata = {
@@ -29,10 +30,12 @@ export default function RootLayout({
             twaReturnUrl: 'https://t.me/V0_aiassist_bot/V0app'
           }}
         >
-          <Providers>
-            {children}
-            <Toaster />
-          </Providers>
+          <TonPriceProvider>
+            <Providers>
+              {children}
+              <Toaster />
+            </Providers>
+          </TonPriceProvider>
         </TonConnectUIProvider>
       </body>
     </html>
