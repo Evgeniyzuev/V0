@@ -16,6 +16,7 @@ import { createClientSupabaseClient } from "@/lib/supabase"
 import { useTaskVerification } from '@/hooks/useTaskVerification'
 import { useLevelCheck } from '@/hooks/useLevelCheck'
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog"
+import { TonConnectButton } from '@tonconnect/ui-react'
 
 // Initialize Supabase client
 const supabase = createClientSupabaseClient()
@@ -571,12 +572,7 @@ export default function FinanceTab() {
               </button>
             </CardContent>
           </Card>
-        </div>
-      )}
 
-      {/* Additional Wallet Actions */}
-      {activeTab === "wallet" && (
-        <div className="px-2 grid grid-cols-2 gap-1">
           <Card className="bg-gradient-to-r from-purple-500/10 to-blue-500/10">
             <CardContent className="p-2 flex flex-col items-center justify-center">
               <div className="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center mb-1.5">
@@ -592,6 +588,12 @@ export default function FinanceTab() {
                 <ArrowDown className="h-4 w-4 text-green-500" />
               </div>
               <p className="text-sm font-medium">Receive</p>
+            </CardContent>
+          </Card>
+
+          <Card className="bg-gradient-to-r from-purple-500/10 to-blue-500/10 col-span-2">
+            <CardContent className="p-2 flex flex-col items-center justify-center">
+              <TonConnectButton />
             </CardContent>
           </Card>
         </div>
