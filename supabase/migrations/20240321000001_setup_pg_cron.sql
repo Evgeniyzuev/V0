@@ -63,10 +63,12 @@ BEGIN
   -- Log execution
   INSERT INTO interest_execution_log (
     execution_date,
+    execution_time,
     processed_users,
     total_interest
   ) VALUES (
     v_execution_date,
+    timezone('utc'::text, now()),
     v_processed_users,
     v_total_interest
   );
