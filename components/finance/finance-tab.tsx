@@ -18,8 +18,8 @@ import { useTaskVerification } from '@/hooks/useTaskVerification'
 import { useLevelCheck } from '@/hooks/useLevelCheck'
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog"
 import { TonConnectButton } from '@tonconnect/ui-react'
-import InterestHistory from "./interest-history"
 import InterestNotification from "./interest-notification"
+import CoreHistory from "./core-history"
 
 // Initialize Supabase client
 const supabase = createClientSupabaseClient()
@@ -698,13 +698,8 @@ export default function FinanceTab() {
             </CardContent>
           </Card>
 
-          {/* Interest History */}
-          {userId && (
-            <div>
-              <h3 className="text-sm font-medium mb-2">Interest History</h3>
-              <InterestHistory userId={userId} />
-            </div>
-          )}
+          {/* Core History */}
+          {userId && <CoreHistory userId={userId} />}
         </div>
       )}
 

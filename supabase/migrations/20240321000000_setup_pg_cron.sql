@@ -21,64 +21,60 @@ CREATE INDEX IF NOT EXISTS idx_interest_execution_date ON interest_execution_log
 CREATE OR REPLACE FUNCTION calculate_daily_interest()
 RETURNS void AS $$
 DECLARE
-    user_record RECORD;
-    daily_rate DECIMAL := 0.000633; -- 0.0633% daily rate
-    interest_amount DECIMAL;
-    to_core DECIMAL;
-    to_wallet DECIMAL;
-    processed_count INTEGER := 0;
-    total_interest_amount DECIMAL := 0;
-    last_execution_date DATE;
+  v_execution_date DATE;
+  v_total_interest DECIMAL(20,8) := 0;
+  v_processed_users INTEGER := 0;
+  v_user RECORD;
+  v_interest_amount DECIMAL(20,8);
 BEGIN
-    -- Check if already executed today
-    SELECT execution_date INTO last_execution_date
-    FROM interest_execution_log
-    ORDER BY execution_date DESC
-    LIMIT 1;
-
-    IF last_execution_date = CURRENT_DATE THEN
-        RAISE NOTICE 'Interest already calculated for today (%)', CURRENT_DATE;
-        RETURN;
-    END IF;
-
-    -- Loop through all users
-    FOR user_record IN 
-        SELECT id, aicore_balance, reinvest 
-        FROM users 
-        WHERE aicore_balance > 0
-    LOOP
-        -- Calculate total interest
-        interest_amount := user_record.aicore_balance * daily_rate;
-        total_interest_amount := total_interest_amount + interest_amount;
-        
-        -- Split interest based on reinvest percentage
-        to_core := interest_amount * (user_record.reinvest / 100);
-        to_wallet := interest_amount * ((100 - user_record.reinvest) / 100);
-        
-        -- Update balances
-        UPDATE users
-        SET 
-            aicore_balance = aicore_balance + to_core,
-            wallet_balance = wallet_balance + to_wallet
-        WHERE id = user_record.id;
-
-        processed_count := processed_count + 1;
-    END LOOP;
-
-    -- Log the execution
-    INSERT INTO interest_execution_log (
-        execution_date,
-        execution_time,
-        processed_users,
-        total_interest
-    ) VALUES (
-        CURRENT_DATE,
-        CURRENT_TIMESTAMP,
-        processed_count,
-        total_interest_amount
-    );
+  -- Get current date in UTC
+  v_execution_date := timezone('utc'::text, now())::date;
+  
+  -- Check if already executed today
+  IF EXISTS (
+    SELECT 1 FROM interest_execution_log 
+    WHERE execution_date = v_execution_date
+  ) THEN
+    RAISE NOTICE 'Interest already calculated for today (%)', v_execution_date;
+    RETURN;
+  END IF;
+  
+  -- Process each user
+  FOR v_user IN 
+    SELECT id, aicore_balance, reinvest 
+    FROM users 
+    WHERE aicore_balance > 0
+  LOOP
+    -- Calculate interest
+    v_interest_amount := v_user.aicore_balance * 0.000633; -- 0.0633% daily interest
+    
+    -- Update user balance
+    UPDATE users 
+    SET aicore_balance = aicore_balance + v_interest_amount
+    WHERE id = v_user.id;
+    
+    -- Log the operation
+    PERFORM log_core_operation(v_user.id, v_interest_amount, 'interest');
+    
+    v_total_interest := v_total_interest + v_interest_amount;
+    v_processed_users := v_processed_users + 1;
+  END LOOP;
+  
+  -- Log execution
+  INSERT INTO interest_execution_log (
+    execution_date,
+    processed_users,
+    total_interest
+  ) VALUES (
+    v_execution_date,
+    v_processed_users,
+    v_total_interest
+  );
+  
+  RAISE NOTICE 'Daily interest calculation completed. Processed % users, total interest: %', 
+    v_processed_users, v_total_interest;
 END;
-$$ LANGUAGE plpgsql;
+$$ LANGUAGE plpgsql SECURITY DEFINER;
 
 -- Schedule the job to run daily at 00:00 UTC
 SELECT cron.schedule(
