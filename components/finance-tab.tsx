@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button"
 import { getUserBalances, updateUserReinvest } from "@/app/actions/finance-actions"
 import TopUpModal from "@/components/finance/top-up-modal"
 import TransferModal from "@/components/finance/transfer-modal"
+import SendTonModal from "@/components/finance/send-ton-modal"
 import { useToast } from "@/hooks/use-toast"
 import { useUser } from "@/components/UserContext"
 import { Avatar, AvatarFallback } from "@/components/ui/avatar"
@@ -30,6 +31,7 @@ export default function FinanceTab() {
   const [userId, setUserId] = useState<string | null>(null)
   const [isTopUpModalOpen, setIsTopUpModalOpen] = useState(false)
   const [isTransferModalOpen, setIsTransferModalOpen] = useState(false)
+  const [isSendModalOpen, setIsSendModalOpen] = useState(false)
   const [reinvestPercentage, setReinvestPercentage] = useState(100)
   const [isReinvestChanged, setIsReinvestChanged] = useState(false)
   const { toast } = useToast()
@@ -292,6 +294,14 @@ export default function FinanceTab() {
     toast({
       title: "Success",
       description: "Transfer to Core completed successfully",
+    })
+  }
+
+  const handleSendSuccess = (newBalance: number) => {
+    setWalletBalance(newBalance)
+    toast({
+      title: "Success",
+      description: "TON sent successfully",
     })
   }
 
@@ -575,10 +585,15 @@ export default function FinanceTab() {
 
           <Card className="bg-gradient-to-r from-purple-500/10 to-blue-500/10">
             <CardContent className="p-2 flex flex-col items-center justify-center">
-              <div className="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center mb-1.5">
-                <Send className="h-4 w-4 text-blue-500" />
-              </div>
-              <p className="text-sm font-medium">Send</p>
+              <button
+                className="w-full h-full flex flex-col items-center py-1.5"
+                onClick={() => setIsSendModalOpen(true)}
+              >
+                <div className="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center mb-1.5">
+                  <Send className="h-4 w-4 text-blue-500" />
+                </div>
+                <p className="text-sm font-medium">Send</p>
+              </button>
             </CardContent>
           </Card>
 
@@ -635,6 +650,14 @@ export default function FinanceTab() {
             currentWalletBalance={walletBalance}
             onSuccess={handleTransferSuccess}
             userId={userId || ''}
+          />
+
+          <SendTonModal
+            isOpen={isSendModalOpen}
+            onClose={() => setIsSendModalOpen(false)}
+            onSuccess={handleSendSuccess}
+            userId={userId}
+            currentBalance={walletBalance}
           />
         </>
       )}
