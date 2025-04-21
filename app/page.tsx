@@ -5,7 +5,7 @@ import BottomTabs from "@/components/bottom-tabs"
 import GoalsTab from "@/components/goals-tab"
 import TasksTab from "@/components/tasks-tab"
 import AIAssistantTab from "@/components/ai-assistant-tab"
-import FinanceTab from "@/components/finance-tab"
+import FinanceTab from "@/components/finance/finance-tab"
 import CommunityTab from "@/components/community-tab"
 
 export default function Home() {
