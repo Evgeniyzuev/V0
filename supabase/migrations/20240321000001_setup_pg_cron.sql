@@ -1,5 +1,6 @@
--- Enable pg_cron extension
-CREATE EXTENSION IF NOT EXISTS pg_cron;
+-- Drop existing grants if any
+REVOKE ALL PRIVILEGES ON ALL TABLES IN SCHEMA cron FROM postgres;
+REVOKE USAGE ON SCHEMA cron FROM postgres;
 
 -- Grant necessary permissions to postgres user
 GRANT USAGE ON SCHEMA cron TO postgres;
@@ -16,6 +17,14 @@ CREATE TABLE IF NOT EXISTS interest_execution_log (
 
 -- Create index for faster date lookups
 CREATE INDEX IF NOT EXISTS idx_interest_execution_date ON interest_execution_log(execution_date);
+
+-- Create table for logging interest errors
+CREATE TABLE IF NOT EXISTS interest_errors_log (
+    id SERIAL PRIMARY KEY,
+    user_id UUID NOT NULL REFERENCES auth.users(id),
+    error_message TEXT NOT NULL,
+    error_time TIMESTAMP WITH TIME ZONE NOT NULL
+);
 
 -- Create function to calculate daily interest
 CREATE OR REPLACE FUNCTION calculate_daily_interest()
@@ -45,19 +54,33 @@ BEGIN
     FROM users 
     WHERE aicore_balance > 0
   LOOP
-    -- Calculate interest
-    v_interest_amount := v_user.aicore_balance * 0.000633; -- 0.0633% daily interest
-    
-    -- Update user balance
-    UPDATE users 
-    SET aicore_balance = aicore_balance + v_interest_amount
-    WHERE id = v_user.id;
-    
-    -- Log the operation
-    PERFORM log_core_operation(v_user.id, v_interest_amount, 'interest');
-    
-    v_total_interest := v_total_interest + v_interest_amount;
-    v_processed_users := v_processed_users + 1;
+    BEGIN
+      -- Calculate interest
+      v_interest_amount := v_user.aicore_balance * 0.000633; -- 0.0633% daily interest
+      
+      -- Update user balance
+      UPDATE users 
+      SET aicore_balance = aicore_balance + v_interest_amount
+      WHERE id = v_user.id;
+      
+      -- Log the operation
+      PERFORM log_core_operation(v_user.id, v_interest_amount, 'interest');
+      
+      v_total_interest := v_total_interest + v_interest_amount;
+      v_processed_users := v_processed_users + 1;
+    EXCEPTION
+      WHEN OTHERS THEN
+        -- Log error for this user
+        INSERT INTO interest_errors_log (
+          user_id,
+          error_message,
+          error_time
+        ) VALUES (
+          v_user.id,
+          SQLERRM,
+          timezone('utc'::text, now())
+        );
+    END;
   END LOOP;
   
   -- Log execution
