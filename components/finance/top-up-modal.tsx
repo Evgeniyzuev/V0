@@ -32,7 +32,8 @@ export default function TopUpModal({ isOpen, onClose, onSuccess, userId }: TopUp
   const { convertUsdToTon, tonPrice } = useTonPrice()
 
   const handleTonPayment = async () => {
-    if (!amount || isNaN(Number(amount)) || Number(amount) <= 0) {
+    const numericAmount = parseFloat(amount)
+    if (isNaN(numericAmount) || numericAmount <= 0) {
       setError("Please enter a valid amount greater than zero")
       return
     }
@@ -41,19 +42,21 @@ export default function TopUpModal({ isOpen, onClose, onSuccess, userId }: TopUp
       setIsSubmitting(true)
       setError(null)
 
-      const tonAmount = convertUsdToTon(Number(amount))
+      const tonAmount = convertUsdToTon(numericAmount)
       if (!tonAmount) {
         setError("Unable to convert USD to TON. Please try again later.")
         return
       }
 
       console.log('Converting USD to TON:', {
-        usdAmount: amount,
+        usdAmount: numericAmount,
         tonAmount,
         tonPrice: tonPrice
       })
 
-      const amountInNanotons = toNano(tonAmount.toString()).toString()
+      // Round to 9 decimal places to avoid precision issues
+      const roundedTonAmount = Number(tonAmount.toFixed(9))
+      const amountInNanotons = toNano(roundedTonAmount.toString()).toString()
       
       console.log('Transaction details:', {
         amountInNanotons,
@@ -129,7 +132,7 @@ export default function TopUpModal({ isOpen, onClose, onSuccess, userId }: TopUp
 
         <form onSubmit={(e) => e.preventDefault()} className="space-y-4">
           <div className="space-y-2">
-            <Label htmlFor="amount">Amount</Label>
+            <Label htmlFor="amount">Amount in USD</Label>
             <div className="relative">
               <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500">$</span>
               <Input
@@ -143,6 +146,11 @@ export default function TopUpModal({ isOpen, onClose, onSuccess, userId }: TopUp
                 className="pl-8"
               />
             </div>
+            {amount && !isNaN(parseFloat(amount)) && tonPrice && (
+              <p className="text-sm text-muted-foreground">
+                ≈ {convertUsdToTon(parseFloat(amount))?.toFixed(4)} TON
+              </p>
+            )}
             {error && <p className="text-sm text-red-500">{error}</p>}
             {transactionStatus === 'checking' && (
               <p className="text-sm text-blue-500">Checking transaction status...</p>
