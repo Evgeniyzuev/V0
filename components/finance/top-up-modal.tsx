@@ -1,17 +1,23 @@
 "use client"
 
 import type React from "react"
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from "@/components/ui/dialog"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { topUpWalletBalance } from "@/app/actions/finance-actions"
-import { useTonConnectUI } from '@tonconnect/ui-react'
+import { useTonConnectUI, TonConnectButton } from '@tonconnect/ui-react'
 import { toNano } from '@ton/core'
 import { useTransactionStatus } from '@/hooks/useTransactionStatus'
 
-// Стабильный билд
+// Project wallet address where funds will be sent
+const PROJECT_WALLET_ADDRESS = process.env.NEXT_PUBLIC_DESTINATION_ADDRESS
+
+if (!PROJECT_WALLET_ADDRESS) {
+  throw new Error("Project wallet address is not configured. Please set NEXT_PUBLIC_DESTINATION_ADDRESS in .env.local")
+}
+
 // Обновим интерфейс TopUpModalProps
 interface TopUpModalProps {
   isOpen: boolean
@@ -27,15 +33,23 @@ export default function TopUpModal({ isOpen, onClose, onSuccess, userId }: TopUp
   const [error, setError] = useState<string | null>(null)
   const [tonConnectUI] = useTonConnectUI()
   const { transactionStatus, startChecking } = useTransactionStatus()
-  const [tonWalletAddress, setTonWalletAddress] = useState<string | null>(null)
 
-  const handleConnectWallet = async () => {
-    try {
-      await tonConnectUI.openModal()
-    } catch (err) {
-      setError("Failed to connect wallet")
+  // Subscribe to wallet connection status
+  useEffect(() => {
+    if (!tonConnectUI) return
+
+    const unsubscribe = tonConnectUI.onStatusChange((wallet) => {
+      if (wallet) {
+        console.log("Wallet connected:", wallet)
+      } else {
+        console.log("Wallet disconnected")
+      }
+    })
+
+    return () => {
+      unsubscribe()
     }
-  }
+  }, [tonConnectUI])
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -57,49 +71,61 @@ export default function TopUpModal({ isOpen, onClose, onSuccess, userId }: TopUp
     try {
       // Create TON transaction
       const amountInNanotons = toNano(amount)
-      const transaction = {
-        validUntil: Math.floor(Date.now() / 1000) + 60,
+      const transaction: {
+        validUntil: number
+        messages: Array<{
+          address: string
+          amount: string
+        }>
+      } = {
+        validUntil: Math.floor(Date.now() / 1000) + 60, // 60 seconds
         messages: [
           {
-            address: tonWalletAddress!,
+            address: PROJECT_WALLET_ADDRESS as string, // We can safely assert this as we check it at the top
             amount: amountInNanotons.toString(),
-          },
-        ],
+          }
+        ]
       }
+
+      console.log("Sending transaction to:", PROJECT_WALLET_ADDRESS)
 
       // Send transaction
       const result = await tonConnectUI.sendTransaction(transaction)
+      console.log("Transaction sent:", result)
       
       // Start checking transaction status
-      startChecking(result.boc)
+      if (result.boc) {
+        startChecking(result.boc)
 
-      // Wait for transaction confirmation
-      const confirmed = await new Promise((resolve) => {
-        const checkInterval = setInterval(() => {
-          if (transactionStatus?.includes('успешно')) {
-            clearInterval(checkInterval)
-            resolve(true)
-          } else if (transactionStatus?.includes('Ошибка')) {
-            clearInterval(checkInterval)
-            resolve(false)
+        // Wait for transaction confirmation
+        const confirmed = await new Promise((resolve) => {
+          const checkInterval = setInterval(() => {
+            if (transactionStatus?.includes('успешно')) {
+              clearInterval(checkInterval)
+              resolve(true)
+            } else if (transactionStatus?.includes('Ошибка')) {
+              clearInterval(checkInterval)
+              resolve(false)
+            }
+          }, 1000)
+        })
+
+        if (confirmed) {
+          // Update wallet balance only after transaction is confirmed
+          const result = await topUpWalletBalance(amountValue, userId)
+          if (result.success && typeof result.newBalance === 'number') {
+            setAmount("")
+            onSuccess(result.newBalance)
+            onClose()
+          } else {
+            setError(result.error || "Failed to top up wallet")
           }
-        }, 1000)
-      })
-
-      if (confirmed) {
-        // Update wallet balance only after transaction is confirmed
-        const result = await topUpWalletBalance(amountValue, userId)
-        if (result.success && typeof result.newBalance === 'number') {
-          setAmount("")
-          onSuccess(result.newBalance)
-          onClose()
         } else {
-          setError(result.error || "Failed to top up wallet")
+          setError("Transaction failed or was rejected")
         }
-      } else {
-        setError("Transaction failed or was rejected")
       }
     } catch (err) {
+      console.error("Transaction error:", err)
       setError("An unexpected error occurred")
     } finally {
       setIsSubmitting(false)
@@ -118,9 +144,8 @@ export default function TopUpModal({ isOpen, onClose, onSuccess, userId }: TopUp
 
         <form onSubmit={handleSubmit} className="space-y-4">
           <div className="space-y-2">
-            <Label htmlFor="amount">Amount</Label>
+            <Label htmlFor="amount">Amount in TON</Label>
             <div className="relative">
-              <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500">$</span>
               <Input
                 id="amount"
                 type="number"
@@ -129,30 +154,26 @@ export default function TopUpModal({ isOpen, onClose, onSuccess, userId }: TopUp
                 value={amount}
                 onChange={(e) => setAmount(e.target.value)}
                 placeholder="0.00"
-                className="pl-8"
+                className="pl-4"
               />
             </div>
             {error && <p className="text-sm text-red-500">{error}</p>}
           </div>
 
-          {!tonConnectUI.connected ? (
-            <Button 
-              type="button"
-              onClick={handleConnectWallet}
-              className="w-full"
-            >
-              Connect TON Wallet
-            </Button>
-          ) : (
-            <DialogFooter>
-              <Button type="button" variant="outline" onClick={onClose} disabled={isSubmitting}>
-                Cancel
-              </Button>
-              <Button type="submit" disabled={isSubmitting}>
-                {isSubmitting ? "Processing..." : "Top Up"}
-              </Button>
-            </DialogFooter>
-          )}
+          <div className="flex flex-col items-center gap-4">
+            <TonConnectButton />
+
+            {tonConnectUI.connected && (
+              <DialogFooter className="w-full">
+                <Button type="button" variant="outline" onClick={onClose} disabled={isSubmitting}>
+                  Cancel
+                </Button>
+                <Button type="submit" disabled={isSubmitting}>
+                  {isSubmitting ? "Processing..." : "Top Up"}
+                </Button>
+              </DialogFooter>
+            )}
+          </div>
 
           {transactionStatus && (
             <div className={`mt-4 p-3 rounded ${
