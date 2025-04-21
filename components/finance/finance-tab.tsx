@@ -19,6 +19,7 @@ import { useLevelCheck } from '@/hooks/useLevelCheck'
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog"
 import { TonConnectButton } from '@tonconnect/ui-react'
 import InterestHistory from "./interest-history"
+import InterestNotification from "./interest-notification"
 
 // Initialize Supabase client
 const supabase = createClientSupabaseClient()
@@ -49,6 +50,8 @@ export default function FinanceTab() {
   const [hasCalculated, setHasCalculated] = useState(false)
   const [statusMessage, setStatusMessage] = useState<{ type: 'success' | 'error', text: string } | null>(null)
   const [hasUnviewedInterest, setHasUnviewedInterest] = useState(false);
+  const [showInterestNotification, setShowInterestNotification] = useState(false)
+  const [unviewedInterestAmount, setUnviewedInterestAmount] = useState(0)
 
   const { verifying, handleTaskVerification } = useTaskVerification({
     dbUser,
@@ -255,7 +258,7 @@ export default function FinanceTab() {
 
       const { data: lastInterest } = await supabase
         .from('interest_execution_log')
-        .select('execution_date')
+        .select('execution_date, total_interest')
         .order('execution_date', { ascending: false })
         .limit(1)
         .single();
@@ -265,11 +268,22 @@ export default function FinanceTab() {
         return;
       }
 
-      setHasUnviewedInterest(lastView.last_view_date < lastInterest.execution_date);
+      const hasUnviewed = lastView.last_view_date < lastInterest.execution_date;
+      setHasUnviewedInterest(hasUnviewed);
+      if (hasUnviewed) {
+        setUnviewedInterestAmount(lastInterest.total_interest);
+      }
     };
 
     checkUnviewedInterest();
   }, [userId]);
+
+  // Show notification when switching to Core tab with unviewed interest
+  useEffect(() => {
+    if (activeTab === "core" && hasUnviewedInterest) {
+      setShowInterestNotification(true);
+    }
+  }, [activeTab, hasUnviewedInterest]);
 
   // Update view date when tab is active
   useEffect(() => {
@@ -761,6 +775,19 @@ export default function FinanceTab() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      {/* Interest Notification */}
+      {userId && (
+        <InterestNotification
+          isOpen={showInterestNotification}
+          onClose={() => {
+            setShowInterestNotification(false);
+            setHasUnviewedInterest(false);
+          }}
+          userId={userId}
+          interestAmount={unviewedInterestAmount}
+        />
+      )}
     </div>
   )
 } 
