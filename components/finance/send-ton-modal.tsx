@@ -57,6 +57,10 @@ export default function SendTonModal({ isOpen, onClose, onSuccess, userId, curre
         return
       }
 
+      // Add network fee to the amount (0.005 TON)
+      const networkFee = 0.005
+      const totalTonAmount = tonAmount + networkFee
+
       // Validate TON address
       let destinationAddress: Address
       try {
@@ -81,6 +85,13 @@ export default function SendTonModal({ isOpen, onClose, onSuccess, userId, curre
       const walletContract = client.open(wallet)
       const seqno = await walletContract.getSeqno()
       
+      console.log('Sending transaction:', {
+        to: destinationAddress.toString(),
+        amount: tonAmount,
+        totalAmount: totalTonAmount,
+        amountInNano: toNano(tonAmount.toString()).toString()
+      })
+
       setTransactionStatus('Sending transaction...')
       await walletContract.sendTransfer({
         secretKey: key.secretKey,
@@ -163,9 +174,17 @@ export default function SendTonModal({ isOpen, onClose, onSuccess, userId, curre
               />
             </div>
             {amount && !isNaN(parseFloat(amount)) && tonPrice && (
-              <p className="text-sm text-muted-foreground">
-                ≈ {convertUsdToTon(parseFloat(amount))?.toFixed(4)} TON
-              </p>
+              <div className="space-y-1">
+                <p className="text-sm text-muted-foreground">
+                  ≈ {convertUsdToTon(parseFloat(amount))?.toFixed(4)} TON
+                </p>
+                <p className="text-xs text-gray-500">
+                  Network fee: 0.005 TON
+                </p>
+                <p className="text-xs text-gray-500">
+                  Total with fee: {(convertUsdToTon(parseFloat(amount)) || 0 + 0.005).toFixed(4)} TON
+                </p>
+              </div>
             )}
             <p className="text-xs text-gray-500">Available balance: ${currentBalance.toFixed(2)}</p>
             {error && <p className="text-sm text-red-500">{error}</p>}
