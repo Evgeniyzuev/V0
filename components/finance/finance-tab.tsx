@@ -23,6 +23,11 @@ import InterestHistory from "./interest-history"
 // Initialize Supabase client
 const supabase = createClientSupabaseClient()
 
+// Add notification dot component
+const NotificationDot = () => (
+  <div className="absolute -top-1 -right-1 w-2 h-2 bg-green-500 rounded-full" />
+);
+
 export default function FinanceTab() {
   const { telegramUser, dbUser, isLoading: userLoading, refreshUserData, goals } = useUser()
   const { levelUpModal, handleLevelUpModalClose, levelThresholds } = useLevelCheck()
@@ -43,6 +48,7 @@ export default function FinanceTab() {
   const [timeToTarget, setTimeToTarget] = useState<number | null>(null)
   const [hasCalculated, setHasCalculated] = useState(false)
   const [statusMessage, setStatusMessage] = useState<{ type: 'success' | 'error', text: string } | null>(null)
+  const [hasUnviewedInterest, setHasUnviewedInterest] = useState(false);
 
   const { verifying, handleTaskVerification } = useTaskVerification({
     dbUser,
@@ -234,6 +240,49 @@ export default function FinanceTab() {
     return Math.max(0, 100 - (5 * currentLevel));
   };
 
+  // Check for unviewed interest
+  useEffect(() => {
+    const checkUnviewedInterest = async () => {
+      if (!userId) return;
+
+      const { data: lastView } = await supabase
+        .from('interest_view_tracking')
+        .select('last_view_date')
+        .eq('user_id', userId)
+        .order('last_view_date', { ascending: false })
+        .limit(1)
+        .single();
+
+      const { data: lastInterest } = await supabase
+        .from('interest_execution_log')
+        .select('execution_date')
+        .order('execution_date', { ascending: false })
+        .limit(1)
+        .single();
+
+      if (!lastView || !lastInterest) {
+        setHasUnviewedInterest(false);
+        return;
+      }
+
+      setHasUnviewedInterest(lastView.last_view_date < lastInterest.execution_date);
+    };
+
+    checkUnviewedInterest();
+  }, [userId]);
+
+  // Update view date when tab is active
+  useEffect(() => {
+    const updateViewDate = async () => {
+      if (!userId || !hasUnviewedInterest) return;
+
+      await supabase.rpc('update_interest_view_date', { user_id: userId });
+      setHasUnviewedInterest(false);
+    };
+
+    updateViewDate();
+  }, [activeTab, userId, hasUnviewedInterest]);
+
   // Показываем индикатор загрузки
   if (userLoading) {
     return (
@@ -311,20 +360,22 @@ export default function FinanceTab() {
       {/* Tabs */}
       <div className="flex bg-white border-b">
         <button
-          className={`flex-1 py-1.5 text-center font-medium text-sm ${
+          className={`flex-1 py-1.5 text-center font-medium text-sm relative ${
             activeTab === "wallet" ? "text-purple-600 border-b-2 border-purple-600" : "text-gray-500"
           }`}
           onClick={() => setActiveTab("wallet")}
         >
           Wallet
+          {hasUnviewedInterest && <NotificationDot />}
         </button>
         <button
-          className={`flex-1 py-1.5 text-center font-medium text-sm ${
+          className={`flex-1 py-1.5 text-center font-medium text-sm relative ${
             activeTab === "core" ? "text-purple-600 border-b-2 border-purple-600" : "text-gray-500"
           }`}
           onClick={() => setActiveTab("core")}
         >
           Core
+          {hasUnviewedInterest && <NotificationDot />}
         </button>
       </div>
 
