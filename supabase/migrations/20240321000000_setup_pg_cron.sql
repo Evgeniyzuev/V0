@@ -1,4 +1,11 @@
--- Create table to track last execution
+-- Enable pg_cron extension
+CREATE EXTENSION IF NOT EXISTS pg_cron;
+
+-- Grant necessary permissions to postgres user
+GRANT USAGE ON SCHEMA cron TO postgres;
+GRANT ALL PRIVILEGES ON ALL TABLES IN SCHEMA cron TO postgres;
+
+-- Create table for tracking interest execution
 CREATE TABLE IF NOT EXISTS interest_execution_log (
     id SERIAL PRIMARY KEY,
     execution_date DATE NOT NULL,
@@ -7,7 +14,10 @@ CREATE TABLE IF NOT EXISTS interest_execution_log (
     total_interest DECIMAL NOT NULL
 );
 
--- Function to calculate and apply daily interest
+-- Create index for faster date lookups
+CREATE INDEX IF NOT EXISTS idx_interest_execution_date ON interest_execution_log(execution_date);
+
+-- Create function to calculate daily interest
 CREATE OR REPLACE FUNCTION calculate_daily_interest()
 RETURNS void AS $$
 DECLARE
@@ -70,23 +80,9 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql;
 
--- Create a scheduled job to run daily interest calculation
-CREATE OR REPLACE FUNCTION schedule_daily_interest()
-RETURNS void AS $$
-BEGIN
-    -- Check if the job already exists
-    IF NOT EXISTS (
-        SELECT 1 FROM cron.job WHERE jobname = 'calculate_daily_interest'
-    ) THEN
-        -- Schedule the job to run daily at 00:00 UTC
-        PERFORM cron.schedule(
-            'calculate_daily_interest',
-            '0 0 * * *',  -- Run at midnight every day
-            'SELECT calculate_daily_interest()'
-        );
-    END IF;
-END;
-$$ LANGUAGE plpgsql;
-
--- Execute the scheduling function
-SELECT schedule_daily_interest(); 
+-- Schedule the job to run daily at 00:00 UTC
+SELECT cron.schedule(
+    'calculate-daily-interest',
+    '0 0 * * *',
+    $$SELECT calculate_daily_interest()$$
+); 

@@ -18,6 +18,7 @@ import { useTaskVerification } from '@/hooks/useTaskVerification'
 import { useLevelCheck } from '@/hooks/useLevelCheck'
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog"
 import { TonConnectButton } from '@tonconnect/ui-react'
+import InterestHistory from "./interest-history"
 
 // Initialize Supabase client
 const supabase = createClientSupabaseClient()
@@ -616,7 +617,7 @@ export default function FinanceTab() {
 
       {/* Core Tab Content */}
       {activeTab === "core" && (
-        <div className="px-2">
+        <div className="px-2 space-y-4">
           <Card className="bg-gradient-to-r from-purple-500/10 to-blue-500/10">
             <CardContent className="p-2 flex flex-col items-center justify-center">
               <button
@@ -631,6 +632,14 @@ export default function FinanceTab() {
               </button>
             </CardContent>
           </Card>
+
+          {/* Interest History */}
+          {userId && (
+            <div>
+              <h3 className="text-sm font-medium mb-2">Interest History</h3>
+              <InterestHistory userId={userId} />
+            </div>
+          )}
         </div>
       )}
 
