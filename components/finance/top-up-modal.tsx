@@ -37,7 +37,7 @@ export default function TopUpModal({ isOpen, onClose, onSuccess, userId }: TopUp
       return
     }
 
-    if (!tonPrice) {
+    if (!tonPrice || tonPrice <= 0) {
       setError("Unable to get TON price. Please try again later.")
       return
     }
@@ -45,6 +45,13 @@ export default function TopUpModal({ isOpen, onClose, onSuccess, userId }: TopUp
     try {
       // Convert USD to TON
       const amountInTon = Number(amount) / tonPrice
+      
+      // Check if amount is too small (less than 0.01 TON)
+      if (amountInTon < 0.01) {
+        setError("Amount is too small. Minimum amount is 0.01 TON")
+        return
+      }
+
       const amountInNanotons = toNano(amountInTon.toString())
       
       const transaction = {
@@ -60,7 +67,6 @@ export default function TopUpModal({ isOpen, onClose, onSuccess, userId }: TopUp
       const result = await tonConnectUI.sendTransaction(transaction)
       console.log("Transaction sent:", result)
 
-      // Start checking transaction status
       startChecking(result.boc)
 
     } catch (error) {
