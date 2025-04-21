@@ -1,8 +1,8 @@
 "use client"
 
-import type React from "react"
+import React from "react"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from "@/components/ui/dialog"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -10,6 +10,7 @@ import { Label } from "@/components/ui/label"
 import { topUpWalletBalance } from "@/app/actions/finance-actions"
 import { useTonConnectUI } from '@tonconnect/ui-react'
 import { toNano } from '@ton/core'
+import { useTransactionStatus } from '../../hooks/useTransactionStatus'
 
 // Стабильный билд
 // Обновим интерфейс TopUpModalProps
@@ -26,35 +27,7 @@ export default function TopUpModal({ isOpen, onClose, onSuccess, userId }: TopUp
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [tonConnectUI] = useTonConnectUI()
-
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault()
-
-    const amountValue = Number.parseFloat(amount)
-    if (isNaN(amountValue) || amountValue <= 0) {
-      setError("Please enter a valid amount greater than zero")
-      return
-    }
-
-    setIsSubmitting(true)
-    setError(null)
-
-    try {
-      const result = await topUpWalletBalance(amountValue, userId)
-
-      if (result.success && typeof result.newBalance === 'number') {
-        setAmount("")
-        onSuccess(result.newBalance)
-        onClose()
-      } else {
-        setError(result.error || "Failed to top up wallet")
-      }
-    } catch (err) {
-      setError("An unexpected error occurred")
-    } finally {
-      setIsSubmitting(false)
-    }
-  }
+  const { transactionStatus, startChecking } = useTransactionStatus()
 
   const handleTonPayment = async () => {
     if (!amount || isNaN(Number(amount)) || Number(amount) <= 0) {
@@ -78,20 +51,39 @@ export default function TopUpModal({ isOpen, onClose, onSuccess, userId }: TopUp
       const result = await tonConnectUI.sendTransaction(transaction)
       console.log("Transaction sent:", result)
 
-      // After successful transaction, update the balance
-      const topUpResult = await topUpWalletBalance(Number(amount), userId)
-      if (topUpResult.success && typeof topUpResult.newBalance === 'number') {
-        setAmount("")
-        onSuccess(topUpResult.newBalance)
-        onClose()
-      } else {
-        setError(topUpResult.error || "Failed to update balance after TON payment")
-      }
+      // Start checking transaction status
+      startChecking(result.boc)
+
     } catch (error) {
       console.error("TON payment error:", error)
       setError("Failed to process TON payment")
     }
   }
+
+  // Handle transaction status changes
+  useEffect(() => {
+    if (transactionStatus === 'confirmed') {
+      // Only update balance after transaction is confirmed
+      const updateBalance = async () => {
+        try {
+          const topUpResult = await topUpWalletBalance(Number(amount), userId)
+          if (topUpResult.success && typeof topUpResult.newBalance === 'number') {
+            setAmount("")
+            onSuccess(topUpResult.newBalance)
+            onClose()
+          } else {
+            setError(topUpResult.error || "Failed to update balance after TON payment")
+          }
+        } catch (error) {
+          console.error("Error updating balance:", error)
+          setError("Failed to update balance")
+        }
+      }
+      updateBalance()
+    } else if (transactionStatus === 'failed') {
+      setError("Transaction failed. Please try again.")
+    }
+  }, [transactionStatus, amount, userId, onSuccess, onClose])
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
@@ -103,7 +95,7 @@ export default function TopUpModal({ isOpen, onClose, onSuccess, userId }: TopUp
           </DialogDescription>
         </DialogHeader>
 
-        <form onSubmit={handleSubmit} className="space-y-4">
+        <form onSubmit={(e) => e.preventDefault()} className="space-y-4">
           <div className="space-y-2">
             <Label htmlFor="amount">Amount</Label>
             <div className="relative">
@@ -120,6 +112,15 @@ export default function TopUpModal({ isOpen, onClose, onSuccess, userId }: TopUp
               />
             </div>
             {error && <p className="text-sm text-red-500">{error}</p>}
+            {transactionStatus === 'checking' && (
+              <p className="text-sm text-blue-500">Checking transaction status...</p>
+            )}
+            {transactionStatus === 'confirmed' && (
+              <p className="text-sm text-green-500">Transaction confirmed!</p>
+            )}
+            {transactionStatus === 'failed' && (
+              <p className="text-sm text-red-500">Transaction failed. Please try again.</p>
+            )}
           </div>
 
           <Button 
@@ -151,7 +152,7 @@ export default function TopUpModal({ isOpen, onClose, onSuccess, userId }: TopUp
             variant="outline" 
             className="flex items-center gap-2"
             onClick={handleTonPayment}
-            disabled={!tonConnectUI.connected}
+            disabled={!tonConnectUI.connected || isSubmitting}
           >
             <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" className="h-5 w-5">
               <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 18c-4.41 0-8-3.59-8-8s3.59-8 8-8 8 3.59 8 8-3.59 8-8 8zm-1-13h2v6h-2zm0 8h2v2h-2z" fill="#0088cc"/>
@@ -162,9 +163,6 @@ export default function TopUpModal({ isOpen, onClose, onSuccess, userId }: TopUp
           <DialogFooter>
             <Button type="button" variant="outline" onClick={onClose} disabled={isSubmitting}>
               Cancel
-            </Button>
-            <Button type="submit" disabled={isSubmitting}>
-              {isSubmitting ? "Processing..." : "Top Up"}
             </Button>
           </DialogFooter>
         </form>
