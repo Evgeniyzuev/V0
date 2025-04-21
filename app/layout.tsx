@@ -21,7 +21,13 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body>
-        <TonConnectUIProvider manifestUrl="/tonconnect-manifest.json">
+        <TonConnectUIProvider 
+          manifestUrl="/tonconnect-manifest.json"
+          actionsConfiguration={{
+            returnStrategy: 'back',
+            twaReturnUrl: 'https://t.me/V0_aiassist_bot/V0app'
+          }}
+        >
           <Providers>
             {children}
             <Toaster />
