@@ -4,7 +4,7 @@
 import './globals.css'
 import { Providers } from '@/components/Providers'
 import { Toaster } from "@/components/ui/sonner"
-import { TonConnectUIProvider } from '@tonconnect/ui-react'
+import { TonConnectUIProvider, TonConnectButton } from '@tonconnect/ui-react'
 
 // Metadata export removed as this is now a client component
 // export const metadata: Metadata = {
@@ -29,6 +29,9 @@ export default function RootLayout({
           }}
         >
           <Providers>
+            <div style={{ position: 'absolute', top: '1rem', right: '1rem', zIndex: 999 }}>
+              <TonConnectButton />
+            </div>
             {children}
             <Toaster />
           </Providers>
