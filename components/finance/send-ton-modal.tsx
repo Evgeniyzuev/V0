@@ -12,6 +12,7 @@ import { mnemonicToWalletKey } from "@ton/crypto"
 import { WalletContractV4, TonClient, internal } from "@ton/ton"
 import { getHttpEndpoint } from "@orbs-network/ton-access"
 import { useUser } from "@/components/UserContext"
+import { useTonConnectUI } from '@tonconnect/ui-react'
 
 interface SendTonModalProps {
   isOpen: boolean
@@ -28,6 +29,7 @@ export default function SendTonModal({ isOpen, onClose, onSuccess, userId, curre
   const [error, setError] = useState<string | null>(null)
   const [transactionStatus, setTransactionStatus] = useState<string>("")
   const { convertUsdToTon, tonPrice } = useTonPrice()
+  const [tonConnectUI] = useTonConnectUI()
 
   const formatTonAmount = (amount: number): string => {
     // Форматируем число с 9 знаками после запятой и убираем trailing zeros
@@ -175,7 +177,25 @@ export default function SendTonModal({ isOpen, onClose, onSuccess, userId, curre
 
         <form onSubmit={(e) => e.preventDefault()} className="space-y-4">
           <div className="space-y-2">
-            <Label htmlFor="address">Destination Address</Label>
+            <div className="flex items-center justify-between">
+              <Label htmlFor="address">Destination Address</Label>
+              {tonConnectUI.account?.address && (
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="icon"
+                  className="h-6 w-6"
+                  onClick={() => setAddress(tonConnectUI.account?.address || '')}
+                  title="Use my TON address"
+                >
+                  <img 
+                    src="/ton.png" 
+                    alt="TON" 
+                    className="h-4 w-4"
+                  />
+                </Button>
+              )}
+            </div>
             <Input
               id="address"
               value={address}
