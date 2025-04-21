@@ -29,6 +29,11 @@ export default function SendTonModal({ isOpen, onClose, onSuccess, userId, curre
   const [transactionStatus, setTransactionStatus] = useState<string>("")
   const { convertUsdToTon, tonPrice } = useTonPrice()
 
+  const formatTonAmount = (amount: number): string => {
+    // Форматируем число с 9 знаками после запятой и убираем trailing zeros
+    return amount.toFixed(9).replace(/\.?0+$/, '')
+  }
+
   const handleSendTon = async () => {
     const numericAmount = parseFloat(amount)
     if (isNaN(numericAmount) || numericAmount <= 0) {
@@ -79,17 +84,29 @@ export default function SendTonModal({ isOpen, onClose, onSuccess, userId, curre
       const key = await mnemonicToWalletKey(mnemonic.split(" "))
       const wallet = WalletContractV4.create({ publicKey: key.publicKey, workchain: 0 })
       
-      const endpoint = await getHttpEndpoint({ network: "mainnet" })
+      // Используем резервные эндпоинты если основной не отвечает
+      let endpoint: string
+      try {
+        endpoint = await getHttpEndpoint({ network: "mainnet" })
+      } catch (e) {
+        console.log('Failed to get primary endpoint, using fallback')
+        endpoint = 'https://toncenter.com/api/v2/jsonRPC'
+      }
+      
       const client = new TonClient({ endpoint })
 
       const walletContract = client.open(wallet)
       const seqno = await walletContract.getSeqno()
       
+      // Форматируем сумму для отправки
+      const formattedAmount = formatTonAmount(tonAmount)
+      
       console.log('Sending transaction:', {
         to: destinationAddress.toString(),
         amount: tonAmount,
+        formattedAmount,
         totalAmount: totalTonAmount,
-        amountInNano: toNano(tonAmount.toString()).toString()
+        amountInNano: toNano(formattedAmount).toString()
       })
 
       setTransactionStatus('Sending transaction...')
@@ -99,7 +116,7 @@ export default function SendTonModal({ isOpen, onClose, onSuccess, userId, curre
         messages: [
           internal({
             to: destinationAddress.toString(),
-            value: toNano(tonAmount.toString()),
+            value: toNano(formattedAmount),
             body: "Transfer from V0",
             bounce: false,
           })
@@ -130,7 +147,17 @@ export default function SendTonModal({ isOpen, onClose, onSuccess, userId, curre
     } catch (error) {
       console.error("Send TON error:", error)
       setTransactionStatus('Transaction failed')
-      setError(error instanceof Error ? error.message : "Failed to send TON")
+      if (error instanceof Error) {
+        if (error.message.includes('Invalid number')) {
+          setError('Invalid amount format. Please try a different amount.')
+        } else if (error.message.includes('exception in fetch')) {
+          setError('Network error. Please try again.')
+        } else {
+          setError(error.message)
+        }
+      } else {
+        setError("Failed to send TON")
+      }
     } finally {
       setIsSubmitting(false)
     }
@@ -176,13 +203,13 @@ export default function SendTonModal({ isOpen, onClose, onSuccess, userId, curre
             {amount && !isNaN(parseFloat(amount)) && tonPrice && (
               <div className="space-y-1">
                 <p className="text-sm text-muted-foreground">
-                  ≈ {convertUsdToTon(parseFloat(amount))?.toFixed(4)} TON
+                  ≈ {convertUsdToTon(parseFloat(amount))?.toFixed(9)} TON
                 </p>
                 <p className="text-xs text-gray-500">
                   Network fee: 0.005 TON
                 </p>
                 <p className="text-xs text-gray-500">
-                  Total with fee: {(convertUsdToTon(parseFloat(amount)) || 0 + 0.005).toFixed(4)} TON
+                  Total with fee: {formatTonAmount(convertUsdToTon(parseFloat(amount)) || 0 + 0.005)} TON
                 </p>
               </div>
             )}
