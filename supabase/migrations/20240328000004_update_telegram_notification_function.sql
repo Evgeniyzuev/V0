@@ -19,7 +19,7 @@ BEGIN
         -- Call our service to send the message
         SELECT content::jsonb INTO v_response
         FROM net.http_post(
-            url := 'https://api.telegram.org/bot8189008759:AAGD8FOOHjlrGqHVLHeru-KGtuSj5bIZkwE/sendMessage',
+            url := 'https://api.telegram.org/bot' || current_setting('app.telegram_bot_token') || '/sendMessage',
             body := jsonb_build_object(
                 'chat_id', v_chat_id,
                 'text', p_message,
