@@ -26,6 +26,22 @@ export default function CoreHistory({ userId }: CoreHistoryProps) {
     console.log('Loading operations for userId:', userId)
     setIsLoading(true)
     try {
+      // Сначала проверим, есть ли вообще записи в таблице
+      const { count } = await supabase
+        .from('core_operations')
+        .select('*', { count: 'exact', head: true })
+
+      console.log('Total records in table:', count)
+      
+      // Проверим все записи без фильтра по user_id
+      const { data: allData, error: allError } = await supabase
+        .from('core_operations')
+        .select('*')
+        .limit(5)
+
+      console.log('Sample records from table:', allData)
+      
+      // Затем выполним основной запрос
       const { data, error } = await supabase
         .from('core_operations')
         .select('*')
@@ -38,8 +54,13 @@ export default function CoreHistory({ userId }: CoreHistoryProps) {
         throw error
       }
       
+      console.log('Query details:', {
+        table: 'core_operations',
+        filter: { user_id: userId },
+        resultCount: data?.length || 0
+      })
+      
       console.log('Loaded operations:', data)
-      console.log('Query params:', { user_id: userId })
       setOperations(data || [])
     } catch (error) {
       console.error('Error loading operations:', error)
