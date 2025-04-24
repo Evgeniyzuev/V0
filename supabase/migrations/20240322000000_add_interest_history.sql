@@ -82,6 +82,13 @@ BEGIN
             wallet_balance = wallet_balance + to_wallet
         WHERE id = user_record.id;
 
+        -- Log the operation
+        PERFORM log_core_operation(
+            user_record.id,
+            to_core,
+            'interest'
+        );
+
         processed_count := processed_count + 1;
     END LOOP;
 

@@ -27,15 +27,22 @@ BEGIN
     END IF;
 
     -- Update user's aicore_balance
-    UPDATE public.profiles
+    UPDATE public.users
     SET 
       aicore_balance = COALESCE(aicore_balance, 0) + p_reward_amount
-    WHERE user_id = p_user_id;
+    WHERE id = p_user_id;
 
     -- If no rows were updated, the user wasn't found
     IF NOT FOUND THEN
       RAISE EXCEPTION 'User not found';
     END IF;
+
+    -- Log the operation
+    PERFORM log_core_operation(
+      p_user_id,
+      p_reward_amount,
+      'reinvest'
+    );
 
   EXCEPTION
     WHEN OTHERS THEN

@@ -134,6 +134,18 @@ export async function transferToCore(amount: number, userId: string) {
       return { success: false, error: updateError.message }
     }
 
+    // Log the operation
+    const { error: logError } = await supabase.rpc('log_core_operation', {
+      p_user_id: userId,
+      p_amount: amount,
+      p_type: 'transfer'
+    })
+
+    if (logError) {
+      console.error("Error logging operation:", logError)
+      // Don't fail the transfer if logging fails
+    }
+
     revalidatePath("/")
     return {
       success: true,
