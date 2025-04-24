@@ -1,4 +1,4 @@
--- Create core_operations table
+--1. Create core_operations table
 CREATE TABLE IF NOT EXISTS public.core_operations (
   id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
   user_id UUID NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,

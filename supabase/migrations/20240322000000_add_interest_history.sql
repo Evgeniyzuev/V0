@@ -1,4 +1,4 @@
--- Create table for interest history
+--1. Create table for interest history
 CREATE TABLE IF NOT EXISTS interest_history (
     id SERIAL PRIMARY KEY,
     user_id UUID NOT NULL REFERENCES users(id),

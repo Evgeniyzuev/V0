@@ -1,4 +1,4 @@
--- Create a function to handle task completion and balance update in a transaction
+--1. Create a function to handle task completion and balance update in a transaction
 CREATE OR REPLACE FUNCTION public.complete_task(
   p_user_id UUID,
   p_task_id BIGINT,
