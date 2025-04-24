@@ -7,7 +7,7 @@ CREATE OR REPLACE FUNCTION log_core_operation(
 DECLARE
     v_operation_id UUID;
 BEGIN
-    -- Insert the operation into core_operations table
+    -- 1.Insert the operation into core_operations table
     INSERT INTO core_operations (
         user_id,
         amount,
