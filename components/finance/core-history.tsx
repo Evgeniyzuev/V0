@@ -18,13 +18,12 @@ interface CoreHistoryProps {
 }
 
 export default function CoreHistory({ userId }: CoreHistoryProps) {
-  const [isExpanded, setIsExpanded] = useState(false)
+  const [isExpanded, setIsExpanded] = useState(true)
   const [operations, setOperations] = useState<CoreOperation[]>([])
   const [isLoading, setIsLoading] = useState(false)
 
   const loadOperations = async () => {
-    if (!isExpanded) return
-
+    console.log('Loading operations for userId:', userId)
     setIsLoading(true)
     try {
       const { data, error } = await supabase
@@ -34,8 +33,13 @@ export default function CoreHistory({ userId }: CoreHistoryProps) {
         .order('created_at', { ascending: false })
         .limit(50)
 
+      if (error) {
+        console.error('Error loading operations:', error)
+        throw error
+      }
+      
       console.log('Loaded operations:', data)
-      if (error) throw error
+      console.log('Query params:', { user_id: userId })
       setOperations(data || [])
     } catch (error) {
       console.error('Error loading operations:', error)
@@ -45,12 +49,9 @@ export default function CoreHistory({ userId }: CoreHistoryProps) {
   }
 
   useEffect(() => {
-    if (!isExpanded) {
-      setOperations([])
-    } else {
-      loadOperations()
-    }
-  }, [isExpanded])
+    console.log('CoreHistory mounted/updated with userId:', userId)
+    loadOperations()
+  }, [userId])
 
   const toggleExpand = () => {
     setIsExpanded(!isExpanded)
@@ -92,37 +93,35 @@ export default function CoreHistory({ userId }: CoreHistoryProps) {
         {isExpanded ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
       </button>
 
-      {isExpanded && (
-        <div className="space-y-2">
-          {isLoading ? (
-            <div className="text-center py-4 text-gray-500">Loading history...</div>
-          ) : operations.length === 0 ? (
-            <div className="text-center py-4 text-gray-500">No operations yet</div>
-          ) : (
-            <div className="space-y-2">
-              {operations.map((op) => (
-                <div
-                  key={op.id}
-                  className="flex items-center justify-between p-2 bg-white rounded-lg border"
-                >
-                  <div className="flex items-center space-x-2">
-                    <span className="text-lg">{getOperationIcon(op.type)}</span>
-                    <div>
-                      <div className="font-medium">{getOperationLabel(op.type)}</div>
-                      <div className="text-sm text-gray-500">
-                        {format(new Date(op.created_at), 'MMM d, yyyy HH:mm')}
-                      </div>
+      <div className={`space-y-2 ${isExpanded ? 'block' : 'hidden'}`}>
+        {isLoading ? (
+          <div className="text-center py-4 text-gray-500">Loading history...</div>
+        ) : operations.length === 0 ? (
+          <div className="text-center py-4 text-gray-500">No operations yet</div>
+        ) : (
+          <div className="space-y-2">
+            {operations.map((op) => (
+              <div
+                key={op.id}
+                className="flex items-center justify-between p-2 bg-white rounded-lg border"
+              >
+                <div className="flex items-center space-x-2">
+                  <span className="text-lg">{getOperationIcon(op.type)}</span>
+                  <div>
+                    <div className="font-medium">{getOperationLabel(op.type)}</div>
+                    <div className="text-sm text-gray-500">
+                      {format(new Date(op.created_at), 'MMM d, yyyy HH:mm')}
                     </div>
                   </div>
-                  <div className={`font-medium ${op.amount >= 0 ? 'text-green-600' : 'text-red-600'}`}>
-                    {op.amount >= 0 ? '+' : ''}{op.amount.toFixed(8)}
-                  </div>
                 </div>
-              ))}
-            </div>
-          )}
-        </div>
-      )}
+                <div className={`font-medium ${op.amount >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+                  {op.amount >= 0 ? '+' : ''}{op.amount.toFixed(8)}
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
     </div>
   )
 } 

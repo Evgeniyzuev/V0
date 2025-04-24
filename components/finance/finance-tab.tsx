@@ -71,6 +71,12 @@ export default function FinanceTab() {
   // Update local state when dbUser changes
   useEffect(() => {
     if (dbUser) {
+      console.log('Setting user data from dbUser:', {
+        id: dbUser.id,
+        wallet_balance: dbUser.wallet_balance,
+        aicore_balance: dbUser.aicore_balance,
+        reinvest: dbUser.reinvest
+      })
       setWalletBalance(dbUser.wallet_balance || 0)
       setCoreBalance(dbUser.aicore_balance || 0)
       setReinvestPercentage(dbUser.reinvest || 100)
