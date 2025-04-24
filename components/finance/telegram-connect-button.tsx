@@ -7,7 +7,7 @@ import { useToast } from "@/hooks/use-toast"
 import { Loader2 } from "lucide-react"
 
 const supabase = createClientSupabaseClient()
-const BOT_USERNAME = "V0_aiassist" // Замените на username вашего бота
+const BOT_USERNAME = "V0_aiassist_bot" // Имя Telegram бота
 
 export default function TelegramConnectButton({ userId }: { userId: string }) {
   const [isLoading, setIsLoading] = useState(false)
