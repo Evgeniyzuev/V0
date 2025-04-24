@@ -370,7 +370,7 @@ export default function FinanceTab() {
   }
 
   return (
-    <div className="flex flex-col h-full bg-gray-50">
+    <div className="flex flex-col h-full bg-gray-50 pb-20">
       {/* Tabs */}
       <div className="flex bg-white border-b">
         <button
@@ -682,7 +682,7 @@ export default function FinanceTab() {
 
       {/* Core Tab Content */}
       {activeTab === "core" && (
-        <div className="px-2 space-y-4">
+        <div className="px-2 space-y-4 pb-20">
           <Card className="bg-gradient-to-r from-purple-500/10 to-blue-500/10">
             <CardContent className="p-2 flex flex-col items-center justify-center">
               <button

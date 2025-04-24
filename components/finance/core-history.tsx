@@ -1,4 +1,4 @@
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { ChevronDown, ChevronUp } from "lucide-react"
 import { createClientSupabaseClient } from "@/lib/supabase"
 import { format } from "date-fns"
@@ -23,7 +23,7 @@ export default function CoreHistory({ userId }: CoreHistoryProps) {
   const [isLoading, setIsLoading] = useState(false)
 
   const loadOperations = async () => {
-    if (!isExpanded || operations.length > 0) return
+    if (!isExpanded) return
 
     setIsLoading(true)
     try {
@@ -34,6 +34,7 @@ export default function CoreHistory({ userId }: CoreHistoryProps) {
         .order('created_at', { ascending: false })
         .limit(50)
 
+      console.log('Loaded operations:', data)
       if (error) throw error
       setOperations(data || [])
     } catch (error) {
@@ -43,11 +44,16 @@ export default function CoreHistory({ userId }: CoreHistoryProps) {
     }
   }
 
-  const toggleExpand = () => {
-    setIsExpanded(!isExpanded)
+  useEffect(() => {
     if (!isExpanded) {
+      setOperations([])
+    } else {
       loadOperations()
     }
+  }, [isExpanded])
+
+  const toggleExpand = () => {
+    setIsExpanded(!isExpanded)
   }
 
   const getOperationIcon = (type: string) => {
