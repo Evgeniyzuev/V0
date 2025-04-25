@@ -72,7 +72,7 @@ export async function POST(request: Request) {
     
     const telegramId = telegramUser.id;
     
-    // Extract referrer_id from startapp parameter if present
+    // Extract referrer_id from start_param parameter if present
     let referrerId = null;
     console.log('Raw initData:', initData);
     
@@ -84,20 +84,20 @@ export async function POST(request: Request) {
       const urlParams = new URLSearchParams(decodedInitData);
       console.log('All URL parameters:', Object.fromEntries(urlParams.entries()));
       
-      // Try to get startapp from both startapp and start_param
-      const startAppParam = urlParams.get('startapp') || urlParams.get('start_param');
-      console.log('Extracted startapp parameter:', startAppParam);
+      // Get start_param from initData
+      const startParam = urlParams.get('start_param');
+      console.log('Extracted start_param:', startParam);
       
-      if (startAppParam) {
-        referrerId = parseInt(startAppParam, 10);
+      if (startParam) {
+        referrerId = parseInt(startParam, 10);
         if (isNaN(referrerId)) {
-          console.warn('Invalid referrer_id in startapp parameter:', startAppParam);
+          console.warn('Invalid referrer_id in start_param:', startParam);
           referrerId = null;
         } else {
           console.log('Successfully parsed referrer_id:', referrerId);
         }
       } else {
-        console.log('No startapp parameter found in initData');
+        console.log('No start_param found in initData');
       }
     } catch (error) {
       console.error('Error processing initData:', error);

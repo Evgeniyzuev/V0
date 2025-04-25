@@ -342,10 +342,25 @@ export const UserProvider = ({ children }: { children: ReactNode }) => {
           return;
         }
 
+        // Get start_param from URL if not in initData
+        let finalInitData = initData;
+        const urlParams = new URLSearchParams(initData);
+        const startParam = urlParams.get('start_param');
+        
+        if (!startParam) {
+          const currentUrl = window.location.href;
+          const url = new URL(currentUrl);
+          const startParamFromUrl = url.searchParams.get('tgWebAppStartParam');
+          if (startParamFromUrl) {
+            finalInitData += `&start_param=${encodeURIComponent(startParamFromUrl)}`;
+            console.log("Added start_param from URL to initData:", finalInitData);
+          }
+        }
+
         // Send data to your API endpoint
         console.log("===== START SENDING TO API =====");
         console.log("Telegram User Being Sent:", user);
-        console.log("InitData Being Sent:", initData);
+        console.log("InitData Being Sent:", finalInitData);
 
         // Используем локальный интерфейс TelegramUser
         const userToSend: Partial<TelegramUser> = {
@@ -368,7 +383,7 @@ export const UserProvider = ({ children }: { children: ReactNode }) => {
           },
           body: JSON.stringify({
             telegramUser: userToSend,
-            initData: initData,
+            initData: finalInitData,
           }),
         });
 
