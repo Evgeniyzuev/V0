@@ -355,7 +355,7 @@ export const UserProvider = ({ children }: { children: ReactNode }) => {
         if (!startAppParam) {
           const currentUrl = window.location.href;
           const url = new URL(currentUrl);
-          const startAppFromUrl = url.searchParams.get('startapp');
+          const startAppFromUrl = url.searchParams.get('tgWebAppStartParam');
           if (startAppFromUrl) {
             finalInitData += `&startapp=${encodeURIComponent(startAppFromUrl)}`;
             console.log("Added startapp parameter from URL to initData:", finalInitData);

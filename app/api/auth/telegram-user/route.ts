@@ -74,9 +74,10 @@ export async function POST(request: Request) {
     
     // Extract referrer_id from startapp parameter if present
     let referrerId = null;
+    console.log('Raw initData:', initData);
     const urlParams = new URLSearchParams(initData);
     const startAppParam = urlParams.get('startapp');
-    console.log('Received initData:', initData);
+    console.log('All URL parameters:', Object.fromEntries(urlParams.entries()));
     console.log('Extracted startapp parameter:', startAppParam);
     
     if (startAppParam) {
