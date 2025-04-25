@@ -322,8 +322,8 @@ export const UserProvider = ({ children }: { children: ReactNode }) => {
       if (!webApp || !supabase) return;
       
       // Prevent API call if already done or если у нас уже есть authUser
-      if (apiCalledRef.current || authUser) {
-        console.log("API call already made or auth user exists, skipping initUser");
+      if (apiCalledRef.current) {
+        console.log("API call already made, skipping initUser");
         return; 
       }
       apiCalledRef.current = true; // Mark API call as attempted
