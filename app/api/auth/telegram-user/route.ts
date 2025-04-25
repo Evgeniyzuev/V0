@@ -75,21 +75,32 @@ export async function POST(request: Request) {
     // Extract referrer_id from startapp parameter if present
     let referrerId = null;
     console.log('Raw initData:', initData);
-    const urlParams = new URLSearchParams(initData);
-    const startAppParam = urlParams.get('startapp');
-    console.log('All URL parameters:', Object.fromEntries(urlParams.entries()));
-    console.log('Extracted startapp parameter:', startAppParam);
     
-    if (startAppParam) {
-      referrerId = parseInt(startAppParam, 10);
-      if (isNaN(referrerId)) {
-        console.warn('Invalid referrer_id in startapp parameter:', startAppParam);
-        referrerId = null;
+    try {
+      // Decode the initData if it's URL encoded
+      const decodedInitData = decodeURIComponent(initData);
+      console.log('Decoded initData:', decodedInitData);
+      
+      const urlParams = new URLSearchParams(decodedInitData);
+      console.log('All URL parameters:', Object.fromEntries(urlParams.entries()));
+      
+      // Try to get startapp from both startapp and start_param
+      const startAppParam = urlParams.get('startapp') || urlParams.get('start_param');
+      console.log('Extracted startapp parameter:', startAppParam);
+      
+      if (startAppParam) {
+        referrerId = parseInt(startAppParam, 10);
+        if (isNaN(referrerId)) {
+          console.warn('Invalid referrer_id in startapp parameter:', startAppParam);
+          referrerId = null;
+        } else {
+          console.log('Successfully parsed referrer_id:', referrerId);
+        }
       } else {
-        console.log('Successfully parsed referrer_id:', referrerId);
+        console.log('No startapp parameter found in initData');
       }
-    } else {
-      console.log('No startapp parameter found in initData');
+    } catch (error) {
+      console.error('Error processing initData:', error);
     }
     
     // 1. Check if user exists
