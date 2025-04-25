@@ -150,7 +150,7 @@ export const UserProvider = ({ children }: { children: ReactNode }) => {
           .from('users')
           .select('*')
           .eq('id', authUser.id)
-          .single();
+          .maybeSingle();
 
         if (fetchError && fetchError.code !== 'PGRST116') {
           console.error('Error fetching user data by auth ID:', fetchError);

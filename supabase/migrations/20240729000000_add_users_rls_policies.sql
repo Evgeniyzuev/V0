@@ -7,6 +7,7 @@ DROP POLICY IF EXISTS "Users can update their own data" ON public.users;
 DROP POLICY IF EXISTS "Service role has full access" ON public.users;
 DROP POLICY IF EXISTS "Allow querying by telegram_id" ON public.users;
 DROP POLICY IF EXISTS "Allow querying by referrer_id" ON public.users;
+DROP POLICY IF EXISTS "Allow inserting new users" ON public.users;
 
 -- Create policies for users table
 CREATE POLICY "Users can view their own data"
@@ -38,6 +39,12 @@ CREATE POLICY "Allow querying by referrer_id"
   ON public.users
   FOR SELECT
   USING (auth.role() = 'authenticated');
+
+-- Allow inserting new users without RLS checks
+CREATE POLICY "Allow inserting new users"
+  ON public.users
+  FOR INSERT
+  WITH CHECK (true);
 
 -- Add comment to table
 COMMENT ON TABLE public.users IS 'Users table with RLS policies for data protection'; 
