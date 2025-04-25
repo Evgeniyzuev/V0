@@ -349,12 +349,16 @@ export const UserProvider = ({ children }: { children: ReactNode }) => {
 
         let finalInitData = initData; // Start with the original initData
         const urlParams = new URLSearchParams(initData);
-        if (!urlParams.has('startapp')) {
-          const currentParams = new URLSearchParams(window.location.search);
-          const startAppParam = currentParams.get('startapp');
-          if (startAppParam) {
-            finalInitData += `&startapp=${encodeURIComponent(startAppParam)}`;
-            console.log("Added startapp parameter to initData:", finalInitData);
+        const startAppParam = urlParams.get('startapp');
+        
+        // If startapp is not in initData, try to get it from the URL
+        if (!startAppParam) {
+          const currentUrl = window.location.href;
+          const url = new URL(currentUrl);
+          const startAppFromUrl = url.searchParams.get('startapp');
+          if (startAppFromUrl) {
+            finalInitData += `&startapp=${encodeURIComponent(startAppFromUrl)}`;
+            console.log("Added startapp parameter from URL to initData:", finalInitData);
           }
         }
 

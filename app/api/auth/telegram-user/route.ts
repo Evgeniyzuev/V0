@@ -76,12 +76,19 @@ export async function POST(request: Request) {
     let referrerId = null;
     const urlParams = new URLSearchParams(initData);
     const startAppParam = urlParams.get('startapp');
+    console.log('Received initData:', initData);
+    console.log('Extracted startapp parameter:', startAppParam);
+    
     if (startAppParam) {
       referrerId = parseInt(startAppParam, 10);
       if (isNaN(referrerId)) {
         console.warn('Invalid referrer_id in startapp parameter:', startAppParam);
         referrerId = null;
+      } else {
+        console.log('Successfully parsed referrer_id:', referrerId);
       }
+    } else {
+      console.log('No startapp parameter found in initData');
     }
     
     // 1. Check if user exists
