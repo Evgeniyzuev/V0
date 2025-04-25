@@ -1,5 +1,5 @@
 -- First, create the counting function
-CREATE OR REPLACE FUNCTION count_user_referrals(p_telegram_id INTEGER)
+CREATE OR REPLACE FUNCTION count_user_referrals(p_telegram_id BIGINT)
 RETURNS INTEGER AS $$
 DECLARE
     referral_count INTEGER;

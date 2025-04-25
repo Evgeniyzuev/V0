@@ -15,10 +15,16 @@ interface TelegramUser {
 interface NewUser {
   id: string; // UUID из auth.users
   telegram_id: number;
-  telegram_username?: string;
-  first_name?: string;
-  last_name?: string;
-  referrer_id?: number;
+  telegram_username?: string | null;
+  first_name?: string | null;
+  last_name?: string | null;
+  reinvest: number;
+  reinvest_setup: number;
+  aicore_balance: number;
+  wallet_balance: number;
+  level: number;
+  paid_referrals: number;
+  referrer_id?: number | null;
 }
 
 // Функция для верификации данных от Telegram
@@ -223,6 +229,13 @@ export async function POST(request: Request) {
       telegram_username: telegramUser.username || null,
       first_name: telegramUser.first_name || null,
       last_name: telegramUser.last_name || null,
+      reinvest: 100, // Default value as per migration
+      reinvest_setup: 100, // Default value
+      aicore_balance: 0, // Default value
+      wallet_balance: 0, // Default value
+      level: 0, // Default value
+      paid_referrals: 0, // Default value
+      referrer_id: null, // Will be updated if referrer is found in initData
     };
     
     // Логируем детали полей пользователя
