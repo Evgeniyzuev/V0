@@ -170,7 +170,7 @@ export const UserProvider = ({ children }: { children: ReactNode }) => {
           .from('users')
           .select('*')
           .eq('telegram_id', telegramUser.id)
-          .single();
+          .maybeSingle();
 
         if (fetchError && fetchError.code !== 'PGRST116') {
           console.error('Error fetching user data by Telegram ID:', fetchError);

@@ -34,6 +34,12 @@ export const createClientSupabaseClient = () => {
       auth: {
         persistSession: true,
         autoRefreshToken: true,
+      },
+      global: {
+        headers: {
+          'apikey': getSupabaseAnonKey(),
+          'Authorization': `Bearer ${getSupabaseAnonKey()}`
+        }
       }
     }
   )
@@ -50,6 +56,12 @@ export const createServerSupabaseClient = () => {
       auth: {
         autoRefreshToken: false,
         persistSession: false
+      },
+      global: {
+        headers: {
+          'apikey': getSupabaseServiceKey(),
+          'Authorization': `Bearer ${getSupabaseServiceKey()}`
+        }
       }
     }
   )
@@ -64,6 +76,12 @@ export const createAdminSupabaseClient = () => {
       auth: {
         autoRefreshToken: false,
         persistSession: false
+      },
+      global: {
+        headers: {
+          'apikey': getSupabaseServiceKey(),
+          'Authorization': `Bearer ${getSupabaseServiceKey()}`
+        }
       }
     }
   )
