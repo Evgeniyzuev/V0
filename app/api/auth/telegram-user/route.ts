@@ -72,6 +72,18 @@ export async function POST(request: Request) {
     
     const telegramId = telegramUser.id;
     
+    // Extract referrer_id from startapp parameter if present
+    let referrerId = null;
+    const urlParams = new URLSearchParams(initData);
+    const startAppParam = urlParams.get('startapp');
+    if (startAppParam) {
+      referrerId = parseInt(startAppParam, 10);
+      if (isNaN(referrerId)) {
+        console.warn('Invalid referrer_id in startapp parameter:', startAppParam);
+        referrerId = null;
+      }
+    }
+    
     // 1. Check if user exists
     const { data: existingUser } = await supabase
       .from('users')
@@ -123,7 +135,7 @@ export async function POST(request: Request) {
       wallet_balance: 0,
       level: 0,
       paid_referrals: 0,
-      referrer_id: null
+      referrer_id: referrerId
     };
     
     const { data: insertedUser, error: insertError } = await supabase
