@@ -5,6 +5,8 @@ ALTER TABLE public.users ENABLE ROW LEVEL SECURITY;
 DROP POLICY IF EXISTS "Users can view their own data" ON public.users;
 DROP POLICY IF EXISTS "Users can update their own data" ON public.users;
 DROP POLICY IF EXISTS "Service role has full access" ON public.users;
+DROP POLICY IF EXISTS "Allow querying by telegram_id" ON public.users;
+DROP POLICY IF EXISTS "Allow querying by referrer_id" ON public.users;
 
 -- Create policies for users table
 CREATE POLICY "Users can view their own data"
@@ -25,5 +27,17 @@ CREATE POLICY "Service role has full access"
   USING (auth.role() = 'service_role')
   WITH CHECK (auth.role() = 'service_role');
 
--- Add comment explaining the policies
-COMMENT ON TABLE public.users IS 'User profiles with RLS policies for data protection'; 
+-- Allow querying by telegram_id for authenticated users
+CREATE POLICY "Allow querying by telegram_id"
+  ON public.users
+  FOR SELECT
+  USING (auth.role() = 'authenticated');
+
+-- Allow querying by referrer_id for authenticated users
+CREATE POLICY "Allow querying by referrer_id"
+  ON public.users
+  FOR SELECT
+  USING (auth.role() = 'authenticated');
+
+-- Add comment to table
+COMMENT ON TABLE public.users IS 'Users table with RLS policies for data protection'; 
