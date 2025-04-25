@@ -2,20 +2,18 @@
 
 import { createServerSupabaseClient } from "@/lib/supabase"
 
-export type User = {
+export interface UserData {
   id: string
-  telegram_id?: number
-  referrer_id?: number | null
-  username?: string | null
+  telegram_id: number
+  telegram_username?: string | null
   first_name?: string | null
   last_name?: string | null
-  reinvest_setup: number
+  reinvest: number
   aicore_balance: number
   wallet_balance: number
   level: number
-  created_at: string
-  last_login_date: string
   paid_referrals: number
+  referrer_id?: number | null
 }
 
 export async function getUsers() {
@@ -29,7 +27,7 @@ export async function getUsers() {
       return { success: false, error: error.message, users: [] }
     }
 
-    return { success: true, users: data as User[] }
+    return { success: true, users: data as UserData[] }
   } catch (error) {
     console.error("Error in getUsers:", error)
     return { success: false, error: "Failed to fetch users", users: [] }
@@ -49,7 +47,7 @@ export async function getCurrentUser() {
       return { success: false, error: error.message, user: null }
     }
 
-    return { success: true, user: data as User }
+    return { success: true, user: data as UserData }
   } catch (error) {
     console.error("Error in getCurrentUser:", error)
     return { success: false, error: "Failed to fetch current user", user: null }

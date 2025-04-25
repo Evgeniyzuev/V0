@@ -19,7 +19,6 @@ interface NewUser {
   first_name?: string | null;
   last_name?: string | null;
   reinvest: number;
-  reinvest_setup: number;
   aicore_balance: number;
   wallet_balance: number;
   level: number;
@@ -224,18 +223,17 @@ export async function POST(request: Request) {
     
     // 2. Создаем запись в публичной таблице users с id из auth.users
     const newUser: NewUser = {
-      id: authUser.user.id, // Используем UUID из auth.users
+      id: authUser.user.id,
       telegram_id: telegramId,
-      telegram_username: telegramUser.username || null,
-      first_name: telegramUser.first_name || null,
-      last_name: telegramUser.last_name || null,
-      reinvest: 100, // Default value as per migration
-      reinvest_setup: 100, // Default value
-      aicore_balance: 0, // Default value
-      wallet_balance: 0, // Default value
-      level: 0, // Default value
-      paid_referrals: 0, // Default value
-      referrer_id: null, // Will be updated if referrer is found in initData
+      telegram_username: telegramUser.username,
+      first_name: telegramUser.first_name,
+      last_name: telegramUser.last_name,
+      reinvest: 100, // Default value
+      aicore_balance: 0,
+      wallet_balance: 0,
+      level: 0,
+      paid_referrals: 0,
+      referrer_id: null
     };
     
     // Логируем детали полей пользователя

@@ -449,13 +449,10 @@ export default function UserProfileTab() {
                     </div>
                   )}
 
-                  {typeof dbUser.reinvest_setup === 'number' && (
-                    <div className="flex justify-between items-center border-b pb-2">
-                      <div className="flex items-center">
-                        <Calendar className="h-4 w-4 text-purple-600 mr-2" />
-                        <span className="text-sm">Reinvestment Setup</span>
-                      </div>
-                      <span className="font-medium">{dbUser.reinvest_setup}%</span>
+                  {typeof dbUser.reinvest === 'number' && (
+                    <div className="flex items-center justify-between">
+                      <span className="text-sm">Reinvestment</span>
+                      <span className="font-medium">{dbUser.reinvest}%</span>
                     </div>
                   )}
 

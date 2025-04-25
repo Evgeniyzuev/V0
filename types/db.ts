@@ -1,15 +1,13 @@
-export type DbUser = {
+export interface User {
   id: string
-  telegram_id?: number
-  referrer_id?: number | null
-  username?: string | null
+  telegram_id: number
+  telegram_username?: string | null
   first_name?: string | null
   last_name?: string | null
-  reinvest_setup: number
+  reinvest: number
   aicore_balance: number
   wallet_balance: number
   level: number
-  created_at: string
-  last_login_date: string
   paid_referrals: number
+  referrer_id?: number | null
 } 

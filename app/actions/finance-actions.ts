@@ -159,24 +159,22 @@ export async function transferToCore(amount: number, userId: string) {
 }
 
 export async function updateUserReinvest(userId: string, reinvestPercentage: number) {
-  try {
-    if (reinvestPercentage < 50 || reinvestPercentage > 100) {
-      throw new Error('Reinvest percentage must be between 50 and 100')
-    }
+  if (reinvestPercentage < 50 || reinvestPercentage > 100) {
+    throw new Error('Reinvest percentage must be between 50 and 100')
+  }
 
-    const supabase = createServerSupabaseClient()
-    const { error } = await supabase
-      .from('users')
-      .update({ reinvest: reinvestPercentage })
-      .eq('id', userId)
+  const supabase = createServerSupabaseClient()
+  const { error } = await supabase
+    .from('users')
+    .update({ reinvest: reinvestPercentage })
+    .eq('id', userId)
 
-    if (error) throw error
-
-    revalidatePath('/finance')
-    return { success: true }
-  } catch (error) {
+  if (error) {
     console.error('Error updating reinvest percentage:', error)
     throw error
   }
+
+  revalidatePath('/finance')
+  return { success: true }
 }
 

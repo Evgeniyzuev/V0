@@ -36,7 +36,7 @@ export interface User {
   username: string | null;
   first_name: string | null;
   last_name: string | null;
-  reinvest_setup: number;
+  reinvest: number;
   score_balance: number;
   wallet_balance: number;
   level: number;
@@ -46,6 +46,7 @@ export interface User {
   phone_number: string | null;
   avatar_url: string | null;
   telegram_username: string | null;
+  aicore_balance: number;
 }
 
 /**
