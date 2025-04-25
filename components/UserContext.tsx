@@ -342,16 +342,16 @@ export const UserProvider = ({ children }: { children: ReactNode }) => {
           return;
         }
 
-        // Get start_param from URL if not in initData
+        // Get start_param from URL
         let finalInitData = initData;
-        const urlParams = new URLSearchParams(initData);
-        const startParam = urlParams.get('start_param');
+        const currentUrl = window.location.href;
+        const url = new URL(currentUrl);
+        const startParamFromUrl = url.searchParams.get('tgWebAppStartParam');
         
-        if (!startParam) {
-          const currentUrl = window.location.href;
-          const url = new URL(currentUrl);
-          const startParamFromUrl = url.searchParams.get('tgWebAppStartParam');
-          if (startParamFromUrl) {
+        if (startParamFromUrl) {
+          // Check if start_param already exists in initData
+          const urlParams = new URLSearchParams(initData);
+          if (!urlParams.has('start_param')) {
             finalInitData += `&start_param=${encodeURIComponent(startParamFromUrl)}`;
             console.log("Added start_param from URL to initData:", finalInitData);
           }

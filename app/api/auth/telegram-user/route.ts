@@ -104,11 +104,19 @@ export async function POST(request: Request) {
     }
     
     // 1. Check if user exists
-    const { data: existingUser } = await supabase
+    const { data: existingUser, error: fetchError } = await supabase
       .from('users')
       .select('*')
       .eq('telegram_id', telegramId)
       .maybeSingle();
+      
+    if (fetchError) {
+      console.error('Error checking existing user:', fetchError);
+      return NextResponse.json(
+        { error: 'Failed to check existing user' },
+        { status: 500 }
+      );
+    }
       
     if (existingUser) {
       return NextResponse.json({ 
@@ -156,6 +164,8 @@ export async function POST(request: Request) {
       paid_referrals: 0,
       referrer_id: referrerId
     };
+    
+    console.log('Creating new user with data:', newUser);
     
     const { data: insertedUser, error: insertError } = await supabase
       .from('users')
