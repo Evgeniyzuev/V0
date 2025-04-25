@@ -119,6 +119,7 @@ export async function POST(request: Request) {
     }
       
     if (existingUser) {
+      console.log('User already exists:', existingUser);
       return NextResponse.json({ 
         success: true, 
         user: existingUser,
@@ -150,6 +151,8 @@ export async function POST(request: Request) {
       );
     }
     
+    console.log('Successfully created auth user:', authUser);
+    
     // 3. Create database user
     const newUser = {
       id: authUser.user.id,
@@ -167,42 +170,63 @@ export async function POST(request: Request) {
     
     console.log('Creating new user with data:', newUser);
     
-    const { data: insertedUser, error: insertError } = await supabase
-      .from('users')
-      .insert(newUser)
-      .select()
-      .single();
-    
-    if (insertError) {
-      // Cleanup: Delete the auth user if database insert fails
-      await supabase.auth.admin.deleteUser(authUser.user.id);
-      console.error('Database user creation error:', insertError);
+    try {
+      const { data: insertedUser, error: insertError } = await supabase
+        .from('users')
+        .insert(newUser)
+        .select()
+        .single();
+      
+      if (insertError) {
+        console.error('Database user creation error:', insertError);
+        console.error('Error details:', {
+          code: insertError.code,
+          message: insertError.message,
+          details: insertError.details,
+          hint: insertError.hint
+        });
+        
+        // Cleanup: Delete the auth user if database insert fails
+        const { error: deleteError } = await supabase.auth.admin.deleteUser(authUser.user.id);
+        if (deleteError) {
+          console.error('Failed to cleanup auth user:', deleteError);
+        }
+        
+        return NextResponse.json(
+          { error: 'Failed to create database user', details: insertError },
+          { status: 500 }
+        );
+      }
+      
+      console.log('Successfully created user:', insertedUser);
+      
+      // 4. Add default goal
+      try {
+        await supabase
+          .from('user_goals')
+          .insert({
+            user_id: insertedUser.id,
+            goal_id: 1,
+            status: 'not_started',
+          });
+      } catch (e) {
+        console.error('Failed to add default goal:', e);
+        // Continue even if goal creation fails
+      }
+      
+      return NextResponse.json({ 
+        success: true, 
+        user: insertedUser,
+        auth_user_id: authUser.user.id,
+        password: password 
+      });
+    } catch (error) {
+      console.error('Unexpected error during user creation:', error);
       return NextResponse.json(
-        { error: 'Failed to create database user' },
+        { error: 'Unexpected error during user creation', details: error },
         { status: 500 }
       );
     }
-    
-    // 4. Add default goal
-    try {
-      await supabase
-        .from('user_goals')
-        .insert({
-          user_id: insertedUser.id,
-          goal_id: 1,
-          status: 'not_started',
-        });
-    } catch (e) {
-      console.error('Failed to add default goal:', e);
-      // Continue even if goal creation fails
-    }
-    
-    return NextResponse.json({ 
-      success: true, 
-      user: insertedUser,
-      auth_user_id: authUser.user.id,
-      password: password 
-    });
     
   } catch (error: any) {
     console.error('Unhandled error:', error);

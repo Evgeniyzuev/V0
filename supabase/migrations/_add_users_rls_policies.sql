@@ -10,7 +10,7 @@ DROP POLICY IF EXISTS "Allow querying by referrer_id" ON public.users;
 DROP POLICY IF EXISTS "Allow inserting new users" ON public.users;
 
 -- Create function to count user referrals
-CREATE OR REPLACE FUNCTION public.count_user_referrals(user_id integer)
+CREATE OR REPLACE FUNCTION public.count_user_referrals(user_id bigint)
 RETURNS bigint
 LANGUAGE sql
 SECURITY DEFINER
@@ -36,14 +36,14 @@ CREATE POLICY "Users can update their own data"
 CREATE POLICY "Service role has full access"
   ON public.users
   FOR ALL
-  USING (auth.jwt() ->> 'role' = 'service_role')
-  WITH CHECK (auth.jwt() ->> 'role' = 'service_role');
+  USING (auth.role() = 'service_role')
+  WITH CHECK (auth.role() = 'service_role');
 
 -- Allow querying by telegram_id for authenticated users
 CREATE POLICY "Allow querying by telegram_id"
   ON public.users
   FOR SELECT
-  USING (true);
+  USING (auth.role() = 'authenticated');
 
 -- Allow querying by referrer_id for authenticated users
 CREATE POLICY "Allow querying by referrer_id"
