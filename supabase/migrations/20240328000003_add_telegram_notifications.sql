@@ -148,6 +148,9 @@ RETURNS void AS $$
 DECLARE
     user_record RECORD;
     notification_message TEXT;
+    v_success_count INTEGER := 0;
+    v_error_count INTEGER := 0;
+    v_error_message TEXT;
 BEGIN
     -- Get all users who received interest today
     FOR user_record IN 
@@ -156,26 +159,123 @@ BEGIN
             u.aicore_balance,
             ih.interest_amount,
             ih.to_core,
-            ih.to_wallet
+            ih.to_wallet,
+            tns.telegram_chat_id
         FROM users u
         JOIN interest_history ih ON u.id = ih.user_id
+        LEFT JOIN telegram_notification_settings tns ON u.id = tns.user_id
         WHERE ih.execution_date = CURRENT_DATE
+        AND tns.receive_interest_notifications = true
+        AND tns.telegram_chat_id IS NOT NULL
     LOOP
-        -- Format notification message
-        notification_message := format(
-            '💰 Daily Interest Update\n\n' ||
-            'Interest earned: $%s\n' ||
-            'Added to Core: $%s\n' ||
-            'Added to Wallet: $%s\n' ||
-            'Current Core balance: $%s',
-            to_char(user_record.interest_amount, 'FM999999999.99999999'),
-            to_char(user_record.to_core, 'FM999999999.99999999'),
-            to_char(user_record.to_wallet, 'FM999999999.99999999'),
-            to_char(user_record.aicore_balance, 'FM999999999.99')
-        );
-        
-        -- Send notification
-        PERFORM send_telegram_notification(user_record.id, notification_message);
+        BEGIN
+            -- Format notification message with HTML formatting
+            notification_message := format(
+                '<b>💰 Daily Interest Update</b>\n\n' ||
+                'Interest earned: <code>$%s</code>\n' ||
+                'Added to Core: <code>$%s</code>\n' ||
+                'Added to Wallet: <code>$%s</code>\n' ||
+                'Current Core balance: <code>$%s</code>',
+                to_char(user_record.interest_amount, 'FM999999999.99999999'),
+                to_char(user_record.to_core, 'FM999999999.99999999'),
+                to_char(user_record.to_wallet, 'FM999999999.99999999'),
+                to_char(user_record.aicore_balance, 'FM999999999.99')
+            );
+            
+            -- Send notification
+            PERFORM send_telegram_notification(user_record.id, notification_message);
+            v_success_count := v_success_count + 1;
+            
+            -- Log successful notification
+            INSERT INTO notification_log (
+                user_id,
+                notification_type,
+                status,
+                message,
+                created_at
+            ) VALUES (
+                user_record.id,
+                'interest',
+                'success',
+                notification_message,
+                CURRENT_TIMESTAMP
+            );
+            
+        EXCEPTION WHEN OTHERS THEN
+            v_error_count := v_error_count + 1;
+            v_error_message := SQLERRM;
+            
+            -- Log failed notification
+            INSERT INTO notification_log (
+                user_id,
+                notification_type,
+                status,
+                error_message,
+                created_at
+            ) VALUES (
+                user_record.id,
+                'interest',
+                'error',
+                v_error_message,
+                CURRENT_TIMESTAMP
+            );
+            
+            -- Log error to interest_errors_log
+            INSERT INTO interest_errors_log (
+                user_id,
+                error_message,
+                error_time
+            ) VALUES (
+                user_record.id,
+                'Failed to send Telegram notification: ' || v_error_message,
+                CURRENT_TIMESTAMP
+            );
+        END;
     END LOOP;
+
+    -- Log overall notification results
+    INSERT INTO notification_summary (
+        notification_type,
+        execution_date,
+        success_count,
+        error_count,
+        created_at
+    ) VALUES (
+        'interest',
+        CURRENT_DATE,
+        v_success_count,
+        v_error_count,
+        CURRENT_TIMESTAMP
+    );
+
+    -- Raise notice with summary
+    RAISE NOTICE 'Interest notifications completed. Success: %, Errors: %', 
+        v_success_count, v_error_count;
 END;
-$$ LANGUAGE plpgsql; 
+$$ LANGUAGE plpgsql SECURITY DEFINER;
+
+-- Create notification_log table if it doesn't exist
+CREATE TABLE IF NOT EXISTS notification_log (
+    id SERIAL PRIMARY KEY,
+    user_id UUID NOT NULL REFERENCES users(id),
+    notification_type TEXT NOT NULL,
+    status TEXT NOT NULL,
+    message TEXT,
+    error_message TEXT,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+);
+
+-- Create notification_summary table if it doesn't exist
+CREATE TABLE IF NOT EXISTS notification_summary (
+    id SERIAL PRIMARY KEY,
+    notification_type TEXT NOT NULL,
+    execution_date DATE NOT NULL,
+    success_count INTEGER NOT NULL DEFAULT 0,
+    error_count INTEGER NOT NULL DEFAULT 0,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+);
+
+-- Create indexes for better performance
+CREATE INDEX IF NOT EXISTS idx_notification_log_user ON notification_log(user_id);
+CREATE INDEX IF NOT EXISTS idx_notification_log_type ON notification_log(notification_type);
+CREATE INDEX IF NOT EXISTS idx_notification_summary_date ON notification_summary(execution_date); 

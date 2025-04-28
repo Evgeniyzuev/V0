@@ -105,5 +105,13 @@ $$ LANGUAGE plpgsql SECURITY DEFINER;
 SELECT cron.schedule(
     'calculate-daily-interest',
     '0 0 * * *',
-    $$SELECT calculate_daily_interest()$$
+    $$
+    BEGIN
+        -- Calculate interest
+        PERFORM calculate_daily_interest();
+        
+        -- Send notifications
+        PERFORM send_interest_notifications();
+    END;
+    $$
 ); 
