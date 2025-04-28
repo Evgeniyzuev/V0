@@ -326,7 +326,6 @@ export const UserProvider = ({ children }: { children: ReactNode }) => {
         console.log("API call already made, skipping initUser");
         return; 
       }
-      apiCalledRef.current = true; // Mark API call as attempted
 
       setIsLoading(true);
       setError(null);
@@ -337,8 +336,16 @@ export const UserProvider = ({ children }: { children: ReactNode }) => {
         const user = webApp.initDataUnsafe?.user;
         
         if (!initData || !user) {
-          setError("Не удалось получить данные инициализации или пользователя Telegram");
-          setIsLoading(false);
+          console.log("Waiting for Telegram data...");
+          // Wait a bit and try again
+          setTimeout(() => {
+            if (webApp.initDataUnsafe?.user) {
+              initUser();
+            } else {
+              setError("Не удалось получить данные инициализации или пользователя Telegram");
+              setIsLoading(false);
+            }
+          }, 1000);
           return;
         }
 
@@ -346,7 +353,7 @@ export const UserProvider = ({ children }: { children: ReactNode }) => {
         let finalInitData = initData;
         const currentUrl = window.location.href;
         const url = new URL(currentUrl);
-        const startParamFromUrl = url.searchParams.get('tgWebAppStartParam');
+        const startParamFromUrl = url.searchParams.get('start_param') || url.searchParams.get('tgWebAppStartParam');
         
         if (startParamFromUrl) {
           // Check if start_param already exists in initData
@@ -400,7 +407,6 @@ export const UserProvider = ({ children }: { children: ReactNode }) => {
           userLoadedRef.current = true;
           
           // После успешного создания пользователя через API, логинимся в Supabase
-          // Используем email и пароль, которые были созданы на сервере
           const email = `telegram_${user.id}@example.com`;
           const password = result.password || ""; // Если сервер не вернул пароль, используем пустую строку
           
@@ -440,7 +446,7 @@ export const UserProvider = ({ children }: { children: ReactNode }) => {
     };
 
     initUser();
-  }, [webApp, supabase, authUser]);
+  }, [webApp, supabase]);
 
   // Обеспечиваем загрузку данных пользователя, как только у нас появился telegramUser
   useEffect(() => {

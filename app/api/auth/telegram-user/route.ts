@@ -95,6 +95,18 @@ export async function POST(request: Request) {
           referrerId = null;
         } else {
           console.log('Successfully parsed referrer_id:', referrerId);
+          
+          // Verify that referrer exists
+          const { data: referrer } = await supabase
+            .from('users')
+            .select('id')
+            .eq('telegram_id', referrerId)
+            .single();
+            
+          if (!referrer) {
+            console.warn('Referrer not found:', referrerId);
+            referrerId = null;
+          }
         }
       } else {
         console.log('No start_param found in initData');
