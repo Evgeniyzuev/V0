@@ -114,14 +114,14 @@ BEGIN
         -- Send telegram notification
         notification_message := format(
             '💰 Daily Interest Update\n\n' ||
-            'Interest earned: $%.8f\n' ||
-            'Added to Core: $%.8f\n' ||
-            'Added to Wallet: $%.8f\n' ||
-            'Current Core balance: $%.2f',
-            interest_amount,
-            to_core,
-            to_wallet,
-            user_record.aicore_balance + to_core
+            'Interest earned: $%s\n' ||
+            'Added to Core: $%s\n' ||
+            'Added to Wallet: $%s\n' ||
+            'Current Core balance: $%s',
+            to_char(interest_amount, 'FM999999999.99999999'),
+            to_char(to_core, 'FM999999999.99999999'),
+            to_char(to_wallet, 'FM999999999.99999999'),
+            to_char(user_record.aicore_balance + to_core, 'FM999999999.99')
         );
         
         PERFORM send_telegram_notification(user_record.id, notification_message);
