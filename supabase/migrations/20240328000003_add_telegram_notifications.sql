@@ -24,6 +24,7 @@ RETURNS void AS $$
 DECLARE
     v_chat_id BIGINT;
     v_response JSONB;
+    v_url TEXT;
 BEGIN
     -- Get user's telegram chat ID
     SELECT telegram_chat_id INTO v_chat_id
@@ -33,15 +34,16 @@ BEGIN
 
     -- If user has chat ID and wants notifications, send message
     IF v_chat_id IS NOT NULL THEN
-        SELECT content::jsonb INTO v_response
-        FROM extensions.http_post(
-            'https://api.telegram.org/bot8189008759:AAGD8FOOHjlrGqHVLHeru-KGtuSj5bIZkwE/sendMessage',
-            jsonb_build_object(
-                'chat_id', v_chat_id,
-                'text', p_message,
-                'parse_mode', 'HTML'
-            )
+        -- Construct URL with parameters
+        v_url := format(
+            'https://api.telegram.org/bot8189008759:AAGD8FOOHjlrGqHVLHeru-KGtuSj5bIZkwE/sendMessage?chat_id=%s&text=%s&parse_mode=HTML',
+            v_chat_id,
+            urlencode(p_message)
         );
+        
+        -- Send GET request
+        SELECT content::jsonb INTO v_response
+        FROM extensions.http_get(v_url);
         
         -- Log the response for debugging
         RAISE NOTICE 'Telegram API response: %', v_response;
