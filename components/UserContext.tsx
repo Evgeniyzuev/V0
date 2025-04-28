@@ -353,7 +353,11 @@ export const UserProvider = ({ children }: { children: ReactNode }) => {
         let finalInitData = initData;
         const currentUrl = window.location.href;
         const url = new URL(currentUrl);
-        const startParamFromUrl = url.searchParams.get('start_param') || url.searchParams.get('tgWebAppStartParam');
+        
+        // Try to get start_param from different possible locations
+        const startParamFromUrl = url.searchParams.get('start_param') || 
+                                url.searchParams.get('tgWebAppStartParam') ||
+                                url.searchParams.get('ref');
         
         if (startParamFromUrl) {
           // Check if start_param already exists in initData
@@ -391,6 +395,7 @@ export const UserProvider = ({ children }: { children: ReactNode }) => {
           body: JSON.stringify({
             telegramUser: userToSend,
             initData: finalInitData,
+            startParam: startParamFromUrl // Добавляем startParam отдельно
           }),
         });
 

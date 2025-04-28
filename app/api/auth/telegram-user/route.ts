@@ -77,16 +77,9 @@ export async function POST(request: Request) {
     console.log('Raw initData:', initData);
     
     try {
-      // Decode the initData if it's URL encoded
-      const decodedInitData = decodeURIComponent(initData);
-      console.log('Decoded initData:', decodedInitData);
-      
-      const urlParams = new URLSearchParams(decodedInitData);
-      console.log('All URL parameters:', Object.fromEntries(urlParams.entries()));
-      
-      // Get start_param from initData
-      const startParam = urlParams.get('start_param');
-      console.log('Extracted start_param:', startParam);
+      // First try to get start_param from the body
+      const startParam = body.startParam;
+      console.log('Start param from body:', startParam);
       
       if (startParam) {
         referrerId = parseInt(startParam, 10);
@@ -94,25 +87,51 @@ export async function POST(request: Request) {
           console.warn('Invalid referrer_id in start_param:', startParam);
           referrerId = null;
         } else {
-          console.log('Successfully parsed referrer_id:', referrerId);
-          
-          // Verify that referrer exists
-          const { data: referrer } = await supabase
-            .from('users')
-            .select('id')
-            .eq('telegram_id', referrerId)
-            .single();
-            
-          if (!referrer) {
-            console.warn('Referrer not found:', referrerId);
+          console.log('Successfully parsed referrer_id from body:', referrerId);
+        }
+      }
+      
+      // If no start_param in body, try to get it from initData
+      if (!referrerId) {
+        // Decode the initData if it's URL encoded
+        const decodedInitData = decodeURIComponent(initData);
+        console.log('Decoded initData:', decodedInitData);
+        
+        const urlParams = new URLSearchParams(decodedInitData);
+        console.log('All URL parameters:', Object.fromEntries(urlParams.entries()));
+        
+        // Get start_param from initData
+        const startParamFromInitData = urlParams.get('start_param');
+        console.log('Extracted start_param from initData:', startParamFromInitData);
+        
+        if (startParamFromInitData) {
+          referrerId = parseInt(startParamFromInitData, 10);
+          if (isNaN(referrerId)) {
+            console.warn('Invalid referrer_id in start_param from initData:', startParamFromInitData);
             referrerId = null;
+          } else {
+            console.log('Successfully parsed referrer_id from initData:', referrerId);
           }
         }
-      } else {
-        console.log('No start_param found in initData');
+      }
+      
+      // Verify that referrer exists if we have a referrerId
+      if (referrerId) {
+        const { data: referrer } = await supabase
+          .from('users')
+          .select('id')
+          .eq('telegram_id', referrerId)
+          .single();
+          
+        if (!referrer) {
+          console.warn('Referrer not found:', referrerId);
+          referrerId = null;
+        } else {
+          console.log('Referrer verified:', referrer);
+        }
       }
     } catch (error) {
-      console.error('Error processing initData:', error);
+      console.error('Error processing start_param:', error);
     }
     
     // 1. Check if user exists
