@@ -355,9 +355,12 @@ export const UserProvider = ({ children }: { children: ReactNode }) => {
         const url = new URL(currentUrl);
         
         // Try to get start_param from different possible locations
-        const startParamFromUrl = url.searchParams.get('start_param') || 
+        const startParamFromUrl = url.searchParams.get('start') || 
+                                url.searchParams.get('start_param') || 
                                 url.searchParams.get('tgWebAppStartParam') ||
                                 url.searchParams.get('ref');
+        
+        console.log('Start param from URL:', startParamFromUrl);
         
         if (startParamFromUrl) {
           // Check if start_param already exists in initData
@@ -365,6 +368,19 @@ export const UserProvider = ({ children }: { children: ReactNode }) => {
           if (!urlParams.has('start_param')) {
             finalInitData += `&start_param=${encodeURIComponent(startParamFromUrl)}`;
             console.log("Added start_param from URL to initData:", finalInitData);
+          }
+        }
+
+        // Also check for start parameter in the URL hash
+        const hashParams = new URLSearchParams(window.location.hash.substring(1));
+        const startParamFromHash = hashParams.get('start') || hashParams.get('start_param');
+        
+        if (startParamFromHash && !startParamFromUrl) {
+          console.log('Start param from hash:', startParamFromHash);
+          const urlParams = new URLSearchParams(initData);
+          if (!urlParams.has('start_param')) {
+            finalInitData += `&start_param=${encodeURIComponent(startParamFromHash)}`;
+            console.log("Added start_param from hash to initData:", finalInitData);
           }
         }
 

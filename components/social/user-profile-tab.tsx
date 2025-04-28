@@ -54,6 +54,7 @@ function ReferralLinkSection({ userId, telegramId }: { userId?: string, telegram
       
       // Прямая генерация ссылки без обращения к API (можно также использовать API если нужна дополнительная логика)
       const link = `https://t.me/${botUsername}?start=${paramToUse}`
+      console.log('Generated referral link:', link);
       setReferralLink(link)
     } catch (error) {
       console.error("Error generating referral link:", error)

@@ -101,7 +101,7 @@ export async function POST(request: Request) {
         console.log('All URL parameters:', Object.fromEntries(urlParams.entries()));
         
         // Get start_param from initData
-        const startParamFromInitData = urlParams.get('start_param');
+        const startParamFromInitData = urlParams.get('start_param') || urlParams.get('start');
         console.log('Extracted start_param from initData:', startParamFromInitData);
         
         if (startParamFromInitData) {
@@ -111,6 +111,23 @@ export async function POST(request: Request) {
             referrerId = null;
           } else {
             console.log('Successfully parsed referrer_id from initData:', referrerId);
+          }
+        }
+      }
+      
+      // Also check for start parameter in the URL
+      if (!referrerId) {
+        const url = new URL(request.url);
+        const startParamFromUrl = url.searchParams.get('start') || url.searchParams.get('start_param');
+        console.log('Start param from request URL:', startParamFromUrl);
+        
+        if (startParamFromUrl) {
+          referrerId = parseInt(startParamFromUrl, 10);
+          if (isNaN(referrerId)) {
+            console.warn('Invalid referrer_id in URL start_param:', startParamFromUrl);
+            referrerId = null;
+          } else {
+            console.log('Successfully parsed referrer_id from URL:', referrerId);
           }
         }
       }
