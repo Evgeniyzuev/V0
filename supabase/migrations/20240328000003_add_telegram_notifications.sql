@@ -89,7 +89,7 @@ BEGIN
         to_core := interest_amount * (user_record.reinvest / 100);
         to_wallet := interest_amount * ((100 - user_record.reinvest) / 100);
         
-        -- Log the transaction before updating balances
+        -- Log the transaction
         INSERT INTO interest_history (
             user_id,
             execution_date,
