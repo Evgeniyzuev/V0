@@ -34,14 +34,18 @@ BEGIN
     -- If user has chat ID and wants notifications, send message
     IF v_chat_id IS NOT NULL THEN
         SELECT content::jsonb INTO v_response
-        FROM extensions.http_post(
-            url := 'https://api.telegram.org/bot8189008759:AAGD8FOOHjlrGqHVLHeru-KGtuSj5bIZkwE/sendMessage',
-            body := jsonb_build_object(
+        FROM extensions.http((
+            'POST',
+            'https://api.telegram.org/bot8189008759:AAGD8FOOHjlrGqHVLHeru-KGtuSj5bIZkwE/sendMessage',
+            ARRAY[
+                ('Content-Type', 'application/json')::extensions.http_header
+            ],
+            jsonb_build_object(
                 'chat_id', v_chat_id,
                 'text', p_message,
                 'parse_mode', 'HTML'
-            )
-        );
+            )::text
+        )::extensions.http_request);
         
         -- Log the response for debugging
         RAISE NOTICE 'Telegram API response: %', v_response;
