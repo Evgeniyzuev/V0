@@ -51,7 +51,7 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql SECURITY DEFINER;
 
--- Modify the calculate_daily_interest function to send notifications
+-- Function to calculate daily interest
 CREATE OR REPLACE FUNCTION calculate_daily_interest()
 RETURNS void AS $$
 DECLARE
@@ -63,7 +63,6 @@ DECLARE
     processed_count INTEGER := 0;
     total_interest_amount DECIMAL := 0;
     last_execution_date DATE;
-    notification_message TEXT;
 BEGIN
     -- Check if already executed today
     SELECT execution_date INTO last_execution_date
@@ -125,21 +124,6 @@ BEGIN
             'interest'
         );
 
-        -- Send telegram notification
-        notification_message := format(
-            '💰 Daily Interest Update\n\n' ||
-            'Interest earned: $%s\n' ||
-            'Added to Core: $%s\n' ||
-            'Added to Wallet: $%s\n' ||
-            'Current Core balance: $%s',
-            to_char(interest_amount, 'FM999999999.99999999'),
-            to_char(to_core, 'FM999999999.99999999'),
-            to_char(to_wallet, 'FM999999999.99999999'),
-            to_char(user_record.aicore_balance + to_core, 'FM999999999.99')
-        );
-        
-        PERFORM send_telegram_notification(user_record.id, notification_message);
-
         processed_count := processed_count + 1;
     END LOOP;
 
@@ -155,5 +139,43 @@ BEGIN
         processed_count,
         total_interest_amount
     );
+END;
+$$ LANGUAGE plpgsql;
+
+-- Function to send notifications for all users
+CREATE OR REPLACE FUNCTION send_interest_notifications()
+RETURNS void AS $$
+DECLARE
+    user_record RECORD;
+    notification_message TEXT;
+BEGIN
+    -- Get all users who received interest today
+    FOR user_record IN 
+        SELECT 
+            u.id,
+            u.aicore_balance,
+            ih.interest_amount,
+            ih.to_core,
+            ih.to_wallet
+        FROM users u
+        JOIN interest_history ih ON u.id = ih.user_id
+        WHERE ih.execution_date = CURRENT_DATE
+    LOOP
+        -- Format notification message
+        notification_message := format(
+            '💰 Daily Interest Update\n\n' ||
+            'Interest earned: $%s\n' ||
+            'Added to Core: $%s\n' ||
+            'Added to Wallet: $%s\n' ||
+            'Current Core balance: $%s',
+            to_char(user_record.interest_amount, 'FM999999999.99999999'),
+            to_char(user_record.to_core, 'FM999999999.99999999'),
+            to_char(user_record.to_wallet, 'FM999999999.99999999'),
+            to_char(user_record.aicore_balance, 'FM999999999.99')
+        );
+        
+        -- Send notification
+        PERFORM send_telegram_notification(user_record.id, notification_message);
+    END LOOP;
 END;
 $$ LANGUAGE plpgsql; 
