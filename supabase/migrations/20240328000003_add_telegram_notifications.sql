@@ -1,3 +1,6 @@
+-- Enable the http extension
+CREATE EXTENSION IF NOT EXISTS http WITH SCHEMA extensions;
+
 -- Create table for telegram notification settings
 CREATE TABLE IF NOT EXISTS telegram_notification_settings (
     id SERIAL PRIMARY KEY,
@@ -20,6 +23,7 @@ CREATE OR REPLACE FUNCTION send_telegram_notification(
 RETURNS void AS $$
 DECLARE
     v_chat_id BIGINT;
+    v_response JSONB;
 BEGIN
     -- Get user's telegram chat ID
     SELECT telegram_chat_id INTO v_chat_id
@@ -29,10 +33,18 @@ BEGIN
 
     -- If user has chat ID and wants notifications, send message
     IF v_chat_id IS NOT NULL THEN
-        -- Here we'll use the telegram bot API to send the message
-        -- This is a placeholder for the actual API call
-        -- You'll need to implement the actual telegram bot integration
-        RAISE NOTICE 'Sending telegram notification to chat %: %', v_chat_id, p_message;
+        SELECT content::jsonb INTO v_response
+        FROM extensions.http_post(
+            url := 'https://api.telegram.org/bot8189008759:AAGD8FOOHjlrGqHVLHeru-KGtuSj5bIZkwE/sendMessage',
+            body := jsonb_build_object(
+                'chat_id', v_chat_id,
+                'text', p_message,
+                'parse_mode', 'HTML'
+            )
+        );
+        
+        -- Log the response for debugging
+        RAISE NOTICE 'Telegram API response: %', v_response;
     END IF;
 END;
 $$ LANGUAGE plpgsql SECURITY DEFINER;
