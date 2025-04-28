@@ -12,8 +12,32 @@ CREATE TABLE IF NOT EXISTS telegram_notification_settings (
     UNIQUE(user_id)
 );
 
--- Create index for faster lookups
+-- Create notification_log table
+CREATE TABLE IF NOT EXISTS notification_log (
+    id SERIAL PRIMARY KEY,
+    user_id UUID NOT NULL REFERENCES users(id),
+    notification_type TEXT NOT NULL,
+    status TEXT NOT NULL,
+    message TEXT,
+    error_message TEXT,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+);
+
+-- Create notification_summary table
+CREATE TABLE IF NOT EXISTS notification_summary (
+    id SERIAL PRIMARY KEY,
+    notification_type TEXT NOT NULL,
+    execution_date DATE NOT NULL,
+    success_count INTEGER NOT NULL DEFAULT 0,
+    error_count INTEGER NOT NULL DEFAULT 0,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+);
+
+-- Create indexes for better performance
 CREATE INDEX IF NOT EXISTS idx_telegram_notification_user ON telegram_notification_settings(user_id);
+CREATE INDEX IF NOT EXISTS idx_notification_log_user ON notification_log(user_id);
+CREATE INDEX IF NOT EXISTS idx_notification_log_type ON notification_log(notification_type);
+CREATE INDEX IF NOT EXISTS idx_notification_summary_date ON notification_summary(execution_date);
 
 -- Function to send telegram notification
 CREATE OR REPLACE FUNCTION send_telegram_notification(
@@ -252,30 +276,4 @@ BEGIN
     RAISE NOTICE 'Interest notifications completed. Success: %, Errors: %', 
         v_success_count, v_error_count;
 END;
-$$ LANGUAGE plpgsql SECURITY DEFINER;
-
--- Create notification_log table if it doesn't exist
-CREATE TABLE IF NOT EXISTS notification_log (
-    id SERIAL PRIMARY KEY,
-    user_id UUID NOT NULL REFERENCES users(id),
-    notification_type TEXT NOT NULL,
-    status TEXT NOT NULL,
-    message TEXT,
-    error_message TEXT,
-    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
-);
-
--- Create notification_summary table if it doesn't exist
-CREATE TABLE IF NOT EXISTS notification_summary (
-    id SERIAL PRIMARY KEY,
-    notification_type TEXT NOT NULL,
-    execution_date DATE NOT NULL,
-    success_count INTEGER NOT NULL DEFAULT 0,
-    error_count INTEGER NOT NULL DEFAULT 0,
-    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
-);
-
--- Create indexes for better performance
-CREATE INDEX IF NOT EXISTS idx_notification_log_user ON notification_log(user_id);
-CREATE INDEX IF NOT EXISTS idx_notification_log_type ON notification_log(notification_type);
-CREATE INDEX IF NOT EXISTS idx_notification_summary_date ON notification_summary(execution_date); 
+$$ LANGUAGE plpgsql SECURITY DEFINER; 
