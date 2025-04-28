@@ -56,12 +56,12 @@ CREATE OR REPLACE FUNCTION calculate_daily_interest()
 RETURNS void AS $$
 DECLARE
     user_record RECORD;
-    daily_rate DECIMAL := 0.000633; -- 0.0633% daily rate
-    interest_amount DECIMAL;
-    to_core DECIMAL;
-    to_wallet DECIMAL;
+    daily_rate NUMERIC(20,8) := 0.00063300; -- 0.0633% daily rate with 8 decimal places
+    interest_amount NUMERIC(20,8);
+    to_core NUMERIC(20,8);
+    to_wallet NUMERIC(20,8);
     processed_count INTEGER := 0;
-    total_interest_amount DECIMAL := 0;
+    total_interest_amount NUMERIC(20,8) := 0;
     last_execution_date DATE;
 BEGIN
     -- Check if already executed today
@@ -81,13 +81,13 @@ BEGIN
         FROM users 
         WHERE aicore_balance > 0
     LOOP
-        -- Calculate total interest
-        interest_amount := user_record.aicore_balance * daily_rate;
+        -- Calculate total interest with explicit type casting
+        interest_amount := (user_record.aicore_balance::NUMERIC(20,8) * daily_rate)::NUMERIC(20,8);
         total_interest_amount := total_interest_amount + interest_amount;
         
         -- Split interest based on reinvest percentage
-        to_core := interest_amount * (user_record.reinvest / 100);
-        to_wallet := interest_amount * ((100 - user_record.reinvest) / 100);
+        to_core := (interest_amount * (user_record.reinvest::NUMERIC(20,8) / 100::NUMERIC(20,8)))::NUMERIC(20,8);
+        to_wallet := (interest_amount * ((100::NUMERIC(20,8) - user_record.reinvest::NUMERIC(20,8)) / 100::NUMERIC(20,8)))::NUMERIC(20,8);
         
         -- Log the transaction
         INSERT INTO interest_history (
