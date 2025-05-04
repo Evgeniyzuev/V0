@@ -8,6 +8,7 @@ import { Button } from "@/components/ui/button"
 import { useToast } from "@/components/ui/use-toast"
 import { useUser } from "./UserContext"
 import { generateSystemInstructions, generateDailyGreeting, generateInterestingSuggestion } from "@/lib/ai/assistant-instructions"
+import { AIAssistantEngine } from "./ai-assistant-engine"
 
 interface ChatMessage {
   sender: string;
@@ -89,67 +90,12 @@ export default function AIAssistantTab() {
 
   // Generate welcome message with daily context
   const generateWelcomeMessage = () => {
-    // Check if user data is still loading
     if (isUserContextLoading || !dbUser) {
       return "Hi there! I'm your personal AI assistant. Connecting to your profile...";
     }
-
     const dailyContext = getDailyContext();
-    let baseMessage = "";
-    const userGoals = goals || []; // Use goals from context
-    const userTasks = tasks || []; // Use tasks from context
-
-    // Pass current dbUser, goals, tasks to generation functions
-    const greeting = generateDailyGreeting({ dbUser, goals, tasks }, dailyContext);
-    if (greeting) {
-      const suggestion = generateInterestingSuggestion({ dbUser, goals, tasks });
-      baseMessage = `${greeting}\n\n${suggestion}`;
-    } else {
-      // Fallback to regular welcome message if no daily greeting
-      const name = dbUser.first_name || dbUser.telegram_username || 'there';
-      if (userGoals.length > 0) {
-        const activeGoals = userGoals.filter(goal => goal.status !== 'completed');
-        if (activeGoals.length > 0) {
-          const goalTitles = activeGoals.map(goal => 
-            `"${goal.title || goal.goal?.title || `Goal ${goal.id}`}"`
-          ).join(', ');
-          baseMessage = `Hi ${name}! You're working on these goals: ${goalTitles}. How can I help you make progress on them today?`;
-        }
-      }
-
-      if (!baseMessage && userTasks.length > 0) {
-        const pendingTasks = userTasks.filter(task => task.status !== 'completed');
-        if (pendingTasks.length > 0) {
-          baseMessage = `Hi ${name}! You have ${pendingTasks.length} pending ${pendingTasks.length === 1 ? 'task' : 'tasks'}. How can I help you make progress today?`;
-        }
-      }
-
-      if (!baseMessage) {
-        baseMessage = `Hi ${name}! I'm your personal AI assistant. Let's work on setting some meaningful goals for you today. What would you like to achieve?`;
-      }
-    }
-
-    // // Add debugging info about goals with titles
-    // if (userGoals.length > 0) {
-    //   const goalTitles = userGoals.map(goal => 
-    //     goal.title || goal.goal?.title || `Goal ${goal.id}`
-    //   ).join(', ');
-    //   baseMessage += `\n\n(Debug: I see ${userGoals.length} goal(s) loaded: ${goalTitles})`;
-    // } else {
-    //   baseMessage += `\n\n(Debug: I don't see any goals loaded currently.)`;
-    // }
-
-    // // Add debugging info about tasks
-    // if (userTasks.length > 0) {
-    //   const taskTitles = userTasks.map(task => 
-    //     task.task?.title || `Task ${task.id}`
-    //   ).join(', ');
-    //   baseMessage += `\n\n(Debug: I see ${userTasks.length} task(s) loaded: ${taskTitles})`;
-    // } else {
-    //   baseMessage += `\n\n(Debug: I don't see any tasks loaded currently.)`;
-    // }
-
-    return baseMessage;
+    const engine = new AIAssistantEngine({ userContext: { dbUser, goals, tasks } });
+    return engine.generateWelcomeMessage(dailyContext);
   };
 
   // Load chat history from localStorage

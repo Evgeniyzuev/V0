@@ -64,12 +64,64 @@ export class AIAssistantEngine {
     return this.scenarioState;
   }
 
-  // Основной метод обработки пользовательского сообщения
+  // Генерация приветственного сообщения с учётом user context и daily context
+  public generateWelcomeMessage(dailyContext?: {
+    isFirstVisitToday?: boolean;
+    lastVisitTimestamp?: string;
+    completedTodayTasks?: number;
+    pendingHighPriorityTasks?: number;
+  }): string {
+    const { dbUser, goals, tasks } = this.userContext || {};
+    const userGoals = goals || [];
+    const userTasks = tasks || [];
+    const name = dbUser?.first_name || dbUser?.telegram_username || 'друг';
+
+    // Если dailyContext есть, можно добавить особые приветствия
+    if (dailyContext) {
+      if (dailyContext.isFirstVisitToday) {
+        return `С возвращением, ${name}! Готов помочь тебе сегодня.`;
+      }
+      // Можно добавить больше условий на основе dailyContext
+    }
+
+    if (userGoals.length > 0) {
+      const activeGoals = userGoals.filter((goal: any) => goal.status !== 'completed');
+      if (activeGoals.length > 0) {
+        const goalTitles = activeGoals.map((goal: any) =>
+          `"${goal.title || goal.goal?.title || `Цель ${goal.id}`}"`
+        ).join(', ');
+        return `Привет, ${name}! Ты работаешь над целями: ${goalTitles}. Чем могу помочь продвинуться сегодня?`;
+      }
+    }
+    if (userTasks.length > 0) {
+      const pendingTasks = userTasks.filter((task: any) => task.status !== 'completed');
+      if (pendingTasks.length > 0) {
+        return `Привет, ${name}! У тебя ${pendingTasks.length} незавершённых задач. С чего начнём?`;
+      }
+    }
+    return `Привет, ${name}! Я твой ИИ-ассистент. Давай поставим для тебя значимые цели. Чего хочешь достичь?`;
+  }
+
+  // Генерация системного промпта для LLM (скрытый от пользователя)
+  public generateSystemPrompt(): string {
+    const { dbUser, goals, tasks } = this.userContext || {};
+    // Можно расширять: добавлять интересы, прогресс, статистику и т.д.
+    return `Контекст пользователя:\nИмя: ${dbUser?.first_name || dbUser?.telegram_username || 'Пользователь'}\nЦелей: ${goals?.length || 0}\nЗадач: ${tasks?.length || 0}`;
+  }
+
+  // Основной метод обработки пользовательского сообщения и сценариев
   public async handleUserMessage(message: string): Promise<string> {
-    // TODO: реализовать обработку сценариев, генерацию промптов, работу с user context
-    // Пример: если целей нет — предложить создать, если есть задачи — предложить выбрать и т.д.
-    // Использовать системный промпт с user context для генерации ответа
-    return 'TODO: Реализация логики ассистента';
+    // Пример простого сценария: если целей нет — предложить создать, если есть задачи — предложить выбрать и т.д.
+    const { goals, tasks } = this.userContext || {};
+    if (!goals || goals.length === 0) {
+      return 'У тебя пока нет целей. Хочешь создать первую цель?';
+    }
+    const pendingTasks = (tasks || []).filter((task: any) => task.status !== 'completed');
+    if (pendingTasks.length > 0) {
+      return `У тебя ${pendingTasks.length} незавершённых задач. С какой начнём? Или задай вопрос!`;
+    }
+    // TODO: Здесь можно добавить вызов LLM с системным промптом и историей чата
+    return 'Спасибо за сообщение! Я готов помочь с твоими целями и задачами.';
   }
 
   // Вспомогательные методы для генерации промптов, анализа контекста и т.д.
