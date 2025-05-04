@@ -7,7 +7,7 @@ import { Input } from "@/components/ui/input"
 import { Button } from "@/components/ui/button"
 import { useToast } from "@/components/ui/use-toast"
 import { useUser } from "./UserContext"
-import { generateSystemInstructions, generateDailyGreeting, generateInterestingSuggestion } from "@/lib/ai/assistant-instructions"
+import { generateDailyGreeting, generateInterestingSuggestion } from "@/lib/ai/assistant-instructions"
 import { AIAssistantEngine } from "./ai-assistant-engine"
 
 interface ChatMessage {
@@ -175,7 +175,8 @@ export default function AIAssistantTab() {
     setIsLoading(true)
 
     try {
-      const systemInstructions = generateSystemInstructions({ dbUser, goals, tasks });
+      const engine = new AIAssistantEngine({ userContext: { dbUser, goals, tasks } });
+      const systemInstructions = engine.generateSystemInstructions();
       console.log("Sending to /api/chat with context:", { dbUser, goals, tasks }); // Log the context being sent
 
       // Call our server API endpoint
