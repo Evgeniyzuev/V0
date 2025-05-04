@@ -105,8 +105,28 @@ export class AIAssistantEngine {
   // Генерация системного промпта для LLM (скрытый от пользователя)
   public generateSystemPrompt(): string {
     const { dbUser, goals, tasks } = this.userContext || {};
-    // Можно расширять: добавлять интересы, прогресс, статистику и т.д.
-    return `Контекст пользователя:\nИмя: ${dbUser?.first_name || dbUser?.telegram_username || 'Пользователь'}\nЦелей: ${goals?.length || 0}\nЗадач: ${tasks?.length || 0}`;
+    let prompt = `Контекст пользователя:
+Имя: ${dbUser?.first_name || dbUser?.telegram_username || 'Пользователь'}
+Уровень: ${dbUser?.level || 'не указан'}
+Целей: ${goals?.length || 0}
+Задач: ${tasks?.length || 0}
+`;
+
+    if (goals && goals.length > 0) {
+      prompt += `\nСписок целей:\n`;
+      for (const goal of goals) {
+        prompt += `- ${goal.title || goal.goal?.title || 'Без названия'} (статус: ${goal.status}, сложность: ${goal.difficulty_level || 'не указана'})\n`;
+      }
+    }
+
+    if (tasks && tasks.length > 0) {
+      prompt += `\nСписок задач:\n`;
+      for (const task of tasks) {
+        prompt += `- ${task.title || task.task?.title || 'Без названия'} (статус: ${task.status})\n`;
+      }
+    }
+
+    return prompt;
   }
 
   // Основной метод обработки пользовательского сообщения и сценариев
