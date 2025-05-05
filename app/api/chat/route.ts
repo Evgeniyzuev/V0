@@ -1,6 +1,6 @@
 import { GoogleGenAI } from "@google/genai";
 import { NextResponse } from "next/server";
-import { generateAssistantInstructions } from "@/lib/assistant-instructions";
+import { AIAssistantEngine } from "@/components/ai-assistant-engine";
 import type { AIAssistantContext } from "@/types/user-context";
 
 // Get all available API keys
@@ -13,8 +13,8 @@ async function tryWithApiKey(apiKey: string, messages: any[], userContext: AIAss
   const ai = new GoogleGenAI({ apiKey });
   
   // Generate instructions based on user context
-  const instructions = userContext 
-    ? generateAssistantInstructions(userContext)
+  const instructions = userContext
+    ? new AIAssistantEngine({ userContext }).generateSystemInstructions()
     : "You are a helpful AI assistant. Be concise and provide specific, actionable advice.";
 
   // Convert messages to Gemini API format and add system instructions

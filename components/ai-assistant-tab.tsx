@@ -7,7 +7,6 @@ import { Input } from "@/components/ui/input"
 import { Button } from "@/components/ui/button"
 import { useToast } from "@/components/ui/use-toast"
 import { useUser } from "./UserContext"
-import { generateDailyGreeting, generateInterestingSuggestion } from "@/lib/ai/assistant-instructions"
 import { AIAssistantEngine } from "./ai-assistant-engine"
 
 interface ChatMessage {
@@ -95,7 +94,9 @@ export default function AIAssistantTab() {
     }
     const dailyContext = getDailyContext();
     const engine = new AIAssistantEngine({ userContext: { dbUser, goals, tasks } });
-    return engine.generateWelcomeMessage(dailyContext);
+    const greeting = engine.generateDailyGreeting(dailyContext);
+    const suggestion = engine.generateInterestingSuggestion();
+    return `${greeting}\n\n${suggestion}`;
   };
 
   // Load chat history from localStorage
