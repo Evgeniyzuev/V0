@@ -195,15 +195,9 @@ BEGIN
         BEGIN
             -- Format notification message with HTML formatting
             notification_message := format(
-                '<b>💰 Daily Interest Update</b>\n\n' ||
-                'Interest earned: <code>$%s</code>\n' ||
-                'Added to Core: <code>$%s</code>\n' ||
-                'Added to Wallet: <code>$%s</code>\n' ||
-                'Current Core balance: <code>$%s</code>',
+                'Daily Interest earned: <code>$%s</code>. Current Core balance: <code>$%s</code>.',
                 to_char(user_record.interest_amount, 'FM999999999.99999999'),
-                to_char(user_record.to_core, 'FM999999999.99999999'),
-                to_char(user_record.to_wallet, 'FM999999999.99999999'),
-                to_char(user_record.aicore_balance, 'FM999999999.99')
+                to_char(user_record.aicore_balance, 'FM999999999.99999999')
             );
             
             -- Send notification
