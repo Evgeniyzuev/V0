@@ -20,7 +20,6 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "
 import { TonConnectButton } from '@tonconnect/ui-react'
 import InterestNotification from "./interest-notification"
 import CoreHistory from "./core-history"
-import TelegramNotificationSettings from "./telegram-notification-settings"
 
 // Initialize Supabase client
 const supabase = createClientSupabaseClient()
@@ -704,9 +703,6 @@ export default function FinanceTab() {
               </button>
             </CardContent>
           </Card>
-
-          {/* Telegram Notification Settings */}
-          {userId && <TelegramNotificationSettings userId={userId} />}
 
           {/* Core History */}
           {userId && <CoreHistory userId={userId} />}
