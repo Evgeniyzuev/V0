@@ -1,4 +1,4 @@
--- Update the send_telegram_notification function to use our service
+-- Исправление вызова http_post: используем extensions.http_post вместо net.http_post
 CREATE OR REPLACE FUNCTION send_telegram_notification(
     p_user_id UUID,
     p_message TEXT
@@ -18,7 +18,7 @@ BEGIN
     IF v_chat_id IS NOT NULL THEN
         -- Call our service to send the message
         SELECT content::jsonb INTO v_response
-        FROM net.http_post(
+        FROM extensions.http_post(
             url := 'https://api.telegram.org/bot' || current_setting('app.telegram_bot_token') || '/sendMessage',
             body := jsonb_build_object(
                 'chat_id', v_chat_id,
