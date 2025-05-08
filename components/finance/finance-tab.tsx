@@ -18,6 +18,7 @@ import { useTaskVerification } from '@/hooks/useTaskVerification'
 import { useLevelCheck } from '@/hooks/useLevelCheck'
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog"
 import { TonConnectButton } from '@tonconnect/ui-react'
+import InterestNotification from "./interest-notification"
 import CoreHistory from "./core-history"
 import TelegramNotificationSettings from "./telegram-notification-settings"
 
@@ -50,6 +51,7 @@ export default function FinanceTab() {
   const [hasCalculated, setHasCalculated] = useState(false)
   const [statusMessage, setStatusMessage] = useState<{ type: 'success' | 'error', text: string } | null>(null)
   const [hasUnviewedInterest, setHasUnviewedInterest] = useState(false);
+  const [showInterestNotification, setShowInterestNotification] = useState(false)
   const [unviewedInterestAmount, setUnviewedInterestAmount] = useState(0)
 
   const { verifying, handleTaskVerification } = useTaskVerification({
@@ -282,6 +284,13 @@ export default function FinanceTab() {
 
     checkUnviewedInterest();
   }, [userId]);
+
+  // Show notification when switching to Core tab with unviewed interest
+  useEffect(() => {
+    if (activeTab === "core" && hasUnviewedInterest) {
+      setShowInterestNotification(true);
+    }
+  }, [activeTab, hasUnviewedInterest]);
 
   // Update view date when tab is active
   useEffect(() => {
@@ -771,6 +780,19 @@ export default function FinanceTab() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      {/* Interest Notification */}
+      {userId && (
+        <InterestNotification
+          isOpen={showInterestNotification}
+          onClose={() => {
+            setShowInterestNotification(false);
+            setHasUnviewedInterest(false);
+          }}
+          userId={userId}
+          interestAmount={unviewedInterestAmount}
+        />
+      )}
     </div>
   )
 } 
