@@ -175,36 +175,31 @@ DECLARE
     v_success_count INTEGER := 0;
     v_error_count INTEGER := 0;
     v_error_message TEXT;
+    interest_amount NUMERIC(20,8);
+    core_balance NUMERIC(20,8);
 BEGIN
-    -- Get all users who received interest today
+    -- Получаем всех пользователей с telegram_chat_id
     FOR user_record IN 
         SELECT 
             u.id,
-            u.aicore_balance,
-            ih.interest_amount,
-            ih.to_core,
-            ih.to_wallet,
-            tns.telegram_chat_id
+            u.telegram_chat_id,
+            COALESCE(ih.interest_amount, 0) AS interest_amount,
+            u.aicore_balance
         FROM users u
-        JOIN interest_history ih ON u.id = ih.user_id
-        LEFT JOIN telegram_notification_settings tns ON u.id = tns.user_id
-        WHERE ih.execution_date = CURRENT_DATE
-        AND tns.receive_interest_notifications = true
-        AND tns.telegram_chat_id IS NOT NULL
+        LEFT JOIN interest_history ih ON u.id = ih.user_id AND ih.execution_date = CURRENT_DATE
+        WHERE u.telegram_chat_id IS NOT NULL
     LOOP
         BEGIN
-            -- Format notification message with HTML formatting
+            -- Формируем сообщение
             notification_message := format(
-                'Daily Interest earned: <code>$%s</code>. Current Core balance: <code>$%s</code>.',
-                to_char(user_record.interest_amount, 'FM999999999.99999999'),
-                to_char(user_record.aicore_balance, 'FM999999999.99999999')
+                'Daily Interest earned: <code>$%s</code>.&#10;Current Core balance: <code>$%s</code>.',
+                to_char(user_record.interest_amount, '0.00000000'),
+                to_char(user_record.aicore_balance, '0.00000000')
             );
-            
-            -- Send notification
+            -- Отправляем уведомление
             PERFORM send_telegram_notification(user_record.id, notification_message);
             v_success_count := v_success_count + 1;
-            
-            -- Log successful notification
+            -- Лог успешной отправки
             INSERT INTO notification_log (
                 user_id,
                 notification_type,
@@ -218,12 +213,10 @@ BEGIN
                 notification_message,
                 CURRENT_TIMESTAMP
             );
-            
         EXCEPTION WHEN OTHERS THEN
             v_error_count := v_error_count + 1;
             v_error_message := SQLERRM;
-            
-            -- Log failed notification
+            -- Лог ошибки
             INSERT INTO notification_log (
                 user_id,
                 notification_type,
@@ -237,8 +230,7 @@ BEGIN
                 v_error_message,
                 CURRENT_TIMESTAMP
             );
-            
-            -- Log error to interest_errors_log
+            -- Лог ошибки в interest_errors_log
             INSERT INTO interest_errors_log (
                 user_id,
                 error_message,
@@ -250,8 +242,7 @@ BEGIN
             );
         END;
     END LOOP;
-
-    -- Log overall notification results
+    -- Лог итогов рассылки
     INSERT INTO notification_summary (
         notification_type,
         execution_date,
@@ -265,8 +256,6 @@ BEGIN
         v_error_count,
         CURRENT_TIMESTAMP
     );
-
-    -- Raise notice with summary
     RAISE NOTICE 'Interest notifications completed. Success: %, Errors: %', 
         v_success_count, v_error_count;
 END;

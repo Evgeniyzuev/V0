@@ -10,9 +10,8 @@ DECLARE
 BEGIN
     -- Get user's telegram chat ID
     SELECT telegram_chat_id INTO v_chat_id
-    FROM telegram_notification_settings
-    WHERE user_id = p_user_id
-    AND receive_interest_notifications = true;
+    FROM users
+    WHERE id = p_user_id;
 
     -- If user has chat ID and wants notifications, send message
     IF v_chat_id IS NOT NULL THEN
