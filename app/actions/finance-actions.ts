@@ -178,3 +178,49 @@ export async function updateUserReinvest(userId: string, reinvestPercentage: num
   return { success: true }
 }
 
+export async function debitWalletBalance(amount: number, userId: string) {
+  try {
+    if (!userId) {
+      return { success: false, error: "User ID is required" }
+    }
+
+    if (amount <= 0) {
+      return { success: false, error: "Amount must be greater than zero" }
+    }
+
+    const supabase = createServerSupabaseClient()
+
+    // Get current balance
+    const { data: userData, error: fetchError } = await supabase
+      .from("users")
+      .select("wallet_balance")
+      .eq("id", userId)
+      .single()
+
+    if (fetchError) {
+      console.error("Error fetching user balance:", fetchError)
+      return { success: false, error: fetchError.message }
+    }
+
+    const currentBalance = Number.parseFloat(userData.wallet_balance)
+    if (currentBalance < amount) {
+      return { success: false, error: "Insufficient funds" }
+    }
+    const newBalance = currentBalance - amount
+
+    // Update balance
+    const { error: updateError } = await supabase.from("users").update({ wallet_balance: newBalance }).eq("id", userId)
+
+    if (updateError) {
+      console.error("Error updating wallet balance:", updateError)
+      return { success: false, error: updateError.message }
+    }
+
+    revalidatePath("/")
+    return { success: true, newBalance }
+  } catch (error) {
+    console.error("Error in debitWalletBalance:", error)
+    return { success: false, error: "Failed to debit wallet balance" }
+  }
+}
+

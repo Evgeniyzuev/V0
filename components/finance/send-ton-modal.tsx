@@ -13,6 +13,7 @@ import { WalletContractV4, TonClient, internal } from "@ton/ton"
 import { getHttpEndpoint } from "@orbs-network/ton-access"
 import { useUser } from "@/components/UserContext"
 import { useTonConnectUI } from '@tonconnect/ui-react'
+import { debitWalletBalance, topUpWalletBalance } from "@/app/actions/finance-actions"
 
 interface SendTonModalProps {
   isOpen: boolean
@@ -54,9 +55,20 @@ export default function SendTonModal({ isOpen, onClose, onSuccess, userId, curre
     }
 
     let transactionSuccess = false
+    let debitedBalance: number | null = null
     try {
       setIsSubmitting(true)
       setError(null)
+
+      // Списываем сумму в базе данных
+      const debitResult = await debitWalletBalance(numericAmount, userId)
+      if (!debitResult.success || typeof debitResult.newBalance !== 'number') {
+        setError(debitResult.error || "Failed to debit balance")
+        setIsSubmitting(false)
+        return
+      }
+      debitedBalance = debitResult.newBalance
+      onSuccess(debitedBalance)
 
       // Convert USD to TON
       const tonAmount = convertUsdToTon(numericAmount)
@@ -84,9 +96,18 @@ export default function SendTonModal({ isOpen, onClose, onSuccess, userId, curre
         throw new Error("Mnemonic is not configured")
       }
 
-      // Списываем сумму с баланса сразу после всех валидаций
-      onSuccess(currentBalance - numericAmount)
+      // Форматируем сумму для отправки
+      const formattedAmount = formatTonAmount(tonAmount)
+      
+      console.log('Sending transaction:', {
+        to: destinationAddress.toString(),
+        amount: tonAmount,
+        formattedAmount,
+        totalAmount: totalTonAmount,
+        amountInNano: toNano(formattedAmount).toString()
+      })
 
+      setTransactionStatus('Sending transaction...')
       const key = await mnemonicToWalletKey(mnemonic.split(" "))
       const wallet = WalletContractV4.create({ publicKey: key.publicKey, workchain: 0 })
       
@@ -103,9 +124,6 @@ export default function SendTonModal({ isOpen, onClose, onSuccess, userId, curre
 
       const walletContract = client.open(wallet)
       const seqno = await walletContract.getSeqno()
-      
-      // Форматируем сумму для отправки
-      const formattedAmount = formatTonAmount(tonAmount)
       
       console.log('Sending transaction:', {
         to: destinationAddress.toString(),
@@ -167,8 +185,12 @@ export default function SendTonModal({ isOpen, onClose, onSuccess, userId, curre
     } finally {
       setIsSubmitting(false)
       // Централизованный возврат суммы на баланс, если транзакция неуспешна
-      if (!transactionSuccess) {
-        onSuccess(currentBalance)
+      if (!transactionSuccess && debitedBalance !== null) {
+        // Возвращаем сумму в базе данных
+        const rollbackResult = await topUpWalletBalance(numericAmount, userId)
+        if (rollbackResult.success && typeof rollbackResult.newBalance === 'number') {
+          onSuccess(rollbackResult.newBalance)
+        }
       }
     }
   }
