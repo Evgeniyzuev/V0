@@ -83,6 +83,9 @@ export default function SendTonModal({ isOpen, onClose, onSuccess, userId, curre
         throw new Error("Mnemonic is not configured")
       }
 
+      // Списываем сумму с баланса сразу после всех валидаций
+      onSuccess(currentBalance - numericAmount)
+
       const key = await mnemonicToWalletKey(mnemonic.split(" "))
       const wallet = WalletContractV4.create({ publicKey: key.publicKey, workchain: 0 })
       
@@ -138,17 +141,20 @@ export default function SendTonModal({ isOpen, onClose, onSuccess, userId, curre
       }
 
       if (attempts >= maxAttempts) {
+        // Возвращаем сумму на баланс, если не дождались подтверждения
+        onSuccess(currentBalance)
         throw new Error('Transaction was not confirmed in time')
       }
 
       setTransactionStatus('Transaction successfully confirmed!')
       console.log('Transaction completed')
-      onSuccess(currentBalance - numericAmount)
       onClose()
 
     } catch (error) {
       console.error("Send TON error:", error)
       setTransactionStatus('Transaction failed')
+      // Возвращаем сумму на баланс при ошибке
+      onSuccess(currentBalance)
       if (error instanceof Error) {
         if (error.message.includes('Invalid number')) {
           setError('Invalid amount format. Please try a different amount.')
