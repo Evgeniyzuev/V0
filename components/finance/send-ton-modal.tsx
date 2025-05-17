@@ -150,7 +150,7 @@ export default function SendTonModal({ isOpen, onClose, onSuccess, userId, curre
       // Wait for transaction confirmation
       let currentSeqno = seqno
       let attempts = 0
-      const maxAttempts = 10
+      const maxAttempts = 5
 
       while (currentSeqno === seqno && attempts < maxAttempts) {
         setTransactionStatus('Waiting for transaction confirmation...')
