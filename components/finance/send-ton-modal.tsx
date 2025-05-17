@@ -53,6 +53,7 @@ export default function SendTonModal({ isOpen, onClose, onSuccess, userId, curre
       return
     }
 
+    let transactionSuccess = false
     try {
       setIsSubmitting(true)
       setError(null)
@@ -141,20 +142,17 @@ export default function SendTonModal({ isOpen, onClose, onSuccess, userId, curre
       }
 
       if (attempts >= maxAttempts) {
-        // Возвращаем сумму на баланс, если не дождались подтверждения
-        onSuccess(currentBalance)
         throw new Error('Transaction was not confirmed in time')
       }
 
       setTransactionStatus('Transaction successfully confirmed!')
       console.log('Transaction completed')
+      transactionSuccess = true
       onClose()
 
     } catch (error) {
       console.error("Send TON error:", error)
       setTransactionStatus('Transaction failed')
-      // Возвращаем сумму на баланс при ошибке
-      onSuccess(currentBalance)
       if (error instanceof Error) {
         if (error.message.includes('Invalid number')) {
           setError('Invalid amount format. Please try a different amount.')
@@ -168,6 +166,10 @@ export default function SendTonModal({ isOpen, onClose, onSuccess, userId, curre
       }
     } finally {
       setIsSubmitting(false)
+      // Централизованный возврат суммы на баланс, если транзакция неуспешна
+      if (!transactionSuccess) {
+        onSuccess(currentBalance)
+      }
     }
   }
 
