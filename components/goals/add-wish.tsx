@@ -14,7 +14,7 @@ import { toast } from "sonner"
 import type { Goal } from "@/types/supabase"
 
 export default function AddWish() {
-  const { dbUser } = useUser()
+  const { dbUser, refreshGoals } = useUser()
   const queryClient = useQueryClient()
   const [title, setTitle] = useState("")
   const [description, setDescription] = useState("")
@@ -131,8 +131,14 @@ export default function AddWish() {
         throw new Error(userGoalError.message)
       }
 
-      // Invalidate queries to refresh the goals list
+      // Refresh goals in UserContext (this will update the personal goals list)
+      await refreshGoals()
+      
+      // Also invalidate any related queries to ensure UI updates
       await queryClient.invalidateQueries({ queryKey: ["user-goals"] })
+      await queryClient.invalidateQueries({ queryKey: ["goals"] })
+      
+      console.log('Goal added and context refreshed')
 
       toast.success("Wish added successfully!")
 
