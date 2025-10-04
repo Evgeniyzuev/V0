@@ -32,14 +32,30 @@ export default function AddWish({ onSuccess, isModal = false }: AddWishProps) {
   const [localImageUrl, setLocalImageUrl] = useState<string>("")
   const fileInputRef = useRef<HTMLInputElement>(null)
 
-  // Функция для сжатия изображения
-  const compressImage = (file: File, maxWidth: number = 1200, quality: number = 0.8): Promise<string> => {
+  // Функция для сжатия изображения с адаптивными параметрами
+  const compressImage = (file: File): Promise<string> => {
     return new Promise((resolve, reject) => {
       const canvas = document.createElement('canvas')
       const ctx = canvas.getContext('2d')
       const img = new Image()
       
       img.onload = () => {
+        // Адаптивные параметры сжатия в зависимости от размера файла
+        const fileSizeMB = file.size / (1024 * 1024)
+        let maxWidth = 1200
+        let quality = 0.8
+        
+        if (fileSizeMB > 2) {
+          maxWidth = 800
+          quality = 0.6
+        } else if (fileSizeMB > 1) {
+          maxWidth = 1000
+          quality = 0.7
+        } else if (fileSizeMB > 0.5) {
+          maxWidth = 1200
+          quality = 0.8
+        }
+        
         // Вычисляем новые размеры с сохранением пропорций
         let { width, height } = img
         if (width > maxWidth) {
@@ -55,7 +71,35 @@ export default function AddWish({ onSuccess, isModal = false }: AddWishProps) {
         
         // Конвертируем в base64 с заданным качеством
         const compressedBase64 = canvas.toDataURL('image/jpeg', quality)
-        resolve(compressedBase64)
+        
+        // Проверяем размер после сжатия
+        const compressedSizeMB = (compressedBase64.length * 0.75) / (1024 * 1024)
+        console.log(`Original: ${fileSizeMB.toFixed(2)}MB, Compressed: ${compressedSizeMB.toFixed(2)}MB, Quality: ${quality}`)
+        
+        // Если все еще слишком большое, пробуем еще более агрессивное сжатие
+        if (compressedSizeMB > 1.5) {
+          const moreAggressiveQuality = Math.max(0.3, quality - 0.2)
+          const moreAggressiveWidth = Math.max(600, maxWidth - 200)
+          
+          let newWidth = width
+          let newHeight = height
+          if (width > moreAggressiveWidth) {
+            newHeight = (height * moreAggressiveWidth) / width
+            newWidth = moreAggressiveWidth
+          }
+          
+          canvas.width = newWidth
+          canvas.height = newHeight
+          ctx?.drawImage(img, 0, 0, newWidth, newHeight)
+          
+          const finalBase64 = canvas.toDataURL('image/jpeg', moreAggressiveQuality)
+          const finalSizeMB = (finalBase64.length * 0.75) / (1024 * 1024)
+          console.log(`Final aggressive compression: ${finalSizeMB.toFixed(2)}MB, Quality: ${moreAggressiveQuality}`)
+          
+          resolve(finalBase64)
+        } else {
+          resolve(compressedBase64)
+        }
       }
       
       img.onerror = () => reject(new Error("Failed to load image"))
@@ -71,8 +115,13 @@ export default function AddWish({ onSuccess, isModal = false }: AddWishProps) {
       const imageId = `wish_image_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`
       
       // Проверяем размер после сжатия
-      const sizeInMB = (compressedBase64.length * 0.75) / (1024 * 1024) // Примерный размер в MB
-      console.log(`Compressed image size: ${sizeInMB.toFixed(2)}MB`)
+      const sizeInMB = (compressedBase64.length * 0.75) / (1024 * 1024)
+      console.log(`Final compressed image size: ${sizeInMB.toFixed(2)}MB`)
+      
+      // Если все еще слишком большое, пробуем еще более агрессивное сжатие
+      if (sizeInMB > 2) {
+        throw new Error(`Image is still too large (${sizeInMB.toFixed(2)}MB) after compression. Please try a smaller image.`)
+      }
       
       // Сохраняем в localStorage
       try {
@@ -80,11 +129,46 @@ export default function AddWish({ onSuccess, isModal = false }: AddWishProps) {
         return imageId
       } catch (storageError) {
         console.error("localStorage error:", storageError)
+        
+        // Если ошибка localStorage, пробуем еще более агрессивное сжатие
+        if (storageError instanceof DOMException && storageError.code === DOMException.QUOTA_EXCEEDED_ERR) {
+          console.log("localStorage quota exceeded, trying more aggressive compression...")
+          
+          // Попробуем еще более агрессивное сжатие
+          const canvas = document.createElement('canvas')
+          const ctx = canvas.getContext('2d')
+          const img = new Image()
+          
+          const ultraCompressedPromise = new Promise<string>((resolve, reject) => {
+            img.onload = () => {
+              // Очень агрессивное сжатие
+              canvas.width = 400
+              canvas.height = 400
+              ctx?.drawImage(img, 0, 0, 400, 400)
+              
+              const ultraCompressed = canvas.toDataURL('image/jpeg', 0.3)
+              const ultraSizeMB = (ultraCompressed.length * 0.75) / (1024 * 1024)
+              console.log(`Ultra compressed size: ${ultraSizeMB.toFixed(2)}MB`)
+              
+              try {
+                localStorage.setItem(imageId, ultraCompressed)
+                resolve(imageId)
+              } catch (finalError) {
+                reject(new Error("Image is too large even after maximum compression. Please try a much smaller image."))
+              }
+            }
+            img.onerror = () => reject(new Error("Failed to load image for ultra compression"))
+            img.src = URL.createObjectURL(file)
+          })
+          
+          return await ultraCompressedPromise
+        }
+        
         throw new Error("Image too large for storage. Please try a smaller image.")
       }
     } catch (error) {
       console.error("Error compressing image:", error)
-      throw new Error("Failed to compress and save image")
+      throw error
     }
   }
 
@@ -99,12 +183,28 @@ export default function AddWish({ onSuccess, isModal = false }: AddWishProps) {
       const keys = Object.keys(localStorage)
       const imageKeys = keys.filter(key => key.startsWith('wish_image_'))
       
-      // Если изображений больше 20, удаляем самые старые
-      if (imageKeys.length > 20) {
+      // Если изображений больше 10, удаляем самые старые (более агрессивная очистка)
+      if (imageKeys.length > 10) {
         imageKeys.sort() // Сортируем по времени создания
-        const keysToRemove = imageKeys.slice(0, imageKeys.length - 20)
+        const keysToRemove = imageKeys.slice(0, imageKeys.length - 10)
         keysToRemove.forEach(key => localStorage.removeItem(key))
         console.log(`Cleaned up ${keysToRemove.length} old images from localStorage`)
+      }
+      
+      // Дополнительная проверка: если localStorage почти полон, удаляем больше
+      const totalSize = imageKeys.reduce((total, key) => {
+        const value = localStorage.getItem(key)
+        return total + (value ? value.length : 0)
+      }, 0)
+      
+      const totalSizeMB = totalSize / (1024 * 1024)
+      console.log(`Total localStorage size for images: ${totalSizeMB.toFixed(2)}MB`)
+      
+      // Если общий размер больше 3MB, удаляем половину изображений
+      if (totalSizeMB > 3 && imageKeys.length > 5) {
+        const keysToRemove = imageKeys.slice(0, Math.floor(imageKeys.length / 2))
+        keysToRemove.forEach(key => localStorage.removeItem(key))
+        console.log(`Emergency cleanup: removed ${keysToRemove.length} images due to size limit`)
       }
     } catch (error) {
       console.error("Error cleaning up old images:", error)
