@@ -89,6 +89,14 @@ export default function NotesPage() {
     return `${day} ${month} ${year} ${hours}:${minutes}`
   }
 
+  const formatDateShort = (timestamp: number) => {
+    const date = new Date(timestamp)
+    const day = String(date.getDate()).padStart(2, "0")
+    const month = String(date.getMonth() + 1).padStart(2, "0")
+    const year = String(date.getFullYear()).slice(-2)
+    return `${day}/${month}/${year}`
+  }
+
   const timestampToDatetimeLocal = (timestamp: number): string => {
     const date = new Date(timestamp)
     const year = date.getFullYear()
@@ -111,7 +119,10 @@ export default function NotesPage() {
       <div className="max-w-4xl mx-auto">
         <div className="flex items-center justify-between mb-6">
           <h1 className="text-3xl font-bold text-foreground">Notes</h1>
-          <Button onClick={handleAddNote} className="flex items-center gap-2">
+          <Button
+            onClick={handleAddNote}
+            className="flex items-center gap-2 bg-white text-black border-2 border-black hover:bg-gray-100"
+          >
             <Plus className="h-4 w-4" />
             Add
           </Button>
@@ -136,8 +147,8 @@ export default function NotesPage() {
                 >
                   <span className="flex-1 truncate text-foreground font-medium">{note.text}</span>
 
-                  <span className="text-sm text-muted-foreground flex-shrink-0 whitespace-nowrap">
-                    {formatDate(note.executionTime)}
+                  <span className="text-sm text-red-600 flex-shrink-0 whitespace-nowrap">
+                    {formatDateShort(note.executionTime)}
                   </span>
                 </button>
 
