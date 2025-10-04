@@ -10,6 +10,7 @@ import { createClientSupabaseClient } from "@/lib/supabase"
 import { addUserGoal, fetchUserGoals } from '@/lib/api/goals' // Import fetchUserGoals
 import { User, Session } from "@supabase/supabase-js";
 import type { UserGoal, UserTask } from '@/types/supabase'; // Import types
+import { saveAuthData, getAuthData, removeAuthData, hasAuthData, refreshAuthDataTimestamp } from '@/lib/auth-storage';
 
 // Интерфейс для WebApp для TypeScript
 interface TelegramWebApp {
@@ -85,6 +86,8 @@ export type UserContextType = {
   refreshUser: () => Promise<void>;
   showWelcomeModal: boolean;
   closeWelcomeModal: () => void;
+  signOut: () => Promise<void>;
+  hasAuthData: () => boolean;
 };
 
 export const UserContext = createContext<UserContextType>({
@@ -101,6 +104,8 @@ export const UserContext = createContext<UserContextType>({
   refreshUser: async () => {},
   showWelcomeModal: false,
   closeWelcomeModal: () => {},
+  signOut: async () => {},
+  hasAuthData: () => false,
 });
 
 // Убираем инициализацию Supabase с верхнего уровня
@@ -126,6 +131,49 @@ export const UserProvider = ({ children }: { children: ReactNode }) => {
     if (typeof window === 'undefined') return null; // На сервере не создаем клиента
     return createClientSupabaseClient();
   }, []);
+
+  // Функция для автоматического логина из сохраненных данных
+  const attemptAutoLogin = async (): Promise<boolean> => {
+    if (!supabase) return false;
+    
+    const authData = getAuthData();
+    if (!authData) {
+      console.log('No saved auth data found for auto-login');
+      return false;
+    }
+    
+    try {
+      console.log('Attempting auto-login with saved credentials');
+      const { data: signInData, error: signInError } = await supabase.auth.signInWithPassword({
+        email: authData.email,
+        password: authData.password,
+      });
+      
+      if (signInError) {
+        console.error('Auto-login failed:', signInError);
+        // Если логин не удался, удаляем сохраненные данные
+        removeAuthData();
+        return false;
+      }
+      
+      if (signInData?.user) {
+        console.log('Auto-login successful:', signInData.user);
+        setAuthUser(signInData.user);
+        setSession(signInData.session);
+        
+        // Обновляем timestamp для продления срока действия
+        refreshAuthDataTimestamp();
+        
+        return true;
+      }
+      
+      return false;
+    } catch (error) {
+      console.error('Exception during auto-login:', error);
+      removeAuthData();
+      return false;
+    }
+  };
 
   // Функция для обновления данных пользователя из БД
   const refreshUserData = async (force = false) => {
@@ -191,6 +239,19 @@ export const UserProvider = ({ children }: { children: ReactNode }) => {
     setShowWelcomeModal(false);
   };
 
+  // Функция для выхода из системы
+  const signOut = async () => {
+    if (!supabase) return;
+    
+    try {
+      await supabase.auth.signOut();
+      // Данные будут удалены автоматически в onAuthStateChange
+      console.log("User signed out successfully");
+    } catch (error) {
+      console.error("Error signing out:", error);
+    }
+  };
+
   // Функция для ручного обновления (публичная)
   const manualRefresh = async () => {
     await refreshUserData(true); // Принудительное обновление
@@ -200,14 +261,27 @@ export const UserProvider = ({ children }: { children: ReactNode }) => {
   useEffect(() => {
     if (!supabase) return;
 
-    // Получаем начальную сессию
-    supabase.auth.getSession().then(({ data: { session: initialSession } }) => {
-      setSession(initialSession);
+    const initializeAuth = async () => {
+      // Сначала пытаемся получить существующую сессию
+      const { data: { session: initialSession } } = await supabase.auth.getSession();
+      
       if (initialSession?.user) {
+        // Если есть активная сессия, используем её
+        setSession(initialSession);
         setAuthUser(initialSession.user);
-        console.log("Auth user loaded from session:", initialSession.user);
+        console.log("Auth user loaded from existing session:", initialSession.user);
+      } else {
+        // Если нет активной сессии, пытаемся автоматический логин
+        console.log("No active session found, attempting auto-login");
+        const autoLoginSuccess = await attemptAutoLogin();
+        
+        if (!autoLoginSuccess) {
+          console.log("Auto-login failed or no saved credentials");
+        }
       }
-    });
+    };
+
+    initializeAuth();
 
     // Подписываемся на изменения состояния аутентификации
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
@@ -218,6 +292,8 @@ export const UserProvider = ({ children }: { children: ReactNode }) => {
           console.log("Auth state changed, new user:", newSession.user);
         } else {
           console.log("Auth state changed: user signed out");
+          // При выходе удаляем сохраненные данные
+          removeAuthData();
         }
         // Сбрасываем флаг загрузки пользователя при изменении сессии
         userLoadedRef.current = false;
@@ -442,6 +518,16 @@ export const UserProvider = ({ children }: { children: ReactNode }) => {
               } else if (signInData?.user) {
                 console.log("Successfully signed in with Supabase Auth:", signInData.user);
                 setAuthUser(signInData.user);
+                setSession(signInData.session);
+                
+                // Сохраняем данные для автоматического логина
+                saveAuthData({
+                  email: email,
+                  password: password,
+                  telegramId: user.id,
+                  userId: signInData.user.id,
+                });
+                console.log("Auth data saved for future auto-login");
               }
             } catch (signInErr) {
               console.error("Exception during sign in:", signInErr);
@@ -549,6 +635,8 @@ export const UserProvider = ({ children }: { children: ReactNode }) => {
     refreshUser,
     showWelcomeModal,
     closeWelcomeModal,
+    signOut,
+    hasAuthData,
   }), [telegramUser, authUser, dbUser, isLoading, error, manualRefresh, goals, tasks, showWelcomeModal]);
 
   return (

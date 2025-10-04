@@ -10,6 +10,8 @@ import RecommendationsFeed from "@/components/goals/recommendations-feed"
 import TaskOrganizer from "@/components/goals/task-organizer"
 import Roadmap from "@/components/goals/roadmap"
 import Notebook from "@/components/goals/notebook"
+import { AuthStatusCard } from "@/components/AuthStatusCard"
+import { AutoLoginDemo } from "@/components/AutoLoginDemo"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
 import { Avatar, AvatarFallback } from "@/components/ui/avatar"
@@ -47,6 +49,13 @@ export default function GoalsTab() {
 
   return (
     <div className="flex flex-col h-full">
+      {/* Показываем статус аутентификации только в development режиме или для демонстрации */}
+      {process.env.NODE_ENV === 'development' && (
+        <div className="p-4 border-b border-gray-100 space-y-4">
+          <AuthStatusCard />
+          <AutoLoginDemo />
+        </div>
+      )}
       <div className="sticky top-0 z-10 bg-white border-b border-gray-100">
         <SecondaryTabs 
           activeTab={activeSecondaryTab} 
