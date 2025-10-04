@@ -219,7 +219,8 @@ const WishBoard: React.FC<WishBoardProps> = ({ showOnlyRecommendations }) => {
     
     try {
       // Use goal.goal_id if it exists (when removing from personal goals), otherwise fall back to goal.id
-      const goalId = (goal as any).goal_id || goal.id;
+      // const goalId = (goal as any).goal_id || goal.id;
+      const goalId = goal.id;
       await removeUserGoal(dbUser.id, goalId);
       await refreshGoals();
       closeModal();

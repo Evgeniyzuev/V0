@@ -1,15 +1,18 @@
-import { createClientSupabaseClient } from "@/lib/supabase"
-import type { Goal, UserGoal } from "@/types/supabase"
-import { toast } from "sonner"
+import { createClientSupabaseClient } from '@/lib/supabase'
+import type { Goal, UserGoal } from '@/types/supabase'
+import { toast } from 'sonner'
 
-const supabase = createClientSupabaseClient()
+const supabase = createClientSupabaseClient();
 
 export async function fetchGoals() {
-  const { data, error } = await supabase.from("goals").select("*").order("id")
+  const { data, error } = await supabase
+    .from('goals')
+    .select('*')
+    .order('id')
 
   if (error) {
-    console.error("Error fetching goals:", error)
-    toast.error("Error fetching goals: " + error.message)
+    console.error('Error fetching goals:', error)
+    toast.error('Error fetching goals: ' + error.message)
     throw error
   }
 
@@ -17,11 +20,15 @@ export async function fetchGoals() {
 }
 
 export async function fetchGoalById(id: number) {
-  const { data, error } = await supabase.from("goals").select("*").eq("id", id).single()
+  const { data, error } = await supabase
+    .from('goals')
+    .select('*')
+    .eq('id', id)
+    .single()
 
   if (error) {
-    console.error("Error fetching goal:", error)
-    toast.error("Error fetching goal: " + error.message)
+    console.error('Error fetching goal:', error)
+    toast.error('Error fetching goal: ' + error.message)
     throw error
   }
 
@@ -29,11 +36,16 @@ export async function fetchGoalById(id: number) {
 }
 
 export async function updateGoal(id: number, updates: Partial<Goal>) {
-  const { data, error } = await supabase.from("goals").update(updates).eq("id", id).select().single()
+  const { data, error } = await supabase
+    .from('goals')
+    .update(updates)
+    .eq('id', id)
+    .select()
+    .single()
 
   if (error) {
-    console.error("Error updating goal:", error)
-    toast.error("Error updating goal: " + error.message)
+    console.error('Error updating goal:', error)
+    toast.error('Error updating goal: ' + error.message)
     throw error
   }
 
@@ -42,30 +54,30 @@ export async function updateGoal(id: number, updates: Partial<Goal>) {
 
 export const fetchUserGoals = async (userId: string | undefined) => {
   if (!userId) {
-    console.log("fetchUserGoals: No user ID provided, returning empty array.")
-    return [] // Возвращаем пустой массив, если нет user ID
+    console.log('fetchUserGoals: No user ID provided, returning empty array.');
+    return []; // Возвращаем пустой массив, если нет user ID
   }
 
   const supabase = createClientSupabaseClient()
-
+  
   console.log(`Fetching user goals for user ID: ${userId}...`)
   const { data: userGoals, error } = await supabase
-    .from("user_goals")
+    .from('user_goals')
     .select(`
       *,
       goal:goals(*)
     `)
-    .eq("user_id", userId)
-    .order("created_at", { ascending: false })
+    .eq('user_id', userId)
+    .order('created_at', { ascending: false })
 
   if (error) {
-    console.error("Error fetching user goals:", error)
-    toast.error("Error fetching user goals: " + error.message)
+    console.error('Error fetching user goals:', error)
+    toast.error('Error fetching user goals: ' + error.message)
     throw error
   }
 
-  console.log("Fetched user goals:", userGoals)
-  return userGoals as UserGoal[] // Return the raw data as UserGoal array
+  console.log('Fetched user goals:', userGoals)
+  return userGoals as UserGoal[]; // Return the raw data as UserGoal array
 }
 
 /**
@@ -77,21 +89,21 @@ export const addUserGoal = async (userId: string, goalId: number): Promise<UserG
 
   // Optionally, fetch the goal details to get difficulty or other defaults
   const { data: goalTemplate, error: fetchError } = await supabase
-    .from("goals")
-    .select("difficulty_level")
-    .eq("id", goalId)
+    .from('goals')
+    .select('difficulty_level')
+    .eq('id', goalId)
     .single()
 
   if (fetchError) {
-    console.error("Error fetching goal template details:", fetchError)
-    toast.error("Could not fetch goal details: " + fetchError.message)
+    console.error('Error fetching goal template details:', fetchError)
+    toast.error('Could not fetch goal details: ' + fetchError.message)
     // Decide if you want to proceed without defaults or throw error
   }
 
-  const newUserGoalData: Omit<UserGoal, "id" | "created_at" | "updated_at"> = {
+  const newUserGoalData: Omit<UserGoal, 'id' | 'created_at' | 'updated_at'> = {
     user_id: userId,
     goal_id: goalId,
-    status: "not_started",
+    status: 'not_started',
     started_at: null,
     target_date: null,
     completed_at: null,
@@ -104,29 +116,28 @@ export const addUserGoal = async (userId: string, goalId: number): Promise<UserG
     description: null,
     image_url: null,
     estimated_cost: null,
-    steps: null,
+    steps: null
   }
 
   const { data, error: upsertError } = await supabase
-    .from("user_goals")
-    .upsert([newUserGoalData], {
-      // Pass data as an array
-      onConflict: "user_id, goal_id", // Assumes unique constraint exists
-      ignoreDuplicates: false, // Set to false to ensure it attempts update/select on conflict
+    .from('user_goals')
+    .upsert([newUserGoalData], { // Pass data as an array
+      onConflict: 'user_id, goal_id', // Assumes unique constraint exists
+      ignoreDuplicates: false // Set to false to ensure it attempts update/select on conflict
     })
     .select() // Select the data after upsert
     .single() // Expecting one row back
 
   if (upsertError) {
-    console.error("Error adding/upserting user goal:", upsertError)
+    console.error('Error adding/upserting user goal:', upsertError)
     // Don't show toast error if it's just a duplicate conflict (code 23505 - unique_violation)
-    if (upsertError.code !== "23505") {
-      toast.error("Failed to add goal: " + upsertError.message)
+    if (upsertError.code !== '23505') {
+        toast.error('Failed to add goal: ' + upsertError.message)
     }
     return null
   }
 
-  console.log("Successfully added/found user goal:", data)
+  console.log('Successfully added/found user goal:', data)
   // No toast success here, let the caller decide based on context
   return data
 }
@@ -134,13 +145,16 @@ export const addUserGoal = async (userId: string, goalId: number): Promise<UserG
 export const removeUserGoal = async (userId: string, goalId: number): Promise<void> => {
   const supabase = createClientSupabaseClient()
 
-  const { error } = await supabase.from("user_goals").delete().match({ user_id: userId, goal_id: goalId })
+  const { error } = await supabase
+    .from('user_goals')
+    .delete()
+    .match({ user_id: userId, id: goalId })
 
   if (error) {
-    console.error("Error removing user goal:", error)
-    toast.error("Failed to remove goal: " + error.message)
+    console.error('Error removing user goal:', error)
+    toast.error('Failed to remove goal: ' + error.message)
     throw error
   }
 
-  console.log("Successfully removed user goal")
+  console.log('Successfully removed user goal')
 }
