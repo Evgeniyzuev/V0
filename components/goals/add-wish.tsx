@@ -32,26 +32,83 @@ export default function AddWish({ onSuccess, isModal = false }: AddWishProps) {
   const [localImageUrl, setLocalImageUrl] = useState<string>("")
   const fileInputRef = useRef<HTMLInputElement>(null)
 
+  // Функция для сжатия изображения
+  const compressImage = (file: File, maxWidth: number = 1200, quality: number = 0.8): Promise<string> => {
+    return new Promise((resolve, reject) => {
+      const canvas = document.createElement('canvas')
+      const ctx = canvas.getContext('2d')
+      const img = new Image()
+      
+      img.onload = () => {
+        // Вычисляем новые размеры с сохранением пропорций
+        let { width, height } = img
+        if (width > maxWidth) {
+          height = (height * maxWidth) / width
+          width = maxWidth
+        }
+        
+        canvas.width = width
+        canvas.height = height
+        
+        // Рисуем сжатое изображение
+        ctx?.drawImage(img, 0, 0, width, height)
+        
+        // Конвертируем в base64 с заданным качеством
+        const compressedBase64 = canvas.toDataURL('image/jpeg', quality)
+        resolve(compressedBase64)
+      }
+      
+      img.onerror = () => reject(new Error("Failed to load image"))
+      img.src = URL.createObjectURL(file)
+    })
+  }
+
   // Функция для конвертации файла в base64 и сохранения в localStorage
   const handleFileUpload = async (file: File) => {
-    return new Promise<string>((resolve, reject) => {
-      const reader = new FileReader()
-      reader.onload = (e) => {
-        const base64String = e.target?.result as string
-        const imageId = `wish_image_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`
-        
-        // Сохраняем в localStorage
-        localStorage.setItem(imageId, base64String)
-        resolve(imageId)
+    try {
+      // Сжимаем изображение перед сохранением
+      const compressedBase64 = await compressImage(file)
+      const imageId = `wish_image_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`
+      
+      // Проверяем размер после сжатия
+      const sizeInMB = (compressedBase64.length * 0.75) / (1024 * 1024) // Примерный размер в MB
+      console.log(`Compressed image size: ${sizeInMB.toFixed(2)}MB`)
+      
+      // Сохраняем в localStorage
+      try {
+        localStorage.setItem(imageId, compressedBase64)
+        return imageId
+      } catch (storageError) {
+        console.error("localStorage error:", storageError)
+        throw new Error("Image too large for storage. Please try a smaller image.")
       }
-      reader.onerror = () => reject(new Error("Failed to read file"))
-      reader.readAsDataURL(file)
-    })
+    } catch (error) {
+      console.error("Error compressing image:", error)
+      throw new Error("Failed to compress and save image")
+    }
   }
 
   // Функция для получения изображения из localStorage
   const getImageFromStorage = (imageId: string): string | null => {
     return localStorage.getItem(imageId)
+  }
+
+  // Функция для очистки старых изображений из localStorage
+  const cleanupOldImages = () => {
+    try {
+      const keys = Object.keys(localStorage)
+      const imageKeys = keys.filter(key => key.startsWith('wish_image_'))
+      
+      // Если изображений больше 20, удаляем самые старые
+      if (imageKeys.length > 20) {
+        imageKeys.sort() // Сортируем по времени создания
+        const keysToRemove = imageKeys.slice(0, imageKeys.length - 20)
+        keysToRemove.forEach(key => localStorage.removeItem(key))
+        console.log(`Cleaned up ${keysToRemove.length} old images from localStorage`)
+      }
+    } catch (error) {
+      console.error("Error cleaning up old images:", error)
+    }
   }
 
   // Обработчик выбора файла
@@ -65,9 +122,9 @@ export default function AddWish({ onSuccess, isModal = false }: AddWishProps) {
       return
     }
 
-    // Проверяем размер файла (максимум 5MB)
-    if (file.size > 5 * 1024 * 1024) {
-      toast.error("Image size should be less than 5MB")
+    // Проверяем размер файла (максимум 10MB, так как будем сжимать)
+    if (file.size > 10 * 1024 * 1024) {
+      toast.error("Image size should be less than 10MB")
       return
     }
 
@@ -75,13 +132,16 @@ export default function AddWish({ onSuccess, isModal = false }: AddWishProps) {
     setIsPreviewLoading(true)
 
     try {
+      // Очищаем старые изображения перед загрузкой нового
+      cleanupOldImages()
+      
       const imageId = await handleFileUpload(file)
       setLocalImageUrl(imageId)
       setIsPreviewLoading(false)
       toast.success("Image uploaded successfully!")
     } catch (error) {
       console.error("Error uploading image:", error)
-      toast.error("Failed to upload image")
+      toast.error(error instanceof Error ? error.message : "Failed to upload image")
       setIsPreviewLoading(false)
     }
   }
