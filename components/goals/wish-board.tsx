@@ -9,9 +9,23 @@ import { Avatar, AvatarFallback } from "@/components/ui/avatar"
 import { useUser } from "@/components/UserContext"
 import { fetchGoals, fetchUserGoals, updateGoal, removeUserGoal } from '@/lib/api/goals'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
-import type { Goal } from '@/types/supabase'
+import type { Goal, UserGoal } from '@/types/supabase'
 import { toast } from 'sonner'
 import GoalUpdater, { GoalUpdaterRef } from './GoalUpdater';
+
+// Функция для получения изображения из localStorage или возврата URL
+const getImageUrl = (imageUrl: string | null | undefined): string => {
+  if (!imageUrl) return '';
+  
+  // Проверяем, является ли это ID изображения в localStorage
+  if (imageUrl.startsWith('wish_image_')) {
+    const storedImage = localStorage.getItem(imageUrl);
+    return storedImage || '';
+  }
+  
+  // Возвращаем обычный URL
+  return imageUrl;
+};
 
 
 const personalGoals: Goal[] = [
@@ -109,9 +123,20 @@ const WishBoard: React.FC<WishBoardProps> = ({ showOnlyRecommendations }) => {
   const [isFromPersonalGoals, setIsFromPersonalGoals] = useState(false);
 
   // Modify click handlers to set the source section
-  const handlePersonalGoalClick = (goal: Goal) => {
+  const handlePersonalGoalClick = (goal: UserGoal) => {
     setIsFromPersonalGoals(true);
-    handleWishClick(goal);
+    // Преобразуем UserGoal в Goal для совместимости
+    const goalForModal: Goal = {
+      id: goal.id,
+      title: goal.title || goal.goal?.title || '',
+      description: goal.description || goal.goal?.description || '',
+      image_url: goal.image_url || '',
+      estimated_cost: goal.estimated_cost || '',
+      difficulty_level: goal.difficulty_level || 0,
+      steps: goal.steps || [],
+      created_at: goal.created_at
+    };
+    handleWishClick(goalForModal);
   };
 
   const handleAvailableGoalClick = (goal: Goal) => {
@@ -257,7 +282,7 @@ const WishBoard: React.FC<WishBoardProps> = ({ showOnlyRecommendations }) => {
                   >
                     <div className="relative w-full h-full">
                       <img
-                        src={goal.image_url || ''}
+                        src={getImageUrl(goal.image_url)}
                         alt={goal.title ?? 'Goal image'}
                         className="w-full h-full object-cover"
                         loading="lazy"
@@ -292,7 +317,7 @@ const WishBoard: React.FC<WishBoardProps> = ({ showOnlyRecommendations }) => {
                 >
                   <div className="relative w-full h-full">
                     <img
-                      src={goal?.image_url || (goal?.goal?.image_url || '')}
+                      src={getImageUrl(goal?.image_url)}
                       alt={goal?.title || (goal?.goal?.title || '')}
                       className="w-full h-full object-cover"
                       loading="lazy"
@@ -326,7 +351,7 @@ const WishBoard: React.FC<WishBoardProps> = ({ showOnlyRecommendations }) => {
                 >
                   <div className="relative w-full h-full">
                     <img
-                      src={goal.image_url || ''}
+                      src={getImageUrl(goal.image_url)}
                       alt={goal.title ?? 'Goal image'}
                       className="w-full h-full object-cover"
                       loading="lazy"
@@ -351,7 +376,7 @@ const WishBoard: React.FC<WishBoardProps> = ({ showOnlyRecommendations }) => {
             <div className="bg-white rounded-lg shadow-xl max-w-3xl w-full mx-4 max-h-[90vh] overflow-y-auto">
               <div className="relative">
                 <img
-                  src={selectedWish.image_url || ''}
+                  src={getImageUrl(selectedWish.image_url)}
                   alt={selectedWish.title ?? 'Goal image'}
                   className="w-full h-48 object-cover"
                 />

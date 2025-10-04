@@ -153,6 +153,11 @@ export interface UserGoal {
   user_id: string;
   goal_id: number | null;
   title?: string;
+  description?: string;
+  image_url?: string;
+  estimated_cost?: string;
+  difficulty_level?: number;
+  steps?: string[];
   notes?: string;
   status: 'not_started' | 'in_progress' | 'completed' | 'archived';
   progress_percentage: number;

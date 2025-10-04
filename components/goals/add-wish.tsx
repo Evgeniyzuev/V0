@@ -2,11 +2,11 @@
 
 import type React from "react"
 
-import { useState } from "react"
+import { useState, useRef } from "react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Textarea } from "@/components/ui/textarea"
-import { Camera } from "lucide-react"
+import { Camera, Upload, Link } from "lucide-react"
 import { createClientSupabaseClient } from "@/lib/supabase"
 import { useUser } from "@/components/UserContext"
 import { useQueryClient } from "@tanstack/react-query"
@@ -22,6 +22,64 @@ export default function AddWish() {
   const [isPreviewLoading, setIsPreviewLoading] = useState(false)
   const [estimatedCost, setEstimatedCost] = useState("")
   const [difficultyLevel, setDifficultyLevel] = useState(1)
+  const [imageMode, setImageMode] = useState<"url" | "upload">("url")
+  const [selectedFile, setSelectedFile] = useState<File | null>(null)
+  const [localImageUrl, setLocalImageUrl] = useState<string>("")
+  const fileInputRef = useRef<HTMLInputElement>(null)
+
+  // Функция для конвертации файла в base64 и сохранения в localStorage
+  const handleFileUpload = async (file: File) => {
+    return new Promise<string>((resolve, reject) => {
+      const reader = new FileReader()
+      reader.onload = (e) => {
+        const base64String = e.target?.result as string
+        const imageId = `wish_image_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`
+        
+        // Сохраняем в localStorage
+        localStorage.setItem(imageId, base64String)
+        resolve(imageId)
+      }
+      reader.onerror = () => reject(new Error("Failed to read file"))
+      reader.readAsDataURL(file)
+    })
+  }
+
+  // Функция для получения изображения из localStorage
+  const getImageFromStorage = (imageId: string): string | null => {
+    return localStorage.getItem(imageId)
+  }
+
+  // Обработчик выбора файла
+  const handleFileSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0]
+    if (!file) return
+
+    // Проверяем тип файла
+    if (!file.type.startsWith('image/')) {
+      toast.error("Please select an image file")
+      return
+    }
+
+    // Проверяем размер файла (максимум 5MB)
+    if (file.size > 5 * 1024 * 1024) {
+      toast.error("Image size should be less than 5MB")
+      return
+    }
+
+    setSelectedFile(file)
+    setIsPreviewLoading(true)
+
+    try {
+      const imageId = await handleFileUpload(file)
+      setLocalImageUrl(imageId)
+      setIsPreviewLoading(false)
+      toast.success("Image uploaded successfully!")
+    } catch (error) {
+      console.error("Error uploading image:", error)
+      toast.error("Failed to upload image")
+      setIsPreviewLoading(false)
+    }
+  }
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -36,13 +94,21 @@ export default function AddWish() {
       return
     }
 
-    if (!imageUrl.trim()) {
+    // Проверяем наличие изображения в зависимости от режима
+    if (imageMode === "url" && !imageUrl.trim()) {
       toast.error("Please enter an image URL")
+      return
+    }
+    if (imageMode === "upload" && !localImageUrl) {
+      toast.error("Please upload an image")
       return
     }
 
     try {
       const supabase = createClientSupabaseClient()
+
+      // Определяем URL изображения в зависимости от режима
+      const finalImageUrl = imageMode === "url" ? imageUrl : localImageUrl
 
       // Create a user_goal entry directly
       const { error: userGoalError } = await supabase
@@ -52,7 +118,7 @@ export default function AddWish() {
             user_id: dbUser.id,
             title,
             description: description || null,
-            image_url: imageUrl,
+            image_url: finalImageUrl,
             estimated_cost: estimatedCost || null,
             difficulty_level: difficultyLevel,
             status: "not_started",
@@ -74,8 +140,11 @@ export default function AddWish() {
       setTitle("")
       setDescription("")
       setImageUrl("")
+      setLocalImageUrl("")
+      setSelectedFile(null)
       setEstimatedCost("")
       setDifficultyLevel(1)
+      setImageMode("url")
     } catch (error) {
       console.error("Error adding wish:", error)
       toast.error(`Failed to add wish: ${error instanceof Error ? error.message : "Unknown error"}`)
@@ -88,6 +157,16 @@ export default function AddWish() {
     setIsPreviewLoading(true)
   }
 
+  // Функция для получения URL изображения для превью
+  const getPreviewImageUrl = () => {
+    if (imageMode === "url") {
+      return imageUrl
+    } else if (imageMode === "upload" && localImageUrl) {
+      return getImageFromStorage(localImageUrl)
+    }
+    return ""
+  }
+
   return (
     <div className="p-4 bg-white">
       <h1 className="text-3xl font-bold mb-2">Add New Wish</h1>
@@ -95,18 +174,73 @@ export default function AddWish() {
 
       <form onSubmit={handleSubmit} className="space-y-6">
         <div className="space-y-2">
-          <label className="text-gray-700 font-medium">Wish Image URL</label>
-          <Input
-            type="url"
-            placeholder="Enter image URL"
-            value={imageUrl}
-            onChange={handleImageUrlChange}
-            className="w-full"
-          />
+          <label className="text-gray-700 font-medium">Wish Image</label>
+          
+          {/* Переключатель режимов */}
+          <div className="flex gap-2 mb-3">
+            <Button
+              type="button"
+              variant={imageMode === "url" ? "default" : "outline"}
+              onClick={() => setImageMode("url")}
+              className="flex items-center gap-2"
+            >
+              <Link className="h-4 w-4" />
+              URL
+            </Button>
+            <Button
+              type="button"
+              variant={imageMode === "upload" ? "default" : "outline"}
+              onClick={() => setImageMode("upload")}
+              className="flex items-center gap-2"
+            >
+              <Upload className="h-4 w-4" />
+              Upload
+            </Button>
+          </div>
+
+          {/* Поле для URL */}
+          {imageMode === "url" && (
+            <Input
+              type="url"
+              placeholder="Enter image URL"
+              value={imageUrl}
+              onChange={handleImageUrlChange}
+              className="w-full"
+            />
+          )}
+
+          {/* Поле для загрузки файла */}
+          {imageMode === "upload" && (
+            <div className="space-y-2">
+              <input
+                ref={fileInputRef}
+                type="file"
+                accept="image/*"
+                onChange={handleFileSelect}
+                className="hidden"
+              />
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => fileInputRef.current?.click()}
+                className="w-full flex items-center gap-2"
+              >
+                <Upload className="h-4 w-4" />
+                {selectedFile ? selectedFile.name : "Choose Image"}
+              </Button>
+              {selectedFile && (
+                <p className="text-sm text-gray-500">
+                  File: {selectedFile.name} ({(selectedFile.size / 1024 / 1024).toFixed(2)} MB)
+                </p>
+              )}
+            </div>
+          )}
+
+          {/* Область превью */}
           <div className="border-2 border-dashed border-gray-300 rounded-lg p-8 flex flex-col items-center justify-center">
-            {imageUrl ? (
+            {getPreviewImageUrl() ? (
               <img
-                src={imageUrl}
+                src={getPreviewImageUrl() || undefined}
                 alt="Wish preview"
                 className="max-h-40 object-contain mb-2"
                 onLoad={() => setIsPreviewLoading(false)}
@@ -118,7 +252,9 @@ export default function AddWish() {
             ) : (
               <>
                 <Camera className="h-12 w-12 text-gray-400 mb-2" />
-                <p className="text-gray-500 text-center">Enter an image URL above</p>
+                <p className="text-gray-500 text-center">
+                  {imageMode === "url" ? "Enter an image URL above" : "Upload an image above"}
+                </p>
                 <p className="text-gray-400 text-sm text-center mt-1">The image will be previewed here</p>
               </>
             )}
