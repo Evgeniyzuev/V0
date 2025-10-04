@@ -1,6 +1,7 @@
 import React, { useState, useRef } from 'react';
 import { Dialog } from '@/components/ui/dialog';
-import { Edit, X, Calendar, DollarSign, CheckSquare, User } from 'lucide-react';
+import { Edit, X, Calendar, DollarSign, CheckSquare, User, Plus } from 'lucide-react';
+import AddWish from './add-wish';
 import { cn } from '@/lib/utils';
 import { Separator } from '@/components/ui/separator';
 import { Button } from "@/components/ui/button"
@@ -89,6 +90,7 @@ const WishBoard: React.FC<WishBoardProps> = ({ showOnlyRecommendations }) => {
   const [editedEstimatedCost, setEditedEstimatedCost] = useState('');
   const [editedProgress, setEditedProgress] = useState(0);
   const [editedDifficultyLevel, setEditedDifficultyLevel] = useState(0);
+  const [isAddWishModalOpen, setIsAddWishModalOpen] = useState(false);
 
   // Check if a goal is in user's personal goals
   const isGoalInPersonalGoals = (goalId: number) => {
@@ -147,6 +149,10 @@ const WishBoard: React.FC<WishBoardProps> = ({ showOnlyRecommendations }) => {
   const closeModal = () => {
     setSelectedWish(null);
     setIsEditing(false);
+  };
+
+  const closeAddWishModal = () => {
+    setIsAddWishModalOpen(false);
   };
 
   const handleEdit = () => {
@@ -336,6 +342,17 @@ const WishBoard: React.FC<WishBoardProps> = ({ showOnlyRecommendations }) => {
                   </div>
                 </div>
               ))}
+              
+              {/* Add New Wish Card */}
+              <div
+                className="image-item animate-fade-in rounded-lg overflow-hidden shadow-md aspect-square cursor-pointer bg-green-500 hover:bg-green-600 transition-colors duration-300 flex items-center justify-center"
+                onClick={() => setIsAddWishModalOpen(true)}
+              >
+                <div className="flex flex-col items-center justify-center text-white">
+                  <Plus className="h-12 w-12 mb-2" />
+                  <span className="text-sm font-medium">Add New Wish</span>
+                </div>
+              </div>
             </div>
           </div>
 
@@ -565,6 +582,25 @@ const WishBoard: React.FC<WishBoardProps> = ({ showOnlyRecommendations }) => {
                     )}
                   </>
                 )}
+              </div>
+            </div>
+          </div>
+        </Dialog>
+      )}
+      
+      {/* Add Wish Modal */}
+      {isAddWishModalOpen && (
+        <Dialog open={isAddWishModalOpen} onOpenChange={setIsAddWishModalOpen}>
+          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
+            <div className="bg-white rounded-lg shadow-xl max-w-4xl w-full mx-4 max-h-[90vh] overflow-y-auto">
+              <div className="relative">
+                <button
+                  onClick={closeAddWishModal}
+                  className="absolute top-4 right-4 p-2 bg-black/50 rounded-full text-white hover:bg-black/70 transition-colors z-10"
+                >
+                  <X className="h-5 w-5" />
+                </button>
+                <AddWish onSuccess={closeAddWishModal} isModal={true} />
               </div>
             </div>
           </div>

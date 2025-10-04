@@ -13,7 +13,12 @@ import { useQueryClient } from "@tanstack/react-query"
 import { toast } from "sonner"
 import type { Goal } from "@/types/supabase"
 
-export default function AddWish() {
+interface AddWishProps {
+  onSuccess?: () => void;
+  isModal?: boolean;
+}
+
+export default function AddWish({ onSuccess, isModal = false }: AddWishProps) {
   const { dbUser, refreshGoals } = useUser()
   const queryClient = useQueryClient()
   const [title, setTitle] = useState("")
@@ -142,6 +147,11 @@ export default function AddWish() {
 
       toast.success("Wish added successfully!")
 
+      // Call onSuccess callback if provided
+      if (onSuccess) {
+        onSuccess()
+      }
+
       // Reset form
       setTitle("")
       setDescription("")
@@ -174,7 +184,7 @@ export default function AddWish() {
   }
 
   return (
-    <div className="p-4 bg-white">
+    <div className={`${isModal ? 'p-6' : 'p-4'} bg-white`}>
       <h1 className="text-3xl font-bold mb-2">Add New Wish</h1>
       <p className="text-gray-600 mb-6">Create a new goal to visualize and achieve</p>
 
