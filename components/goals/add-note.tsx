@@ -4,7 +4,7 @@ import { useState, useEffect } from "react"
 import { Button } from "@/components/ui/button"
 import { Textarea } from "@/components/ui/textarea"
 import { Input } from "@/components/ui/input"
-import { ChevronDown, ChevronRight, Plus, AlertCircle } from "lucide-react"
+import { Plus } from "lucide-react"
 import { cn } from "@/lib/utils"
 
 interface Note {
@@ -12,7 +12,7 @@ interface Note {
   text: string
   createdAt: number
   executionTime: number
-  isUrgent: boolean
+  color: string
 }
 
 export default function NotesPage() {
@@ -73,7 +73,7 @@ export default function NotesPage() {
       text: "",
       createdAt: Date.now(),
       executionTime: Date.now() + 86400000, // +1 day
-      isUrgent: false,
+      color: "#6b7280",
     }
     setNotes([newNote, ...notes])
   }
@@ -119,31 +119,21 @@ export default function NotesPage() {
 
         <div className="space-y-2">
           {sortedNotes.length === 0 ? (
-            <div className="text-center py-12 text-muted-foreground">
-              Click add to create your first note.
-            </div>
+            <div className="text-center py-12 text-muted-foreground">Click add to create your first note.</div>
           ) : (
             sortedNotes.map((note) => (
               <div
                 key={note.id}
                 className={cn(
-                  "border border-border rounded-lg overflow-hidden transition-all",
+                  "border-2 rounded-lg overflow-hidden transition-all",
                   expandedId === note.id ? "bg-card" : "bg-card hover:bg-accent/50",
                 )}
+                style={{ borderColor: note.color }}
               >
-                {/* Collapsed view - one line panel */}
                 <button
                   onClick={() => handleToggleExpand(note.id, note.text)}
                   className="w-full px-4 py-3 flex items-center gap-3 text-left"
                 >
-                  {expandedId === note.id ? (
-                    <ChevronDown className="h-5 w-5 text-muted-foreground flex-shrink-0" />
-                  ) : (
-                    <ChevronRight className="h-5 w-5 text-muted-foreground flex-shrink-0" />
-                  )}
-
-                  {note.isUrgent && <AlertCircle className="h-5 w-5 text-destructive flex-shrink-0" />}
-
                   <span className="flex-1 truncate text-foreground font-medium">{note.text}</span>
 
                   <span className="text-sm text-muted-foreground flex-shrink-0 whitespace-nowrap">
@@ -181,22 +171,19 @@ export default function NotesPage() {
                       </div>
                     </div>
 
-                    <div className="flex items-center gap-2">
-                      <input
-                        type="checkbox"
-                        id={`urgent-${note.id}`}
-                        checked={note.isUrgent}
-                        onChange={(e) => {
-                          setNotes(notes.map((n) => (n.id === note.id ? { ...n, isUrgent: e.target.checked } : n)))
-                        }}
-                        className="h-4 w-4"
-                      />
-                      <label
-                        htmlFor={`urgent-${note.id}`}
-                        className="text-sm font-medium text-foreground cursor-pointer"
-                      >
-                        Urgent note
-                      </label>
+                    <div className="space-y-2">
+                      <label className="text-sm font-medium text-foreground">Note color</label>
+                      <div className="flex items-center gap-3">
+                        <Input
+                          type="color"
+                          value={note.color}
+                          onChange={(e) => {
+                            setNotes(notes.map((n) => (n.id === note.id ? { ...n, color: e.target.value } : n)))
+                          }}
+                          className="w-20 h-10 cursor-pointer"
+                        />
+                        <span className="text-sm text-muted-foreground">{note.color}</span>
+                      </div>
                     </div>
 
                     <div className="flex gap-2">
