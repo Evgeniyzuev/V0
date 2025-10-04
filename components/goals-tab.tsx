@@ -5,7 +5,7 @@ import { User } from "lucide-react"
 import { useUser } from "@/components/UserContext"
 import SecondaryTabs from "@/components/goals/secondary-tabs"
 import WishBoard from "@/components/goals/wish-board"
-import AddWish from "@/components/goals/add-wish"
+import NotesPage from "@/components/goals/add-note"
 import RecommendationsFeed from "@/components/goals/recommendations-feed"
 import TaskOrganizer from "@/components/goals/task-organizer"
 import Roadmap from "@/components/goals/roadmap"
@@ -33,7 +33,7 @@ export default function GoalsTab() {
       case "wishboard":
         return <WishBoard showOnlyRecommendations={false} />
       case "addwish":
-        return <AddWish />
+        return <NotesPage />
       case "tasks":
         return <TaskOrganizer />
       case "roadmap":
