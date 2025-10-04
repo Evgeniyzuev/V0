@@ -70,7 +70,7 @@ export default function NotesPage() {
   const handleAddNote = () => {
     const newNote: Note = {
       id: Date.now().toString(),
-      text: "Новая запись",
+      text: "",
       createdAt: Date.now(),
       executionTime: Date.now() + 86400000, // +1 day
       isUrgent: false,
@@ -110,17 +110,17 @@ export default function NotesPage() {
     <div className="min-h-screen bg-background p-4">
       <div className="max-w-4xl mx-auto">
         <div className="flex items-center justify-between mb-6">
-          <h1 className="text-3xl font-bold text-foreground">Записи</h1>
+          <h1 className="text-3xl font-bold text-foreground">Notes</h1>
           <Button onClick={handleAddNote} className="flex items-center gap-2">
             <Plus className="h-4 w-4" />
-            Добавить
+            Add
           </Button>
         </div>
 
         <div className="space-y-2">
           {sortedNotes.length === 0 ? (
             <div className="text-center py-12 text-muted-foreground">
-              Нет записей. Нажмите "Добавить" чтобы создать первую запись.
+              Click add to create your first note.
             </div>
           ) : (
             sortedNotes.map((note) => (
@@ -155,7 +155,7 @@ export default function NotesPage() {
                 {expandedId === note.id && (
                   <div className="px-4 pb-4 space-y-4 border-t border-border pt-4">
                     <div className="space-y-2">
-                      <label className="text-sm font-medium text-foreground">Текст записи</label>
+                      <label className="text-sm font-medium text-foreground">Note text</label>
                       <Textarea
                         value={editingText}
                         onChange={(e) => setEditingText(e.target.value)}
@@ -166,12 +166,12 @@ export default function NotesPage() {
 
                     <div className="grid grid-cols-2 gap-4">
                       <div className="space-y-1">
-                        <label className="text-sm font-medium text-muted-foreground">Создано</label>
+                        <label className="text-sm font-medium text-muted-foreground">Created</label>
                         <p className="text-sm text-foreground">{formatDate(note.createdAt)}</p>
                       </div>
 
                       <div className="space-y-1">
-                        <label className="text-sm font-medium text-muted-foreground">Выполнить до</label>
+                        <label className="text-sm font-medium text-muted-foreground">Execute by</label>
                         <Input
                           type="datetime-local"
                           value={editingExecutionTime}
@@ -195,13 +195,13 @@ export default function NotesPage() {
                         htmlFor={`urgent-${note.id}`}
                         className="text-sm font-medium text-foreground cursor-pointer"
                       >
-                        Срочная запись
+                        Urgent note
                       </label>
                     </div>
 
                     <div className="flex gap-2">
                       <Button onClick={() => handleSaveEdit(note.id)} className="flex-1">
-                        Сохранить
+                        Save
                       </Button>
                       <Button
                         variant="outline"
@@ -211,7 +211,7 @@ export default function NotesPage() {
                           setEditingExecutionTime("")
                         }}
                       >
-                        Отмена
+                        Cancel
                       </Button>
                       <Button
                         variant="destructive"
@@ -220,7 +220,7 @@ export default function NotesPage() {
                           setExpandedId(null)
                         }}
                       >
-                        Удалить
+                        Delete
                       </Button>
                     </div>
                   </div>
