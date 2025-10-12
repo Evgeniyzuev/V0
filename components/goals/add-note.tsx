@@ -152,18 +152,12 @@ export default function NotesPage() {
                   className="w-full px-4 py-3 flex items-center gap-3 text-left"
                 >
                   <div className="flex items-center gap-3 flex-1 min-w-0">
-                    <div
-                      className="w-10 h-10 rounded-full flex items-center justify-center text-lg flex-shrink-0"
-                      style={{ backgroundColor: note.color + '20', border: `2px solid ${note.color}` }}
-                    >
-                      {note.emoji}
-                    </div>
                     <div className="min-w-0 flex-1">
-                      <div className="font-medium text-foreground truncate">
-                        {note.text.split('\n')[0] || 'Untitled'}
+                      <div className="font-medium text-foreground">
+                        {note.emoji} {note.text.split('\n')[0] || 'Untitled'}
                       </div>
                       {note.text.split('\n').length > 1 && (
-                        <div className="text-sm text-muted-foreground truncate">
+                        <div className="text-sm text-muted-foreground mt-1">
                           {note.text.split('\n')[1]}
                         </div>
                       )}
@@ -179,13 +173,53 @@ export default function NotesPage() {
                 {expandedId === note.id && (
                   <div className="px-4 pb-4 space-y-4 pt-4">
                     <div className="space-y-2">
-                      <label className="text-sm font-medium text-foreground">Note text</label>
-                      <Textarea
-                        value={editingText}
-                        onChange={(e) => setEditingText(e.target.value)}
-                        rows={4}
-                        className="w-full"
-                      />
+                      <div className="min-w-0 flex-1">
+                        <div className="font-medium text-foreground mb-2">
+                          <Input
+                            type="text"
+                            value={editingEmoji}
+                            onChange={(e) => setEditingEmoji(e.target.value)}
+                            className="text-lg inline-block w-16"
+                            placeholder="📝"
+                            maxLength={2}
+                          />
+                          <Input
+                            type="text"
+                            value={editingText.split('\n')[0] || ''}
+                            onChange={(e) => {
+                              const newText = editingText.split('\n');
+                              newText[0] = e.target.value;
+                              setEditingText(newText.join('\n'));
+                            }}
+                            className="font-medium ml-2 flex-1"
+                            placeholder="Note title..."
+                          />
+                        </div>
+                        {editingText.split('\n').length > 1 ? (
+                          <Input
+                            type="text"
+                            value={editingText.split('\n')[1] || ''}
+                            onChange={(e) => {
+                              const newText = editingText.split('\n');
+                              newText[1] = e.target.value;
+                              setEditingText(newText.join('\n'));
+                            }}
+                            className="text-sm text-muted-foreground mt-1"
+                            placeholder="Note description..."
+                          />
+                        ) : (
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => {
+                              setEditingText(editingText + '\n');
+                            }}
+                            className="text-sm text-muted-foreground mt-1 h-8"
+                          >
+                            + Add description
+                          </Button>
+                        )}
+                      </div>
                     </div>
 
                     <div className="grid grid-cols-2 gap-4">
@@ -202,35 +236,6 @@ export default function NotesPage() {
                           onChange={(e) => setEditingExecutionTime(e.target.value)}
                           className="text-sm"
                         />
-                      </div>
-                    </div>
-
-                    <div className="grid grid-cols-2 gap-4">
-                      <div className="space-y-2">
-                        <label className="text-sm font-medium text-foreground">Emoji</label>
-                        <Input
-                          type="text"
-                          value={editingEmoji}
-                          onChange={(e) => setEditingEmoji(e.target.value)}
-                          className="text-lg"
-                          placeholder="📝"
-                          maxLength={2}
-                        />
-                      </div>
-
-                      <div className="space-y-2">
-                        <label className="text-sm font-medium text-foreground">Note color</label>
-                        <div className="flex items-center gap-3">
-                          <Input
-                            type="color"
-                            value={note.color}
-                            onChange={(e) => {
-                              setNotes(notes.map((n) => (n.id === note.id ? { ...n, color: e.target.value } : n)))
-                            }}
-                            className="w-20 h-10 cursor-pointer"
-                          />
-                          <span className="text-sm text-muted-foreground">{note.color}</span>
-                        </div>
                       </div>
                     </div>
 
