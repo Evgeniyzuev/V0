@@ -3,7 +3,6 @@
 import { useState, useEffect } from "react"
 import { Button } from "@/components/ui/button"
 import { Textarea } from "@/components/ui/textarea"
-import { Input } from "@/components/ui/input"
 import { Plus } from "lucide-react"
 import { cn } from "@/lib/utils"
 
@@ -13,15 +12,12 @@ interface Note {
   createdAt: number
   executionTime: number
   color: string
-  emoji: string
-  isEditing?: boolean
 }
 
 export default function NotesPage() {
   const [notes, setNotes] = useState<Note[]>([])
   const [editingId, setEditingId] = useState<string | null>(null)
   const [editingText, setEditingText] = useState<string>("")
-  const [editingEmoji, setEditingEmoji] = useState<string>("")
 
   // Load notes from localStorage on mount
   useEffect(() => {
@@ -49,7 +45,6 @@ export default function NotesPage() {
     if (note) {
       setEditingId(noteId)
       setEditingText(note.text)
-      setEditingEmoji(note.emoji)
     }
   }
 
@@ -58,7 +53,7 @@ export default function NotesPage() {
       setNotes(
         notes.map((note) =>
           note.id === editingId
-            ? { ...note, text: editingText.trim(), emoji: editingEmoji }
+            ? { ...note, text: editingText.trim() }
             : note
         )
       )
@@ -68,7 +63,6 @@ export default function NotesPage() {
     }
     setEditingId(null)
     setEditingText("")
-    setEditingEmoji("")
   }
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
@@ -84,7 +78,12 @@ export default function NotesPage() {
   const handleCancelEdit = () => {
     setEditingId(null)
     setEditingText("")
-    setEditingEmoji("")
+  }
+
+  const handleOutsideClick = (e: React.MouseEvent) => {
+    if (editingId && !(e.target as Element).closest('.note-item')) {
+      handleSaveEdit()
+    }
   }
 
   const handleAddNote = () => {
@@ -94,7 +93,6 @@ export default function NotesPage() {
       createdAt: Date.now(),
       executionTime: Date.now() + 86400000, // +1 day
       color: "#6b7280",
-      emoji: "📝",
     }
     setNotes([newNote, ...notes])
   }
@@ -110,7 +108,7 @@ export default function NotesPage() {
   const sortedNotes = [...notes].sort((a, b) => a.executionTime - b.executionTime)
 
   return (
-    <div className="min-h-screen bg-background p-4">
+    <div className="min-h-screen bg-background p-4" onClick={handleOutsideClick}>
       <div className="max-w-4xl mx-auto">
         <div className="flex items-center justify-between mb-6">
           <h1 className="text-3xl font-bold text-foreground">Notes</h1>
@@ -131,26 +129,13 @@ export default function NotesPage() {
               <div
                 key={note.id}
                 className={cn(
-                  "overflow-hidden transition-all border-b border-gray-200",
+                  "note-item overflow-hidden transition-all border-b border-gray-200",
                   index === sortedNotes.length - 1 ? "border-b-0" : ""
                 )}
               >
                 {editingId === note.id ? (
                   // Editing mode
                   <div className="px-4 py-3">
-                    <div className="mb-2">
-                      <Input
-                        type="text"
-                        value={editingEmoji}
-                        onChange={(e) => setEditingEmoji(e.target.value)}
-                        className="text-lg inline-block w-16"
-                        placeholder="📝"
-                        maxLength={2}
-                        onBlur={handleSaveEdit}
-                        autoFocus
-                        onKeyDown={handleKeyDown}
-                      />
-                    </div>
                     <Textarea
                       value={editingText}
                       onChange={(e) => setEditingText(e.target.value)}
@@ -158,6 +143,7 @@ export default function NotesPage() {
                       placeholder="Enter your note text..."
                       onBlur={handleSaveEdit}
                       onKeyDown={handleKeyDown}
+                      autoFocus
                     />
                   </div>
                 ) : (
