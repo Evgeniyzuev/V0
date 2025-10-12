@@ -13,6 +13,7 @@ interface Note {
   createdAt: number
   executionTime: number
   color: string
+  emoji: string
 }
 
 export default function NotesPage() {
@@ -20,6 +21,7 @@ export default function NotesPage() {
   const [expandedId, setExpandedId] = useState<string | null>(null)
   const [editingText, setEditingText] = useState<string>("")
   const [editingExecutionTime, setEditingExecutionTime] = useState<string>("")
+  const [editingEmoji, setEditingEmoji] = useState<string>("")
 
   // Load notes from localStorage on mount
   useEffect(() => {
@@ -45,12 +47,14 @@ export default function NotesPage() {
       setExpandedId(null)
       setEditingText("")
       setEditingExecutionTime("")
+      setEditingEmoji("")
     } else {
       setExpandedId(noteId)
       setEditingText(noteText)
       const note = notes.find((n) => n.id === noteId)
       if (note) {
         setEditingExecutionTime(timestampToDatetimeLocal(note.executionTime))
+        setEditingEmoji(note.emoji)
       }
     }
   }
@@ -59,12 +63,13 @@ export default function NotesPage() {
     const parsedDate = datetimeLocalToTimestamp(editingExecutionTime)
     if (parsedDate) {
       setNotes(
-        notes.map((note) => (note.id === noteId ? { ...note, text: editingText, executionTime: parsedDate } : note)),
+        notes.map((note) => (note.id === noteId ? { ...note, text: editingText, executionTime: parsedDate, emoji: editingEmoji } : note)),
       )
     }
     setExpandedId(null)
     setEditingText("")
     setEditingExecutionTime("")
+    setEditingEmoji("")
   }
 
   const handleAddNote = () => {
@@ -74,6 +79,7 @@ export default function NotesPage() {
       createdAt: Date.now(),
       executionTime: Date.now() + 86400000, // +1 day
       color: "#6b7280",
+      emoji: "📝",
     }
     setNotes([newNote, ...notes])
   }
@@ -145,9 +151,26 @@ export default function NotesPage() {
                   onClick={() => handleToggleExpand(note.id, note.text)}
                   className="w-full px-4 py-3 flex items-center gap-3 text-left"
                 >
-                  <span className="flex-1 truncate text-foreground font-medium">{note.text}</span>
+                  <div className="flex items-center gap-3 flex-1 min-w-0">
+                    <div
+                      className="w-10 h-10 rounded-full flex items-center justify-center text-lg flex-shrink-0"
+                      style={{ backgroundColor: note.color + '20', border: `2px solid ${note.color}` }}
+                    >
+                      {note.emoji}
+                    </div>
+                    <div className="min-w-0 flex-1">
+                      <div className="font-medium text-foreground truncate">
+                        {note.text.split('\n')[0] || 'Untitled'}
+                      </div>
+                      {note.text.split('\n').length > 1 && (
+                        <div className="text-sm text-muted-foreground truncate">
+                          {note.text.split('\n')[1]}
+                        </div>
+                      )}
+                    </div>
+                  </div>
 
-                  <span className="text-sm text-red-600 flex-shrink-0 whitespace-nowrap">
+                  <span className="text-sm text-muted-foreground flex-shrink-0 whitespace-nowrap">
                     {formatDateShort(note.executionTime)}
                   </span>
                 </button>
@@ -182,18 +205,32 @@ export default function NotesPage() {
                       </div>
                     </div>
 
-                    <div className="space-y-2">
-                      <label className="text-sm font-medium text-foreground">Note color</label>
-                      <div className="flex items-center gap-3">
+                    <div className="grid grid-cols-2 gap-4">
+                      <div className="space-y-2">
+                        <label className="text-sm font-medium text-foreground">Emoji</label>
                         <Input
-                          type="color"
-                          value={note.color}
-                          onChange={(e) => {
-                            setNotes(notes.map((n) => (n.id === note.id ? { ...n, color: e.target.value } : n)))
-                          }}
-                          className="w-20 h-10 cursor-pointer"
+                          type="text"
+                          value={editingEmoji}
+                          onChange={(e) => setEditingEmoji(e.target.value)}
+                          className="text-lg"
+                          placeholder="📝"
+                          maxLength={2}
                         />
-                        <span className="text-sm text-muted-foreground">{note.color}</span>
+                      </div>
+
+                      <div className="space-y-2">
+                        <label className="text-sm font-medium text-foreground">Note color</label>
+                        <div className="flex items-center gap-3">
+                          <Input
+                            type="color"
+                            value={note.color}
+                            onChange={(e) => {
+                              setNotes(notes.map((n) => (n.id === note.id ? { ...n, color: e.target.value } : n)))
+                            }}
+                            className="w-20 h-10 cursor-pointer"
+                          />
+                          <span className="text-sm text-muted-foreground">{note.color}</span>
+                        </div>
                       </div>
                     </div>
 
@@ -207,6 +244,7 @@ export default function NotesPage() {
                           setExpandedId(null)
                           setEditingText("")
                           setEditingExecutionTime("")
+                          setEditingEmoji("")
                         }}
                       >
                         Cancel
