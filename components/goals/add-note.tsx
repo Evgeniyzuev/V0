@@ -89,30 +89,11 @@ export default function NotesPage() {
     setNotes([newNote, ...notes])
   }
 
-  const formatDateShort = (timestamp: number) => {
-    const date = new Date(timestamp)
-    const day = String(date.getDate()).padStart(2, "0")
-    const month = String(date.getMonth() + 1).padStart(2, "0")
-    const year = String(date.getFullYear()).slice(-2)
-    return `${day}/${month}/${year}`
-  }
-
   const sortedNotes = [...notes].sort((a, b) => a.executionTime - b.executionTime)
 
   return (
-    <div className="min-h-screen bg-background p-4 mobile-container" onClick={handleOutsideClick}>
+    <div className="min-h-screen bg-background mobile-container" onClick={handleOutsideClick}>
       <div className="max-w-4xl mx-auto">
-        <div className="flex items-center justify-between mb-6">
-          <h1 className="text-3xl font-bold text-foreground">Notes</h1>
-          <Button
-            onClick={handleAddNote}
-            className="flex items-center gap-2 bg-white text-black border-2 border-black hover:bg-gray-100"
-          >
-            <Plus className="h-4 w-4" />
-            Add
-          </Button>
-        </div>
-
         <div className="space-y-0">
           {sortedNotes.length === 0 ? (
             <div className="text-center py-12 text-muted-foreground">Click add to create your first note.</div>
@@ -121,17 +102,17 @@ export default function NotesPage() {
               <div
                 key={note.id}
                 className={cn(
-                  "note-item overflow-hidden transition-all border-b border-gray-200",
-                  index === sortedNotes.length - 1 ? "border-b-0" : ""
+                  "note-item overflow-hidden transition-all",
+                  index < sortedNotes.length - 1 ? "border-b border-gray-100" : ""
                 )}
               >
                 {editingId === note.id ? (
                   // Editing mode
-                  <div className="px-4 py-3">
+                  <div className="px-2 py-1">
                     <Textarea
                       value={editingText}
                       onChange={(e) => setEditingText(e.target.value)}
-                      className="w-full min-h-[120px] text-foreground bg-transparent border-none resize-none focus:ring-0 p-0 mobile-textarea"
+                      className="w-full min-h-[80px] text-foreground bg-transparent border-none resize-none focus:ring-0 focus:outline-none focus:border-none p-0 mobile-textarea"
                       placeholder="Enter your note text..."
                       onBlur={handleSaveEdit}
                       autoFocus
@@ -146,7 +127,7 @@ export default function NotesPage() {
                   // Display mode
                   <button
                     onClick={() => handleStartEdit(note.id)}
-                    className="w-full px-4 py-3 flex items-center gap-3 text-left hover:bg-accent/50"
+                    className="w-full px-4 py-1 flex items-center gap-3 text-left hover:bg-accent/50"
                   >
                     <div className="flex items-center gap-3 flex-1 min-w-0">
                       <div className="min-w-0 flex-1">
@@ -154,22 +135,28 @@ export default function NotesPage() {
                           {note.text.split('\n')[0] || 'Untitled'}
                         </div>
                         {note.text.split('\n').slice(1, 4).map((line, index) => (
-                          <div key={index} className="text-sm text-muted-foreground mt-1">
+                          <div key={index} className="text-sm text-muted-foreground mt-0.5">
                             {line}
                           </div>
                         ))}
                       </div>
                     </div>
-
-                    <span className="text-sm text-muted-foreground flex-shrink-0 whitespace-nowrap">
-                      {formatDateShort(note.createdAt)}
-                    </span>
                   </button>
                 )}
               </div>
             ))
           )}
         </div>
+      </div>
+
+      {/* Fixed bottom panel with add button */}
+      <div className="fixed bottom-4 left-0 right-0 flex justify-center">
+        <Button
+          onClick={handleAddNote}
+          className="w-12 h-12 rounded-full bg-black text-white hover:bg-gray-800 shadow-lg"
+        >
+          <Plus className="h-6 w-6" />
+        </Button>
       </div>
     </div>
   )
