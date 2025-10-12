@@ -134,18 +134,18 @@ export default function NotesPage() {
           </Button>
         </div>
 
-        <div className="space-y-2">
+        <div className="space-y-0">
           {sortedNotes.length === 0 ? (
             <div className="text-center py-12 text-muted-foreground">Click add to create your first note.</div>
           ) : (
-            sortedNotes.map((note) => (
+            sortedNotes.map((note, index) => (
               <div
                 key={note.id}
                 className={cn(
-                  "border-2 rounded-lg overflow-hidden transition-all",
+                  "overflow-hidden transition-all border-b border-gray-200",
                   expandedId === note.id ? "bg-card" : "bg-card hover:bg-accent/50",
+                  index === sortedNotes.length - 1 ? "border-b-0" : ""
                 )}
-                style={{ borderColor: note.color }}
               >
                 <button
                   onClick={() => handleToggleExpand(note.id, note.text)}
@@ -177,7 +177,7 @@ export default function NotesPage() {
 
                 {/* Expanded view - editable */}
                 {expandedId === note.id && (
-                  <div className="px-4 pb-4 space-y-4 border-t border-border pt-4">
+                  <div className="px-4 pb-4 space-y-4 pt-4">
                     <div className="space-y-2">
                       <label className="text-sm font-medium text-foreground">Note text</label>
                       <Textarea
