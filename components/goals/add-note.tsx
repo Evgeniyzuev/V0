@@ -116,7 +116,12 @@ export default function NotesPage() {
                       onChange={(e) => setEditingText(e.target.value)}
                       className="w-full min-h-[80px] text-foreground bg-transparent border-none resize-none focus:ring-0 focus:outline-none focus:border-none focus:shadow-none p-0 mobile-textarea pr-12"
                       placeholder="Enter your note text..."
-                      onBlur={handleSaveEdit}
+                      onBlur={(e) => {
+                        // Don't save if clicking on the info button
+                        if (!(e.relatedTarget as Element)?.closest('.info-button')) {
+                          handleSaveEdit()
+                        }
+                      }}
                       autoFocus
                       style={{
                         WebkitAppearance: 'none',
@@ -130,10 +135,10 @@ export default function NotesPage() {
                         e.stopPropagation()
                         setShowMetadataModal(note.id)
                       }}
-                      className="absolute right-2 top-2 w-8 h-8 rounded-full bg-gray-200 hover:bg-gray-300 flex items-center justify-center"
+                      className="info-button absolute right-2 top-2 w-10 h-10 rounded-full bg-gray-200 hover:bg-gray-300 flex items-center justify-center"
                       size="sm"
                     >
-                      <Info className="h-4 w-4 text-gray-600" />
+                      <Info className="h-5 w-5 text-gray-600" />
                     </Button>
                   </div>
                 ) : (
