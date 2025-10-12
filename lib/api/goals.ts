@@ -36,6 +36,19 @@ export async function fetchGoalById(id: number) {
 }
 
 export async function updateGoal(id: number, updates: Partial<Goal>) {
+  // First check if the goal exists
+  const { data: existingGoal, error: fetchError } = await supabase
+    .from('goals')
+    .select('id')
+    .eq('id', id)
+    .single()
+
+  if (fetchError) {
+    console.error('Error fetching goal for update:', fetchError)
+    toast.error('Goal not found: ' + fetchError.message)
+    throw fetchError
+  }
+
   const { data, error } = await supabase
     .from('goals')
     .update(updates)
@@ -110,13 +123,13 @@ export const addUserGoal = async (userId: string, goalId: number): Promise<UserG
     progress_percentage: 0,
     current_step_index: null,
     progress_details: null,
-    notes: null,
-    difficulty_level: goalTemplate?.difficulty_level ?? null,
-    title: null,
-    description: null,
-    image_url: null,
-    estimated_cost: null,
-    steps: null
+    notes: undefined,
+    difficulty_level: goalTemplate?.difficulty_level ?? undefined,
+    title: undefined,
+    description: undefined,
+    image_url: undefined,
+    estimated_cost: undefined,
+    steps: undefined
   }
 
   const { data, error: upsertError } = await supabase

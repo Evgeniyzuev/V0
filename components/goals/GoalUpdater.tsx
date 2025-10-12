@@ -34,11 +34,11 @@ const GoalUpdater = forwardRef<GoalUpdaterRef, GoalUpdaterProps>(({ goals, onGoa
     const newUserGoal: Omit<UserGoal, 'id' | 'created_at' | 'updated_at'> = {
       user_id: dbUser.id,
       goal_id: goal.id,
-      title: goal.title,
-      image_url: goal.image_url,
-      description: goal.description,
-      estimated_cost: goal.estimated_cost,
-      steps: goal.steps,
+      title: goal.title ?? undefined,
+      image_url: goal.image_url ?? undefined,
+      description: goal.description ?? undefined,
+      estimated_cost: goal.estimated_cost ?? undefined,
+      steps: goal.steps ?? undefined,
       status: 'not_started',
       started_at: null,
       target_date: null,
@@ -46,8 +46,8 @@ const GoalUpdater = forwardRef<GoalUpdaterRef, GoalUpdaterProps>(({ goals, onGoa
       progress_percentage: 0,
       current_step_index: null,
       progress_details: null,
-      notes: null,
-      difficulty_level: goal.difficulty_level
+      notes: undefined,
+      difficulty_level: goal.difficulty_level ?? undefined
     }
     
     const { data, error: upsertError } = await supabase
@@ -79,4 +79,4 @@ const GoalUpdater = forwardRef<GoalUpdaterRef, GoalUpdaterProps>(({ goals, onGoa
   return null // This is a utility component that doesn't render anything
 })
 
-export default GoalUpdater 
+export default GoalUpdater

@@ -161,6 +161,11 @@ export interface UserGoal {
   notes?: string;
   status: 'not_started' | 'in_progress' | 'completed' | 'archived';
   progress_percentage: number;
+  started_at?: string | null;
+  target_date?: string | null;
+  completed_at?: string | null;
+  current_step_index?: number | null;
+  progress_details?: Record<string, any> | null;
   created_at: string;
   updated_at: string;
   goal?: {
@@ -169,4 +174,4 @@ export interface UserGoal {
     description?: string;
     created_at: string;
   };
-} 
+}
