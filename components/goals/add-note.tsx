@@ -14,13 +14,13 @@ interface Note {
   executionTime: number
   color: string
   emoji: string
+  isEditing?: boolean
 }
 
 export default function NotesPage() {
   const [notes, setNotes] = useState<Note[]>([])
-  const [expandedId, setExpandedId] = useState<string | null>(null)
+  const [editingId, setEditingId] = useState<string | null>(null)
   const [editingText, setEditingText] = useState<string>("")
-  const [editingExecutionTime, setEditingExecutionTime] = useState<string>("")
   const [editingEmoji, setEditingEmoji] = useState<string>("")
 
   // Load notes from localStorage on mount
@@ -39,36 +39,51 @@ export default function NotesPage() {
   useEffect(() => {
     if (notes.length > 0) {
       localStorage.setItem("notes", JSON.stringify(notes))
+    } else {
+      localStorage.removeItem("notes")
     }
   }, [notes])
 
-  const handleToggleExpand = (noteId: string, noteText: string) => {
-    if (expandedId === noteId) {
-      setExpandedId(null)
-      setEditingText("")
-      setEditingExecutionTime("")
-      setEditingEmoji("")
-    } else {
-      setExpandedId(noteId)
-      setEditingText(noteText)
-      const note = notes.find((n) => n.id === noteId)
-      if (note) {
-        setEditingExecutionTime(timestampToDatetimeLocal(note.executionTime))
-        setEditingEmoji(note.emoji)
-      }
+  const handleStartEdit = (noteId: string) => {
+    const note = notes.find((n) => n.id === noteId)
+    if (note) {
+      setEditingId(noteId)
+      setEditingText(note.text)
+      setEditingEmoji(note.emoji)
     }
   }
 
-  const handleSaveEdit = (noteId: string) => {
-    const parsedDate = datetimeLocalToTimestamp(editingExecutionTime)
-    if (parsedDate) {
+  const handleSaveEdit = () => {
+    if (editingId && editingText.trim()) {
       setNotes(
-        notes.map((note) => (note.id === noteId ? { ...note, text: editingText, executionTime: parsedDate, emoji: editingEmoji } : note)),
+        notes.map((note) =>
+          note.id === editingId
+            ? { ...note, text: editingText.trim(), emoji: editingEmoji }
+            : note
+        )
       )
+    } else if (editingId && !editingText.trim()) {
+      // Delete empty note
+      setNotes(notes.filter((n) => n.id !== editingId))
     }
-    setExpandedId(null)
+    setEditingId(null)
     setEditingText("")
-    setEditingExecutionTime("")
+    setEditingEmoji("")
+  }
+
+  const handleKeyDown = (e: React.KeyboardEvent) => {
+    if (e.key === 'Enter' && !e.shiftKey) {
+      e.preventDefault()
+      handleSaveEdit()
+    } else if (e.key === 'Escape') {
+      e.preventDefault()
+      handleCancelEdit()
+    }
+  }
+
+  const handleCancelEdit = () => {
+    setEditingId(null)
+    setEditingText("")
     setEditingEmoji("")
   }
 
@@ -84,38 +99,12 @@ export default function NotesPage() {
     setNotes([newNote, ...notes])
   }
 
-  const formatDate = (timestamp: number) => {
-    const date = new Date(timestamp)
-    const day = String(date.getDate()).padStart(2, "0")
-    const monthNames = ["jan", "feb", "mar", "apr", "may", "jun", "jul", "aug", "sep", "oct", "nov", "dec"]
-    const month = monthNames[date.getMonth()]
-    const year = String(date.getFullYear()).slice(-2)
-    const hours = String(date.getHours()).padStart(2, "0")
-    const minutes = String(date.getMinutes()).padStart(2, "0")
-    return `${day} ${month} ${year} ${hours}:${minutes}`
-  }
-
   const formatDateShort = (timestamp: number) => {
     const date = new Date(timestamp)
     const day = String(date.getDate()).padStart(2, "0")
     const month = String(date.getMonth() + 1).padStart(2, "0")
     const year = String(date.getFullYear()).slice(-2)
     return `${day}/${month}/${year}`
-  }
-
-  const timestampToDatetimeLocal = (timestamp: number): string => {
-    const date = new Date(timestamp)
-    const year = date.getFullYear()
-    const month = String(date.getMonth() + 1).padStart(2, "0")
-    const day = String(date.getDate()).padStart(2, "0")
-    const hours = String(date.getHours()).padStart(2, "0")
-    const minutes = String(date.getMinutes()).padStart(2, "0")
-    return `${year}-${month}-${day}T${hours}:${minutes}`
-  }
-
-  const datetimeLocalToTimestamp = (datetimeLocal: string): number | null => {
-    const date = new Date(datetimeLocal)
-    return isNaN(date.getTime()) ? null : date.getTime()
   }
 
   const sortedNotes = [...notes].sort((a, b) => a.executionTime - b.executionTime)
@@ -143,35 +132,12 @@ export default function NotesPage() {
                 key={note.id}
                 className={cn(
                   "overflow-hidden transition-all border-b border-gray-200",
-                  expandedId === note.id ? "bg-card" : "bg-card hover:bg-accent/50",
                   index === sortedNotes.length - 1 ? "border-b-0" : ""
                 )}
               >
-                <button
-                  onClick={() => handleToggleExpand(note.id, note.text)}
-                  className="w-full px-4 py-3 flex items-center gap-3 text-left"
-                >
-                  <div className="flex items-center gap-3 flex-1 min-w-0">
-                    <div className="min-w-0 flex-1">
-                      <div className="font-medium text-foreground">
-                        {note.text.split('\n')[0] || 'Untitled'}
-                      </div>
-                      {note.text.split('\n').slice(1, 4).map((line, index) => (
-                        <div key={index} className="text-sm text-muted-foreground mt-1">
-                          {line}
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-
-                  <span className="text-sm text-muted-foreground flex-shrink-0 whitespace-nowrap">
-                    {formatDateShort(note.createdAt)}
-                  </span>
-                </button>
-
-                {/* Expanded view - editable */}
-                {expandedId === note.id && (
-                  <div className="px-4 pb-4 pt-4">
+                {editingId === note.id ? (
+                  // Editing mode
+                  <div className="px-4 py-3">
                     <div className="mb-2">
                       <Input
                         type="text"
@@ -180,6 +146,9 @@ export default function NotesPage() {
                         className="text-lg inline-block w-16"
                         placeholder="📝"
                         maxLength={2}
+                        onBlur={handleSaveEdit}
+                        autoFocus
+                        onKeyDown={handleKeyDown}
                       />
                     </div>
                     <Textarea
@@ -187,34 +156,33 @@ export default function NotesPage() {
                       onChange={(e) => setEditingText(e.target.value)}
                       className="w-full min-h-[120px] text-foreground bg-transparent border-none resize-none focus:ring-0 p-0"
                       placeholder="Enter your note text..."
+                      onBlur={handleSaveEdit}
+                      onKeyDown={handleKeyDown}
                     />
-
-                    <div className="flex gap-2 mt-4">
-                      <Button onClick={() => handleSaveEdit(note.id)} className="flex-1">
-                        Save
-                      </Button>
-                      <Button
-                        variant="outline"
-                        onClick={() => {
-                          setExpandedId(null)
-                          setEditingText("")
-                          setEditingExecutionTime("")
-                          setEditingEmoji("")
-                        }}
-                      >
-                        Cancel
-                      </Button>
-                      <Button
-                        variant="destructive"
-                        onClick={() => {
-                          setNotes(notes.filter((n) => n.id !== note.id))
-                          setExpandedId(null)
-                        }}
-                      >
-                        Delete
-                      </Button>
-                    </div>
                   </div>
+                ) : (
+                  // Display mode
+                  <button
+                    onClick={() => handleStartEdit(note.id)}
+                    className="w-full px-4 py-3 flex items-center gap-3 text-left hover:bg-accent/50"
+                  >
+                    <div className="flex items-center gap-3 flex-1 min-w-0">
+                      <div className="min-w-0 flex-1">
+                        <div className="font-medium text-foreground">
+                          {note.text.split('\n')[0] || 'Untitled'}
+                        </div>
+                        {note.text.split('\n').slice(1, 4).map((line, index) => (
+                          <div key={index} className="text-sm text-muted-foreground mt-1">
+                            {line}
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+
+                    <span className="text-sm text-muted-foreground flex-shrink-0 whitespace-nowrap">
+                      {formatDateShort(note.createdAt)}
+                    </span>
+                  </button>
                 )}
               </div>
             ))
