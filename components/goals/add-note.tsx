@@ -112,14 +112,15 @@ export default function NotesPage() {
                     <Textarea
                       value={editingText}
                       onChange={(e) => setEditingText(e.target.value)}
-                      className="w-full min-h-[80px] text-foreground bg-transparent border-none resize-none focus:ring-0 focus:outline-none focus:border-none p-0 mobile-textarea"
+                      className="w-full min-h-[80px] text-foreground bg-transparent border-none resize-none focus:ring-0 focus:outline-none focus:border-none focus:shadow-none p-0 mobile-textarea"
                       placeholder="Enter your note text..."
                       onBlur={handleSaveEdit}
                       autoFocus
                       style={{
                         WebkitAppearance: 'none',
                         WebkitTapHighlightColor: 'transparent',
-                        WebkitUserModify: 'read-write-plaintext-only'
+                        WebkitUserModify: 'read-write-plaintext-only',
+                        boxShadow: 'none'
                       }}
                     />
                   </div>
@@ -150,10 +151,10 @@ export default function NotesPage() {
       </div>
 
       {/* Fixed bottom panel with add button */}
-      <div className="fixed bottom-10 left-0 right-0 flex justify-center">
+      <div className="fixed bottom-14 left-0 right-0 flex justify-center">
         <Button
           onClick={handleAddNote}
-          className="w-10 h-10 rounded-full bg-white text-black hover:bg-gray-800 shadow-lg"
+          className="w-10 h-10 rounded-full bg-gray-200 text-black"
         >
           <Plus className="h-8 w-8" />
         </Button>
