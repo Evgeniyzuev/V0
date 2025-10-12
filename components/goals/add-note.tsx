@@ -150,12 +150,12 @@ export default function NotesPage() {
       </div>
 
       {/* Fixed bottom panel with add button */}
-      <div className="fixed bottom-20 left-0 right-0 flex justify-center">
+      <div className="fixed bottom-10 left-0 right-0 flex justify-center">
         <Button
           onClick={handleAddNote}
-          className="w-12 h-12 rounded-full bg-black text-white hover:bg-gray-800 shadow-lg"
+          className="w-10 h-10 rounded-full bg-white text-black hover:bg-gray-800 shadow-lg"
         >
-          <Plus className="h-6 w-6" />
+          <Plus className="h-8 w-8" />
         </Button>
       </div>
     </div>
