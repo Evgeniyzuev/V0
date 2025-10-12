@@ -224,7 +224,7 @@ const WishBoard: React.FC<WishBoardProps> = ({ showOnlyRecommendations }) => {
     }
 
     try {
-      const goalId = goal.goal_id || goal.id
+      const goalId = goal.id
       console.log("[v0] Removing goal with goal_id:", goalId, "for user:", dbUser.id)
       await removeUserGoal(dbUser.id, goalId)
       await refreshGoals()
