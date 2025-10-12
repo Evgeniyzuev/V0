@@ -13,6 +13,16 @@ interface Note {
   createdAt: number
   executionTime: number
   color: string
+  metadata?: {
+    date?: string
+    time?: string
+    tags?: string
+    location?: boolean
+    flag?: boolean
+    priority?: string
+    list?: boolean
+    subitems?: number
+  }
 }
 
 export default function NotesPage() {
@@ -20,6 +30,25 @@ export default function NotesPage() {
   const [editingId, setEditingId] = useState<string | null>(null)
   const [editingText, setEditingText] = useState<string>("")
   const [showMetadataModal, setShowMetadataModal] = useState<string | null>(null)
+  const [metadataForm, setMetadataForm] = useState<{
+    date: string
+    time: string
+    tags: string
+    location: boolean
+    flag: boolean
+    priority: string
+    list: boolean
+    subitems: number
+  }>({
+    date: '',
+    time: '',
+    tags: '',
+    location: false,
+    flag: false,
+    priority: 'Нет',
+    list: false,
+    subitems: 0
+  })
 
   // Load notes from localStorage on mount
   useEffect(() => {
@@ -89,6 +118,48 @@ export default function NotesPage() {
       color: "#6b7280",
     }
     setNotes([newNote, ...notes])
+  }
+
+  // Load metadata when modal opens
+  useEffect(() => {
+    if (showMetadataModal) {
+      const note = notes.find(n => n.id === showMetadataModal)
+      if (note?.metadata) {
+        setMetadataForm({
+          date: note.metadata.date || new Date(note.createdAt).toISOString().split('T')[0],
+          time: note.metadata.time || new Date(note.createdAt).toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' }),
+          tags: note.metadata.tags || '',
+          location: note.metadata.location || false,
+          flag: note.metadata.flag || false,
+          priority: note.metadata.priority || 'Нет',
+          list: note.metadata.list || false,
+          subitems: note.metadata.subitems || 0
+        })
+      } else {
+        // Set default values
+        setMetadataForm({
+          date: new Date(note?.createdAt || Date.now()).toISOString().split('T')[0],
+          time: new Date(note?.createdAt || Date.now()).toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' }),
+          tags: '',
+          location: false,
+          flag: false,
+          priority: 'Нет',
+          list: false,
+          subitems: 0
+        })
+      }
+    }
+  }, [showMetadataModal, notes])
+
+  const handleSaveMetadata = () => {
+    if (showMetadataModal) {
+      setNotes(notes.map(note =>
+        note.id === showMetadataModal
+          ? { ...note, metadata: metadataForm }
+          : note
+      ))
+    }
+    setShowMetadataModal(null)
   }
 
   const sortedNotes = [...notes].sort((a, b) => a.executionTime - b.executionTime)
@@ -169,130 +240,113 @@ export default function NotesPage() {
 
       {/* Metadata Modal */}
       {showMetadataModal && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50" onClick={() => setShowMetadataModal(null)}>
-          <div className="bg-white rounded-lg p-6 w-full max-w-sm mx-4" onClick={(e) => e.stopPropagation()}>
-            <div className="flex items-center justify-between mb-4">
-              <h3 className="text-lg font-semibold">Подробно</h3>
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={() => setShowMetadataModal(null)}
-                className="w-8 h-8 p-0"
-              >
-                ✕
-              </Button>
-            </div>
+        <div className="fixed inset-0 bg-white z-50 flex flex-col" onClick={() => setShowMetadataModal(null)}>
+          <div className="flex items-center justify-between p-4 border-b" onClick={(e) => e.stopPropagation()}>
+            <h3 className="text-lg font-semibold">Подробно</h3>
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => {
+                // Save metadata before closing
+                if (showMetadataModal) {
+                  const currentNote = notes.find(n => n.id === showMetadataModal)
+                  if (currentNote) {
+                    setNotes(notes.map(note =>
+                      note.id === showMetadataModal
+                        ? { ...note, metadata: metadataForm }
+                        : note
+                    ))
+                  }
+                }
+                setShowMetadataModal(null)
+              }}
+              className="w-8 h-8 p-0"
+            >
+              Готово
+            </Button>
+          </div>
 
-            <div className="space-y-4">
+          <div className="flex-1 overflow-y-auto" onClick={(e) => e.stopPropagation()}>
+
+            <div className="space-y-2 p-4">
               <div className="flex items-center gap-3">
                 <Calendar className="h-5 w-5 text-gray-500" />
-                <div className="flex-1">
-                  <label className="text-sm font-medium text-gray-700">Дата</label>
-                  <Input
-                    type="date"
-                    className="mt-1"
-                    defaultValue={new Date(notes.find(n => n.id === showMetadataModal)?.createdAt || Date.now()).toISOString().split('T')[0]}
-                  />
-                </div>
-                <div className="flex items-center">
-                  <input type="checkbox" className="rounded" defaultChecked />
-                </div>
+                <Input
+                  type="date"
+                  className="flex-1"
+                  value={metadataForm.date}
+                  onChange={(e) => setMetadataForm({...metadataForm, date: e.target.value})}
+                />
+                <input
+                  type="checkbox"
+                  className="rounded"
+                  checked={notes.find(n => n.id === showMetadataModal)?.metadata?.date ? true : false}
+                  onChange={(e) => {
+                    const note = notes.find(n => n.id === showMetadataModal)
+                    if (note) {
+                      setNotes(notes.map(n =>
+                        n.id === showMetadataModal
+                          ? { ...n, metadata: { ...n.metadata, date: e.target.checked ? metadataForm.date : undefined } }
+                          : n
+                      ))
+                    }
+                  }}
+                />
               </div>
 
               <div className="flex items-center gap-3">
                 <Clock className="h-5 w-5 text-gray-500" />
-                <div className="flex-1">
-                  <label className="text-sm font-medium text-gray-700">Время</label>
-                  <Input
-                    type="time"
-                    className="mt-1"
-                    defaultValue={new Date(notes.find(n => n.id === showMetadataModal)?.createdAt || Date.now()).toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' })}
-                  />
-                </div>
-                <div className="flex items-center">
-                  <input type="checkbox" className="rounded" />
-                </div>
+                <Input
+                  type="time"
+                  className="flex-1"
+                  value={metadataForm.time}
+                  onChange={(e) => setMetadataForm({...metadataForm, time: e.target.value})}
+                />
+                <input
+                  type="checkbox"
+                  className="rounded"
+                  checked={notes.find(n => n.id === showMetadataModal)?.metadata?.time ? true : false}
+                  onChange={(e) => {
+                    const note = notes.find(n => n.id === showMetadataModal)
+                    if (note) {
+                      setNotes(notes.map(n =>
+                        n.id === showMetadataModal
+                          ? { ...n, metadata: { ...n.metadata, time: e.target.checked ? metadataForm.time : undefined } }
+                          : n
+                      ))
+                    }
+                  }}
+                />
               </div>
 
               <div className="flex items-center gap-3">
                 <Tag className="h-5 w-5 text-gray-500" />
-                <div className="flex-1">
-                  <label className="text-sm font-medium text-gray-700">Теги</label>
-                  <Input
-                    type="text"
-                    className="mt-1"
-                    placeholder="Добавить тег"
-                  />
-                </div>
-                <div className="flex items-center">
-                  <input type="checkbox" className="rounded" />
-                </div>
-              </div>
-
-              <div className="flex items-center gap-3">
-                <div className="w-5 h-5 bg-blue-500 rounded"></div>
-                <div className="flex-1">
-                  <label className="text-sm font-medium text-gray-700">Геопозиция</label>
-                  <div className="flex items-center mt-1">
-                    <input type="checkbox" className="rounded mr-2" />
-                    <span className="text-sm text-gray-500">При отправке сообщения</span>
-                  </div>
-                </div>
-              </div>
-
-              <div className="flex items-center gap-3">
-                <div className="w-5 h-5 bg-orange-500 rounded"></div>
-                <div className="flex-1">
-                  <label className="text-sm font-medium text-gray-700">Флажок</label>
-                  <div className="flex items-center mt-1">
-                    <input type="checkbox" className="rounded mr-2" />
-                  </div>
-                </div>
-              </div>
-
-              <div className="flex items-center gap-3">
-                <div className="w-5 h-5 bg-red-500 rounded"></div>
-                <div className="flex-1">
-                  <label className="text-sm font-medium text-gray-700">По приоритету</label>
-                  <div className="flex items-center justify-between mt-1">
-                    <input type="checkbox" className="rounded mr-2" />
-                    <span className="text-sm text-gray-500">Нет ↓</span>
-                  </div>
-                </div>
-              </div>
-
-              <div className="flex items-center gap-3">
-                <div className="w-5 h-5 bg-blue-400 rounded"></div>
-                <div className="flex-1">
-                  <label className="text-sm font-medium text-gray-700">Список</label>
-                  <div className="flex items-center justify-between mt-1">
-                    <input type="checkbox" className="rounded mr-2" />
-                    <span className="text-sm text-gray-500">Разобрать ›</span>
-                  </div>
-                </div>
-              </div>
-
-              <div className="flex items-center gap-3">
-                <div className="w-5 h-5 bg-gray-600 rounded"></div>
-                <div className="flex-1">
-                  <label className="text-sm font-medium text-gray-700">Подпункты</label>
-                  <div className="flex items-center justify-between mt-1">
-                    <input type="checkbox" className="rounded mr-2" />
-                    <span className="text-sm text-gray-500">0 ›</span>
-                  </div>
-                </div>
+                <Input
+                  type="text"
+                  className="flex-1"
+                  placeholder="Добавить тег"
+                  value={metadataForm.tags}
+                  onChange={(e) => setMetadataForm({...metadataForm, tags: e.target.value})}
+                />
+                <input
+                  type="checkbox"
+                  className="rounded"
+                  checked={notes.find(n => n.id === showMetadataModal)?.metadata?.tags ? true : false}
+                  onChange={(e) => {
+                    const note = notes.find(n => n.id === showMetadataModal)
+                    if (note) {
+                      setNotes(notes.map(n =>
+                        n.id === showMetadataModal
+                          ? { ...n, metadata: { ...n.metadata, tags: e.target.checked ? metadataForm.tags : undefined } }
+                          : n
+                      ))
+                    }
+                  }}
+                />
               </div>
             </div>
 
-            <div className="mt-6 pt-4 border-t">
-              <Button
-                variant="ghost"
-                className="w-full text-blue-500"
-                onClick={() => setShowMetadataModal(null)}
-              >
-                Добавить изображение
-              </Button>
-            </div>
+
           </div>
         </div>
       )}
