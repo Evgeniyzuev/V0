@@ -20,6 +20,34 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en">
+      <head>
+        <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
+        <style>{`
+          .mobile-textarea {
+            font-size: 16px !important;
+            -webkit-text-size-adjust: 100%;
+            -webkit-user-select: text;
+            user-select: text;
+            transform-origin: 0 0;
+          }
+          .mobile-container {
+            -webkit-text-size-adjust: 100%;
+          }
+          textarea:focus, input:focus {
+            -webkit-user-select: text;
+            user-select: text;
+            outline: none;
+            transform: scale(1) !important;
+          }
+          /* Prevent zoom on input focus for iOS */
+          @media screen and (max-width: 767px) {
+            textarea, input {
+              font-size: 16px !important;
+              transform-origin: 0 0;
+            }
+          }
+        `}</style>
+      </head>
       <body>
         <TonConnectUIProvider 
           manifestUrl="https://v0-psi-one.vercel.app/tonconnect-manifest.json"

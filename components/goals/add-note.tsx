@@ -65,15 +65,7 @@ export default function NotesPage() {
     setEditingText("")
   }
 
-  const handleKeyDown = (e: React.KeyboardEvent) => {
-    if (e.key === 'Enter' && !e.shiftKey) {
-      e.preventDefault()
-      handleSaveEdit()
-    } else if (e.key === 'Escape') {
-      e.preventDefault()
-      handleCancelEdit()
-    }
-  }
+  // Removed keyboard handling for mobile
 
   const handleCancelEdit = () => {
     setEditingId(null)
@@ -108,7 +100,7 @@ export default function NotesPage() {
   const sortedNotes = [...notes].sort((a, b) => a.executionTime - b.executionTime)
 
   return (
-    <div className="min-h-screen bg-background p-4" onClick={handleOutsideClick}>
+    <div className="min-h-screen bg-background p-4 mobile-container" onClick={handleOutsideClick}>
       <div className="max-w-4xl mx-auto">
         <div className="flex items-center justify-between mb-6">
           <h1 className="text-3xl font-bold text-foreground">Notes</h1>
@@ -139,11 +131,15 @@ export default function NotesPage() {
                     <Textarea
                       value={editingText}
                       onChange={(e) => setEditingText(e.target.value)}
-                      className="w-full min-h-[120px] text-foreground bg-transparent border-none resize-none focus:ring-0 p-0"
+                      className="w-full min-h-[120px] text-foreground bg-transparent border-none resize-none focus:ring-0 p-0 mobile-textarea"
                       placeholder="Enter your note text..."
                       onBlur={handleSaveEdit}
-                      onKeyDown={handleKeyDown}
                       autoFocus
+                      style={{
+                        WebkitAppearance: 'none',
+                        WebkitTapHighlightColor: 'transparent',
+                        WebkitUserModify: 'read-write-plaintext-only'
+                      }}
                     />
                   </div>
                 ) : (
