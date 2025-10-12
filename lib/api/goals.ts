@@ -65,6 +65,36 @@ export async function updateGoal(id: number, updates: Partial<Goal>) {
   return data
 }
 
+export async function updateUserGoal(id: number, updates: Partial<UserGoal>) {
+  // First check if the user goal exists
+  const { data: existingGoal, error: fetchError } = await supabase
+    .from('user_goals')
+    .select('id')
+    .eq('id', id)
+    .single()
+
+  if (fetchError) {
+    console.error('Error fetching user goal for update:', fetchError)
+    toast.error('User goal not found: ' + fetchError.message)
+    throw fetchError
+  }
+
+  const { data, error } = await supabase
+    .from('user_goals')
+    .update(updates)
+    .eq('id', id)
+    .select()
+    .single()
+
+  if (error) {
+    console.error('Error updating user goal:', error)
+    toast.error('Error updating user goal: ' + error.message)
+    throw error
+  }
+
+  return data
+}
+
 export const fetchUserGoals = async (userId: string | undefined) => {
   if (!userId) {
     console.log('fetchUserGoals: No user ID provided, returning empty array.');

@@ -9,7 +9,7 @@ import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
 import { Avatar, AvatarFallback } from "@/components/ui/avatar"
 import { useUser } from "@/components/UserContext"
-import { fetchGoals, updateGoal, removeUserGoal } from "@/lib/api/goals"
+import { fetchGoals, updateGoal, updateUserGoal, removeUserGoal } from "@/lib/api/goals"
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query"
 import type { Goal, UserGoal } from "@/types/supabase"
 import { toast } from "sonner"
@@ -116,6 +116,19 @@ const WishBoard: React.FC<WishBoardProps> = ({ showOnlyRecommendations }) => {
     },
   })
 
+  // Update user goal mutation
+  const updateUserGoalMutation = useMutation({
+    mutationFn: ({ id, updates }: { id: number; updates: Partial<UserGoal> }) => updateUserGoal(id, updates),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["user-goals"] })
+      toast.success("Personal goal updated successfully")
+    },
+    onError: (error) => {
+      console.error("Error updating user goal:", error)
+      toast.error("Failed to update personal goal")
+    },
+  })
+
   const handleWishClick = (wish: Goal) => {
     setSelectedWish(wish)
     setEditedTitle(wish.title ?? "")
@@ -168,16 +181,31 @@ const WishBoard: React.FC<WishBoardProps> = ({ showOnlyRecommendations }) => {
   const handleSave = () => {
     if (!selectedWish) return
 
-    updateGoalMutation.mutate({
-      id: selectedWish.id,
-      updates: {
-        title: editedTitle,
-        description: editedDescription,
-        steps: editedSteps,
-        estimated_cost: editedEstimatedCost,
-        difficulty_level: editedDifficultyLevel,
-      },
-    })
+    if (isFromPersonalGoals) {
+      // Update user goal in user_goals table
+      updateUserGoalMutation.mutate({
+        id: selectedWish.id,
+        updates: {
+          title: editedTitle,
+          description: editedDescription,
+          steps: editedSteps,
+          estimated_cost: editedEstimatedCost,
+          difficulty_level: editedDifficultyLevel,
+        },
+      })
+    } else {
+      // Update goal template in goals table
+      updateGoalMutation.mutate({
+        id: selectedWish.id,
+        updates: {
+          title: editedTitle,
+          description: editedDescription,
+          steps: editedSteps,
+          estimated_cost: editedEstimatedCost,
+          difficulty_level: editedDifficultyLevel,
+        },
+      })
+    }
 
     setIsEditing(false)
   }
@@ -490,9 +518,9 @@ const WishBoard: React.FC<WishBoardProps> = ({ showOnlyRecommendations }) => {
                       <button
                         onClick={handleSave}
                         className="px-4 py-2 text-sm font-medium text-white bg-purple-600 rounded-md hover:bg-purple-700 transition-colors"
-                        disabled={updateGoalMutation.isPending}
+                        disabled={updateGoalMutation.isPending || updateUserGoalMutation.isPending}
                       >
-                        {updateGoalMutation.isPending ? "Saving..." : "Save"}
+                        {(updateGoalMutation.isPending || updateUserGoalMutation.isPending) ? "Saving..." : "Save"}
                       </button>
                     </div>
                   </div>
