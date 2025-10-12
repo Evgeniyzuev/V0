@@ -154,92 +154,42 @@ export default function NotesPage() {
                   <div className="flex items-center gap-3 flex-1 min-w-0">
                     <div className="min-w-0 flex-1">
                       <div className="font-medium text-foreground">
-                        {note.emoji} {note.text.split('\n')[0] || 'Untitled'}
+                        {note.text.split('\n')[0] || 'Untitled'}
                       </div>
-                      {note.text.split('\n').length > 1 && (
-                        <div className="text-sm text-muted-foreground mt-1">
-                          {note.text.split('\n')[1]}
+                      {note.text.split('\n').slice(1, 4).map((line, index) => (
+                        <div key={index} className="text-sm text-muted-foreground mt-1">
+                          {line}
                         </div>
-                      )}
+                      ))}
                     </div>
                   </div>
 
                   <span className="text-sm text-muted-foreground flex-shrink-0 whitespace-nowrap">
-                    {formatDateShort(note.executionTime)}
+                    {formatDateShort(note.createdAt)}
                   </span>
                 </button>
 
                 {/* Expanded view - editable */}
                 {expandedId === note.id && (
-                  <div className="px-4 pb-4 space-y-4 pt-4">
-                    <div className="space-y-2">
-                      <div className="min-w-0 flex-1">
-                        <div className="font-medium text-foreground mb-2">
-                          <Input
-                            type="text"
-                            value={editingEmoji}
-                            onChange={(e) => setEditingEmoji(e.target.value)}
-                            className="text-lg inline-block w-16"
-                            placeholder="📝"
-                            maxLength={2}
-                          />
-                          <Input
-                            type="text"
-                            value={editingText.split('\n')[0] || ''}
-                            onChange={(e) => {
-                              const newText = editingText.split('\n');
-                              newText[0] = e.target.value;
-                              setEditingText(newText.join('\n'));
-                            }}
-                            className="font-medium ml-2 flex-1"
-                            placeholder="Note title..."
-                          />
-                        </div>
-                        {editingText.split('\n').length > 1 ? (
-                          <Input
-                            type="text"
-                            value={editingText.split('\n')[1] || ''}
-                            onChange={(e) => {
-                              const newText = editingText.split('\n');
-                              newText[1] = e.target.value;
-                              setEditingText(newText.join('\n'));
-                            }}
-                            className="text-sm text-muted-foreground mt-1"
-                            placeholder="Note description..."
-                          />
-                        ) : (
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={() => {
-                              setEditingText(editingText + '\n');
-                            }}
-                            className="text-sm text-muted-foreground mt-1 h-8"
-                          >
-                            + Add description
-                          </Button>
-                        )}
-                      </div>
+                  <div className="px-4 pb-4 pt-4">
+                    <div className="mb-2">
+                      <Input
+                        type="text"
+                        value={editingEmoji}
+                        onChange={(e) => setEditingEmoji(e.target.value)}
+                        className="text-lg inline-block w-16"
+                        placeholder="📝"
+                        maxLength={2}
+                      />
                     </div>
+                    <Textarea
+                      value={editingText}
+                      onChange={(e) => setEditingText(e.target.value)}
+                      className="w-full min-h-[120px] text-foreground bg-transparent border-none resize-none focus:ring-0 p-0"
+                      placeholder="Enter your note text..."
+                    />
 
-                    <div className="grid grid-cols-2 gap-4">
-                      <div className="space-y-1">
-                        <label className="text-sm font-medium text-muted-foreground">Created</label>
-                        <p className="text-sm text-foreground">{formatDate(note.createdAt)}</p>
-                      </div>
-
-                      <div className="space-y-1">
-                        <label className="text-sm font-medium text-muted-foreground">Execute by</label>
-                        <Input
-                          type="datetime-local"
-                          value={editingExecutionTime}
-                          onChange={(e) => setEditingExecutionTime(e.target.value)}
-                          className="text-sm"
-                        />
-                      </div>
-                    </div>
-
-                    <div className="flex gap-2">
+                    <div className="flex gap-2 mt-4">
                       <Button onClick={() => handleSaveEdit(note.id)} className="flex-1">
                         Save
                       </Button>
