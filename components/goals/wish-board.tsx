@@ -119,8 +119,28 @@ const WishBoard: React.FC<WishBoardProps> = ({ showOnlyRecommendations }) => {
   // Update user goal mutation
   const updateUserGoalMutation = useMutation({
     mutationFn: ({ id, updates }: { id: number; updates: Partial<UserGoal> }) => updateUserGoal(id, updates),
-    onSuccess: () => {
+    onSuccess: (data) => {
       queryClient.invalidateQueries({ queryKey: ["user-goals"] })
+      // Update local state with the new data
+      if (data && selectedWish) {
+        const updatedWish: Goal = {
+          id: selectedWish.id,
+          title: data.title || selectedWish.title,
+          description: data.description || selectedWish.description,
+          image_url: data.image_url || selectedWish.image_url,
+          estimated_cost: data.estimated_cost || selectedWish.estimated_cost,
+          difficulty_level: data.difficulty_level ?? selectedWish.difficulty_level,
+          steps: data.steps || selectedWish.steps,
+          created_at: selectedWish.created_at,
+        }
+        setSelectedWish(updatedWish)
+        // Update form fields with new data
+        setEditedTitle(updatedWish.title || "")
+        setEditedDescription(updatedWish.description || "")
+        setEditedSteps(updatedWish.steps || [])
+        setEditedEstimatedCost(updatedWish.estimated_cost || "")
+        setEditedDifficultyLevel(updatedWish.difficulty_level || 0)
+      }
       toast.success("Personal goal updated successfully")
     },
     onError: (error) => {
