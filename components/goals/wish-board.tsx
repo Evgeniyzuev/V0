@@ -119,8 +119,11 @@ const WishBoard: React.FC<WishBoardProps> = ({ showOnlyRecommendations }) => {
   // Update user goal mutation
   const updateUserGoalMutation = useMutation({
     mutationFn: ({ id, updates }: { id: number; updates: Partial<UserGoal> }) => updateUserGoal(id, updates),
-    onSuccess: (data) => {
-      queryClient.invalidateQueries({ queryKey: ["user-goals"] })
+    onSuccess: async (data) => {
+      // Invalidate and refetch user goals to ensure UI updates
+      await queryClient.invalidateQueries({ queryKey: ["user-goals"] })
+      await refreshGoals() // Refresh goals in context
+
       // Update local state with the new data
       if (data && selectedWish) {
         const updatedWish: Goal = {
