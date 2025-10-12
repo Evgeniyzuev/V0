@@ -480,13 +480,12 @@ export default function AddWish({ onSuccess, isModal = false }: AddWishProps) {
 
         <div className="space-y-2">
           <label htmlFor="difficultyLevel" className="text-gray-700 font-medium">
-            Difficulty Level (1-20)
+            Difficulty Level
           </label>
           <Input
             id="difficultyLevel"
             type="number"
             min={1}
-            max={20}
             value={difficultyLevel}
             onChange={(e) => setDifficultyLevel(Number(e.target.value))}
             className="w-full"
@@ -500,4 +499,3 @@ export default function AddWish({ onSuccess, isModal = false }: AddWishProps) {
     </div>
   )
 }
-
