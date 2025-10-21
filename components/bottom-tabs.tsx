@@ -31,12 +31,10 @@ export default function BottomTabs({ activeTab, setActiveTab }: BottomTabsProps)
             onClick={() => setActiveTab(tab.id)}
             aria-label={tab.label}
           >
-            <Icon className={`h-4 w-4 ${isActive ? "text-purple-600" : "text-gray-400"}`} />
-            <span className="text-[10px] mt-0.5">{tab.label}</span>
+            <Icon className={`h-8 w-8 ${isActive ? "text-purple-600" : "text-gray-400"}`} />
           </button>
         )
       })}
     </div>
   )
 }
-
