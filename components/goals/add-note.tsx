@@ -382,7 +382,7 @@ export default function NotesPage() {
           >
             <div className="flex items-center justify-between mb-2">
               <div className="w-8 h-8 bg-blue-500 rounded-lg flex items-center justify-center">
-                <span className="text-white text-sm font-bold">21</span>
+                <span className="text-white text-sm font-bold">{new Date().getDate()}</span>
               </div>
               <span className="text-2xl font-bold text-gray-900">{getListCount('today')}</span>
             </div>
