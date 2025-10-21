@@ -4,7 +4,7 @@ import { useState, useEffect } from "react"
 import { Button } from "@/components/ui/button"
 import { Textarea } from "@/components/ui/textarea"
 import { Input } from "@/components/ui/input"
-import { Plus, Info, Calendar, Clock, Tag } from "lucide-react"
+import { Plus, Info, Calendar, Clock, Tag, List, ArrowLeft } from "lucide-react"
 import { cn } from "@/lib/utils"
 
 interface Note {
@@ -30,6 +30,7 @@ export default function NotesPage() {
   const [editingId, setEditingId] = useState<string | null>(null)
   const [editingText, setEditingText] = useState<string>("")
   const [showMetadataModal, setShowMetadataModal] = useState<string | null>(null)
+  const [showAllNotesModal, setShowAllNotesModal] = useState<boolean>(false)
   const [metadataForm, setMetadataForm] = useState<{
     date: string
     time: string
@@ -346,8 +347,14 @@ export default function NotesPage() {
         </div>
       )}
 
-      {/* Fixed bottom panel with add button */}
-      <div className="fixed bottom-14 left-0 right-0 flex justify-center">
+      {/* Fixed bottom panel with buttons */}
+      <div className="fixed bottom-14 left-0 right-0 flex justify-center gap-4">
+        <Button
+          onClick={() => setShowAllNotesModal(true)}
+          className="w-10 h-10 rounded-full bg-gray-200 text-black flex items-center justify-center"
+        >
+          <List className="h-5 w-5" />
+        </Button>
         <Button
           onClick={handleAddNote}
           className="w-10 h-10 rounded-full bg-gray-200 text-black"
@@ -355,6 +362,62 @@ export default function NotesPage() {
           <Plus className="h-8 w-8" />
         </Button>
       </div>
+
+      {/* All Notes Modal */}
+      {showAllNotesModal && (
+        <div className="fixed inset-0 bg-white z-50 flex flex-col" onClick={() => setShowAllNotesModal(false)}>
+          <div className="flex items-center justify-between p-4 border-b" onClick={(e) => e.stopPropagation()}>
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => setShowAllNotesModal(false)}
+              className="flex items-center gap-2"
+            >
+              <ArrowLeft className="h-4 w-4" />
+              Назад
+            </Button>
+            <h3 className="text-lg font-semibold">Все заметки</h3>
+            <div className="w-16"></div> {/* Spacer for centering */}
+          </div>
+
+          <div className="flex-1 overflow-y-auto" onClick={(e) => e.stopPropagation()}>
+            <div className="max-w-4xl mx-auto">
+              <div className="space-y-0">
+                {sortedNotes.length === 0 ? (
+                  <div className="text-center py-12 text-muted-foreground">Нет заметок</div>
+                ) : (
+                  sortedNotes.map((note, index) => (
+                    <div
+                      key={note.id}
+                      className={cn(
+                        "overflow-hidden transition-all border-b border-gray-100",
+                        "px-4 py-3"
+                      )}
+                    >
+                      <div className="font-medium text-foreground mb-1">
+                        {note.text.split('\n')[0] || 'Untitled'}
+                      </div>
+                      {note.text.split('\n').length > 1 && (
+                        <div className="text-sm text-muted-foreground mb-2">
+                          {note.text.split('\n').slice(1).join('\n')}
+                        </div>
+                      )}
+                      <div className="flex items-center gap-4 text-xs text-muted-foreground">
+                        <span>{new Date(note.createdAt).toLocaleDateString('ru-RU')}</span>
+                        {note.metadata?.tags && (
+                          <span className="bg-gray-100 px-2 py-1 rounded">
+                            {note.metadata.tags}
+                          </span>
+                        )}
+                      </div>
+                    </div>
+                  ))
+                )}
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   )
 }
