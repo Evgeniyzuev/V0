@@ -192,12 +192,26 @@ export default function NotesPage() {
     switch (activeList) {
       case 'today':
         return notes.filter(note => {
+          // If note has active date metadata, use that date
+          if (note.metadata?.date) {
+            const noteDate = new Date(note.metadata.date)
+            noteDate.setHours(0, 0, 0, 0)
+            return noteDate.getTime() === today.getTime()
+          }
+          // Otherwise use execution time
           const noteDate = new Date(note.executionTime)
           noteDate.setHours(0, 0, 0, 0)
           return noteDate.getTime() === today.getTime()
         })
       case 'plan':
         return notes.filter(note => {
+          // If note has active date metadata, use that date
+          if (note.metadata?.date) {
+            const noteDate = new Date(note.metadata.date)
+            noteDate.setHours(0, 0, 0, 0)
+            return noteDate.getTime() >= tomorrow.getTime()
+          }
+          // Otherwise use execution time
           const noteDate = new Date(note.executionTime)
           noteDate.setHours(0, 0, 0, 0)
           return noteDate.getTime() >= tomorrow.getTime()
@@ -222,12 +236,26 @@ export default function NotesPage() {
     switch (listType) {
       case 'today':
         return notes.filter(note => {
+          // If note has active date metadata, use that date
+          if (note.metadata?.date) {
+            const noteDate = new Date(note.metadata.date)
+            noteDate.setHours(0, 0, 0, 0)
+            return noteDate.getTime() === today.getTime()
+          }
+          // Otherwise use execution time
           const noteDate = new Date(note.executionTime)
           noteDate.setHours(0, 0, 0, 0)
           return noteDate.getTime() === today.getTime()
         }).length
       case 'plan':
         return notes.filter(note => {
+          // If note has active date metadata, use that date
+          if (note.metadata?.date) {
+            const noteDate = new Date(note.metadata.date)
+            noteDate.setHours(0, 0, 0, 0)
+            return noteDate.getTime() >= tomorrow.getTime()
+          }
+          // Otherwise use execution time
           const noteDate = new Date(note.executionTime)
           noteDate.setHours(0, 0, 0, 0)
           return noteDate.getTime() >= tomorrow.getTime()
@@ -634,6 +662,13 @@ export default function NotesPage() {
                   switch (currentListType) {
                     case 'today':
                       listNotes = notes.filter(note => {
+                        // If note has active date metadata, use that date
+                        if (note.metadata?.date) {
+                          const noteDate = new Date(note.metadata.date)
+                          noteDate.setHours(0, 0, 0, 0)
+                          return noteDate.getTime() === today.getTime()
+                        }
+                        // Otherwise use execution time
                         const noteDate = new Date(note.executionTime)
                         noteDate.setHours(0, 0, 0, 0)
                         return noteDate.getTime() === today.getTime()
@@ -641,6 +676,13 @@ export default function NotesPage() {
                       break
                     case 'plan':
                       listNotes = notes.filter(note => {
+                        // If note has active date metadata, use that date
+                        if (note.metadata?.date) {
+                          const noteDate = new Date(note.metadata.date)
+                          noteDate.setHours(0, 0, 0, 0)
+                          return noteDate.getTime() >= tomorrow.getTime()
+                        }
+                        // Otherwise use execution time
                         const noteDate = new Date(note.executionTime)
                         noteDate.setHours(0, 0, 0, 0)
                         return noteDate.getTime() >= tomorrow.getTime()
