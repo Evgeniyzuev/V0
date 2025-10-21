@@ -279,9 +279,11 @@ export default function NotesPage() {
     switch (activeList) {
       case 'today':
         return notes.filter(note => {
-          // Today list: notes WITHOUT active date that are due today
+          // Today list: notes with active date metadata set to today, or notes without active date that are due today
           if (note.metadata?.date) {
-            return false // Notes with active date don't go to "Today"
+            const noteDate = new Date(note.metadata.date)
+            noteDate.setHours(0, 0, 0, 0)
+            return noteDate.getTime() === today.getTime()
           }
           // Otherwise use execution time
           const noteDate = new Date(note.executionTime)
@@ -816,9 +818,11 @@ export default function NotesPage() {
                   switch (currentListType) {
                     case 'today':
                       listNotes = notes.filter(note => {
-                        // Today list: notes created today OR due today, but WITHOUT active date metadata
+                        // Today list: notes with active date metadata set to today, or notes without active date that are due today
                         if (note.metadata?.date) {
-                          return false // Notes with active date don't go to "Today"
+                          const noteDate = new Date(note.metadata.date)
+                          noteDate.setHours(0, 0, 0, 0)
+                          return noteDate.getTime() === today.getTime()
                         }
 
                         // Check if note was created today

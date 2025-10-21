@@ -11,7 +11,7 @@ interface SecondaryTabsProps {
 export default function SecondaryTabs({ activeTab, setActiveTab, isAuthenticated }: SecondaryTabsProps) {
   const tabs = [
     { id: "wishboard", icon: Image, requiresAuth: false },
-    { id: "addwish", icon: Plus, requiresAuth: true },
+    { id: "addwish", icon: Plus, requiresAuth: false }, // Temporarily set to false for testing
     { id: "recommendations", icon: Radio, requiresAuth: false },
     { id: "tasks", icon: LayoutList, requiresAuth: true },
     { id: "roadmap", icon: MessageCircle, requiresAuth: true },
@@ -44,4 +44,3 @@ export default function SecondaryTabs({ activeTab, setActiveTab, isAuthenticated
     </div>
   )
 }
-

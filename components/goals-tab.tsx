@@ -26,6 +26,10 @@ export default function GoalsTab() {
 
     // Show recommendations from WishBoard for unauthorized users
     if (!dbUser?.id) {
+      // Temporarily show NotesPage for testing
+      if (activeSecondaryTab === "addwish") {
+        return <NotesPage />
+      }
       return <WishBoard showOnlyRecommendations={true} />
     }
 
@@ -58,4 +62,3 @@ export default function GoalsTab() {
     </div>
   )
 }
-
