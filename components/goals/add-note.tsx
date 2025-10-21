@@ -42,6 +42,10 @@ export default function NotesPage() {
   const [showListModal, setShowListModal] = useState<boolean>(false)
   const [currentListType, setCurrentListType] = useState<string>('')
   const [currentListTitle, setCurrentListTitle] = useState<string>('')
+  const [showCreateListModal, setShowCreateListModal] = useState<boolean>(false)
+  const [newListName, setNewListName] = useState<string>('')
+  const [newListColor, setNewListColor] = useState<string>('#007AFF')
+  const [newListIcon, setNewListIcon] = useState<string>('menu')
   const [customLists, setCustomLists] = useState<CustomList[]>([
     { id: '1', name: 'Напоминания', color: '#FF3B30', icon: 'bell' },
     { id: '2', name: 'Legacy', color: '#34C759', icon: 'flame' },
@@ -180,6 +184,22 @@ export default function NotesPage() {
     setShowMetadataModal(null)
   }
 
+  const handleCreateList = () => {
+    if (newListName.trim()) {
+      const newList: CustomList = {
+        id: Date.now().toString(),
+        name: newListName.trim(),
+        color: newListColor,
+        icon: newListIcon
+      }
+      setCustomLists([...customLists, newList])
+      setNewListName('')
+      setNewListColor('#007AFF')
+      setNewListIcon('menu')
+      setShowCreateListModal(false)
+    }
+  }
+
   const sortedNotes = [...notes].sort((a, b) => a.executionTime - b.executionTime)
 
   // Filter notes based on active list
@@ -282,6 +302,9 @@ export default function NotesPage() {
       case 'flame': return '🔥'
       case 'menu': return '☰'
       case 'trash': return '🗑️'
+      case 'star': return '⭐'
+      case 'heart': return '❤️'
+      case 'check': return '✅'
       default: return '📝'
     }
   }
@@ -528,16 +551,17 @@ export default function NotesPage() {
         <div className="flex gap-3">
           <Button
             onClick={handleAddNote}
-            className="flex-1 bg-blue-500 hover:bg-blue-600 text-white rounded-lg py-3 flex items-center justify-center gap-2 font-medium"
+            className="flex-1 bg-gray-100 hover:bg-gray-200 text-blue-600 rounded-lg py-3 flex items-center justify-center gap-2 font-medium"
           >
             <Plus className="h-5 w-5" />
-            Напоминание
+            note
           </Button>
           <Button
-            onClick={() => setShowAllNotesModal(true)}
-            className="px-6 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-lg py-3 font-medium"
+            onClick={() => setShowCreateListModal(true)}
+            className="flex-1 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-lg py-3 flex items-center justify-center gap-2 font-medium"
           >
-            Добавить
+            <Plus className="h-5 w-5" />
+            list
           </Button>
         </div>
       </div>
@@ -793,6 +817,105 @@ export default function NotesPage() {
               <Plus className="h-5 w-5" />
               Добавить напоминание
             </Button>
+          </div>
+        </div>
+      )}
+
+      {/* Create List Modal */}
+      {showCreateListModal && (
+        <div className="fixed inset-0 bg-white z-[65] flex flex-col">
+          <div className="flex items-center justify-between p-4 border-b" onClick={(e) => e.stopPropagation()}>
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => setShowCreateListModal(false)}
+              className="flex items-center gap-2"
+            >
+              <ArrowLeft className="h-4 w-4" />
+              Назад
+            </Button>
+            <h3 className="text-lg font-semibold">Новый список</h3>
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={handleCreateList}
+              className="text-blue-600 font-medium"
+            >
+              Готово
+            </Button>
+          </div>
+
+          <div className="flex-1 overflow-y-auto p-4" onClick={(e) => e.stopPropagation()}>
+            <div className="space-y-4">
+              {/* List Name */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Название
+                </label>
+                <Input
+                  type="text"
+                  placeholder="Название списка"
+                  value={newListName}
+                  onChange={(e) => setNewListName(e.target.value)}
+                  className="w-full"
+                />
+              </div>
+
+              {/* List Icon */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Иконка
+                </label>
+                <div className="grid grid-cols-6 gap-2">
+                  {[
+                    { name: 'menu', emoji: '☰' },
+                    { name: 'bell', emoji: '🔔' },
+                    { name: 'flame', emoji: '🔥' },
+                    { name: 'star', emoji: '⭐' },
+                    { name: 'heart', emoji: '❤️' },
+                    { name: 'check', emoji: '✅' }
+                  ].map((icon) => (
+                    <button
+                      key={icon.name}
+                      onClick={() => setNewListIcon(icon.name)}
+                      className={cn(
+                        "w-12 h-12 rounded-lg border-2 flex items-center justify-center text-2xl transition-all",
+                        newListIcon === icon.name
+                          ? "border-blue-500 bg-blue-50"
+                          : "border-gray-200 hover:border-gray-300"
+                      )}
+                    >
+                      {icon.emoji}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {/* List Color */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Цвет
+                </label>
+                <div className="grid grid-cols-6 gap-2">
+                  {[
+                    '#FF3B30', '#FF9500', '#FFCC00', '#34C759',
+                    '#00D4AA', '#007AFF', '#5856D6', '#AF52DE'
+                  ].map((color) => (
+                    <button
+                      key={color}
+                      onClick={() => setNewListColor(color)}
+                      className={cn(
+                        "w-12 h-12 rounded-lg border-2 transition-all",
+                        newListColor === color
+                          ? "border-gray-800"
+                          : "border-gray-200"
+                      )}
+                      style={{ backgroundColor: color }}
+                    />
+                  ))}
+                </div>
+              </div>
+            </div>
           </div>
         </div>
       )}
