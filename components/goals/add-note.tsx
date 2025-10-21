@@ -220,7 +220,7 @@ export default function NotesPage() {
                   >
                     <div className="flex items-center gap-3 flex-1 min-w-0">
                       <div className="min-w-0 flex-1">
-                      <div className="font-medium text-foreground">
+                      <div className="font-bold text-foreground">
                         {note.text.split('\n')[0] || 'Untitled'}
                       </div>
                       </div>
