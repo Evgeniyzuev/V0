@@ -49,6 +49,7 @@ export default function NotesPage() {
   const [showListMenu, setShowListMenu] = useState<string | null>(null)
   const [editingList, setEditingList] = useState<string | null>(null)
   const [editingListName, setEditingListName] = useState<string>('')
+  const [editingListIcon, setEditingListIcon] = useState<string>('')
   const [customLists, setCustomLists] = useState<CustomList[]>([
     { id: '1', name: 'Напоминания', color: '#FF3B30', icon: 'bell' },
     { id: '2', name: 'Legacy', color: '#34C759', icon: 'flame' },
@@ -239,6 +240,7 @@ export default function NotesPage() {
     if (list) {
       setEditingList(listId)
       setEditingListName(list.name)
+      setEditingListIcon(list.icon)
       setShowListMenu(null)
     }
   }
@@ -247,12 +249,13 @@ export default function NotesPage() {
     if (editingList && editingListName.trim()) {
       setCustomLists(customLists.map(list =>
         list.id === editingList
-          ? { ...list, name: editingListName.trim() }
+          ? { ...list, name: editingListName.trim(), icon: editingListIcon }
           : list
       ))
     }
     setEditingList(null)
     setEditingListName('')
+    setEditingListIcon('')
   }
 
   const handleDeleteList = (listId: string) => {
@@ -343,6 +346,12 @@ export default function NotesPage() {
   }
 
   const getListIcon = (iconName: string) => {
+    // If it's a single emoji character, return it as is
+    if (iconName && iconName.length <= 2 && /\p{Emoji}/u.test(iconName)) {
+      return iconName
+    }
+
+    // Otherwise, map predefined icon names to emojis
     switch (iconName) {
       case 'bell': return '🔔'
       case 'flame': return '🔥'
@@ -351,7 +360,7 @@ export default function NotesPage() {
       case 'star': return '⭐'
       case 'heart': return '❤️'
       case 'check': return '✅'
-      default: return '📝'
+      default: return iconName || '📝'
     }
   }
 
@@ -459,31 +468,49 @@ export default function NotesPage() {
                   className="w-full bg-white rounded-lg p-3 flex items-center justify-between border border-gray-200 hover:bg-gray-50 transition-colors"
                 >
                   <div className="flex items-center gap-3">
-                    <div
-                      className="w-8 h-8 rounded-lg flex items-center justify-center text-lg"
-                      style={{ backgroundColor: list.color + '20', color: list.color }}
-                    >
-                      {getListIcon(list.icon)}
-                    </div>
                     {editingList === list.id ? (
-                      <Input
-                        type="text"
-                        value={editingListName}
-                        onChange={(e) => setEditingListName(e.target.value)}
-                        onBlur={handleSaveListEdit}
-                        onKeyDown={(e) => {
-                          if (e.key === 'Enter') {
-                            handleSaveListEdit()
-                          } else if (e.key === 'Escape') {
-                            setEditingList(null)
-                            setEditingListName('')
-                          }
-                        }}
-                        className="font-medium text-gray-900 border-none bg-transparent p-0 h-auto focus:ring-0"
-                        autoFocus
-                      />
+                      <>
+                        <button
+                          onClick={() => {
+                            const emoji = prompt('Введите эмоджи для иконки списка:')
+                            if (emoji && emoji.trim()) {
+                              setEditingListIcon(emoji.trim())
+                            }
+                          }}
+                          className="w-8 h-8 rounded-lg flex items-center justify-center text-lg hover:bg-gray-100 transition-colors"
+                          style={{ backgroundColor: list.color + '20' }}
+                          title="Нажмите чтобы изменить эмоджи"
+                        >
+                          {editingListIcon || getListIcon(list.icon)}
+                        </button>
+                        <Input
+                          type="text"
+                          value={editingListName}
+                          onChange={(e) => setEditingListName(e.target.value)}
+                          onBlur={handleSaveListEdit}
+                          onKeyDown={(e) => {
+                            if (e.key === 'Enter') {
+                              handleSaveListEdit()
+                            } else if (e.key === 'Escape') {
+                              setEditingList(null)
+                              setEditingListName('')
+                              setEditingListIcon('')
+                            }
+                          }}
+                          className="font-medium text-gray-900 border-none bg-transparent p-0 h-auto focus:ring-0"
+                          autoFocus
+                        />
+                      </>
                     ) : (
-                      <span className="font-medium text-gray-900">{list.name}</span>
+                      <>
+                        <div
+                          className="w-8 h-8 rounded-lg flex items-center justify-center text-lg"
+                          style={{ backgroundColor: list.color + '20', color: list.color }}
+                        >
+                          {getListIcon(list.icon)}
+                        </div>
+                        <span className="font-medium text-gray-900">{list.name}</span>
+                      </>
                     )}
                   </div>
                   <div className="flex items-center gap-2">
@@ -789,14 +816,22 @@ export default function NotesPage() {
                   switch (currentListType) {
                     case 'today':
                       listNotes = notes.filter(note => {
-                        // Today list: notes WITHOUT active date that are due today
+                        // Today list: notes created today OR due today, but WITHOUT active date metadata
                         if (note.metadata?.date) {
                           return false // Notes with active date don't go to "Today"
                         }
-                        // Otherwise use execution time
+
+                        // Check if note was created today
+                        const createdToday = new Date(note.createdAt)
+                        createdToday.setHours(0, 0, 0, 0)
+                        const isCreatedToday = createdToday.getTime() === today.getTime()
+
+                        // Check if note is due today
                         const noteDate = new Date(note.executionTime)
                         noteDate.setHours(0, 0, 0, 0)
-                        return noteDate.getTime() === today.getTime()
+                        const isDueToday = noteDate.getTime() === today.getTime()
+
+                        return isCreatedToday || isDueToday
                       })
                       break
                     case 'plan':
@@ -970,28 +1005,50 @@ export default function NotesPage() {
                 <label className="block text-sm font-medium text-gray-700 mb-2">
                   Иконка
                 </label>
-                <div className="grid grid-cols-6 gap-2">
-                  {[
-                    { name: 'menu', emoji: '☰' },
-                    { name: 'bell', emoji: '🔔' },
-                    { name: 'flame', emoji: '🔥' },
-                    { name: 'star', emoji: '⭐' },
-                    { name: 'heart', emoji: '❤️' },
-                    { name: 'check', emoji: '✅' }
-                  ].map((icon) => (
-                    <button
-                      key={icon.name}
-                      onClick={() => setNewListIcon(icon.name)}
-                      className={cn(
-                        "w-12 h-12 rounded-lg border-2 flex items-center justify-center text-2xl transition-all",
-                        newListIcon === icon.name
-                          ? "border-blue-500 bg-blue-50"
-                          : "border-gray-200 hover:border-gray-300"
-                      )}
-                    >
-                      {icon.emoji}
-                    </button>
-                  ))}
+                <div className="space-y-3">
+                  {/* Custom emoji input */}
+                  <div className="flex gap-2">
+                    <Input
+                      type="text"
+                      placeholder="Вставьте эмоджи"
+                      value={newListIcon}
+                      onChange={(e) => setNewListIcon(e.target.value)}
+                      className="flex-1"
+                      maxLength={2}
+                    />
+                    <div className="w-12 h-10 rounded-lg border-2 border-gray-200 flex items-center justify-center text-2xl">
+                      {newListIcon || '📝'}
+                    </div>
+                  </div>
+
+                  {/* Predefined icons */}
+                  <div>
+                    <div className="text-xs text-gray-500 mb-2">или выберите из предложенных:</div>
+                    <div className="grid grid-cols-6 gap-2">
+                      {[
+                        { name: 'menu', emoji: '☰' },
+                        { name: 'bell', emoji: '🔔' },
+                        { name: 'flame', emoji: '🔥' },
+                        { name: 'star', emoji: '⭐' },
+                        { name: 'heart', emoji: '❤️' },
+                        { name: 'check', emoji: '✅' }
+                      ].map((icon) => (
+                        <button
+                          key={icon.name}
+                          onClick={() => setNewListIcon(icon.emoji)}
+                          className={cn(
+                            "w-12 h-12 rounded-lg border-2 flex items-center justify-center text-2xl transition-all",
+                            newListIcon === icon.emoji
+                              ? "border-blue-500 bg-blue-50"
+                              : "border-gray-200 hover:border-gray-300"
+                          )}
+                          title={`Выбрать ${icon.emoji}`}
+                        >
+                          {icon.emoji}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
                 </div>
               </div>
 
