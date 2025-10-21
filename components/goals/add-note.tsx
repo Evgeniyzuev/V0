@@ -46,6 +46,9 @@ export default function NotesPage() {
   const [newListName, setNewListName] = useState<string>('')
   const [newListColor, setNewListColor] = useState<string>('#007AFF')
   const [newListIcon, setNewListIcon] = useState<string>('menu')
+  const [showListMenu, setShowListMenu] = useState<string | null>(null)
+  const [editingList, setEditingList] = useState<string | null>(null)
+  const [editingListName, setEditingListName] = useState<string>('')
   const [customLists, setCustomLists] = useState<CustomList[]>([
     { id: '1', name: 'Напоминания', color: '#FF3B30', icon: 'bell' },
     { id: '2', name: 'Legacy', color: '#34C759', icon: 'flame' },
@@ -131,6 +134,23 @@ export default function NotesPage() {
     }
   }
 
+  // Close list menu when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (e: MouseEvent) => {
+      if (showListMenu && !(e.target as Element).closest('.list-menu-container')) {
+        setShowListMenu(null)
+      }
+    }
+
+    if (showListMenu) {
+      document.addEventListener('mousedown', handleClickOutside)
+    }
+
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside)
+    }
+  }, [showListMenu])
+
   const handleAddNote = () => {
     const newNote: Note = {
       id: Date.now().toString(),
@@ -212,6 +232,36 @@ export default function NotesPage() {
           }
         : note
     ))
+  }
+
+  const handleEditList = (listId: string) => {
+    const list = customLists.find(l => l.id === listId)
+    if (list) {
+      setEditingList(listId)
+      setEditingListName(list.name)
+      setShowListMenu(null)
+    }
+  }
+
+  const handleSaveListEdit = () => {
+    if (editingList && editingListName.trim()) {
+      setCustomLists(customLists.map(list =>
+        list.id === editingList
+          ? { ...list, name: editingListName.trim() }
+          : list
+      ))
+    }
+    setEditingList(null)
+    setEditingListName('')
+  }
+
+  const handleDeleteList = (listId: string) => {
+    setCustomLists(customLists.filter(list => list.id !== listId))
+    setShowListMenu(null)
+  }
+
+  const handleListMenuToggle = (listId: string) => {
+    setShowListMenu(showListMenu === listId ? null : listId)
   }
 
   const sortedNotes = [...notes].sort((a, b) => a.executionTime - b.executionTime)
@@ -399,29 +449,75 @@ export default function NotesPage() {
           <h2 className="text-lg font-semibold text-gray-900 mb-3">Мои списки</h2>
           <div className="space-y-1">
             {customLists.map((list) => (
-              <button
-                key={list.id}
-                onClick={() => {
-                  setCurrentListType(`custom-${list.id}`)
-                  setCurrentListTitle(list.name)
-                  setShowListModal(true)
-                }}
-                className="w-full bg-white rounded-lg p-3 flex items-center justify-between border border-gray-200 hover:bg-gray-50 transition-colors"
-              >
-                <div className="flex items-center gap-3">
-                  <div
-                    className="w-8 h-8 rounded-lg flex items-center justify-center text-lg"
-                    style={{ backgroundColor: list.color + '20', color: list.color }}
-                  >
-                    {getListIcon(list.icon)}
+              <div key={list.id} className="relative">
+                <button
+                  onClick={() => {
+                    setCurrentListType(`custom-${list.id}`)
+                    setCurrentListTitle(list.name)
+                    setShowListModal(true)
+                  }}
+                  className="w-full bg-white rounded-lg p-3 flex items-center justify-between border border-gray-200 hover:bg-gray-50 transition-colors"
+                >
+                  <div className="flex items-center gap-3">
+                    <div
+                      className="w-8 h-8 rounded-lg flex items-center justify-center text-lg"
+                      style={{ backgroundColor: list.color + '20', color: list.color }}
+                    >
+                      {getListIcon(list.icon)}
+                    </div>
+                    {editingList === list.id ? (
+                      <Input
+                        type="text"
+                        value={editingListName}
+                        onChange={(e) => setEditingListName(e.target.value)}
+                        onBlur={handleSaveListEdit}
+                        onKeyDown={(e) => {
+                          if (e.key === 'Enter') {
+                            handleSaveListEdit()
+                          } else if (e.key === 'Escape') {
+                            setEditingList(null)
+                            setEditingListName('')
+                          }
+                        }}
+                        className="font-medium text-gray-900 border-none bg-transparent p-0 h-auto focus:ring-0"
+                        autoFocus
+                      />
+                    ) : (
+                      <span className="font-medium text-gray-900">{list.name}</span>
+                    )}
                   </div>
-                  <span className="font-medium text-gray-900">{list.name}</span>
-                </div>
-                <div className="flex items-center gap-2">
-                  <span className="text-sm text-gray-500">{getCustomListCount(list.id)}</span>
-                  <MoreHorizontal className="h-5 w-5 text-gray-400" />
-                </div>
-              </button>
+                  <div className="flex items-center gap-2">
+                    <span className="text-sm text-gray-500">{getCustomListCount(list.id)}</span>
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation()
+                        handleListMenuToggle(list.id)
+                      }}
+                      className="w-8 h-8 flex items-center justify-center rounded-full hover:bg-gray-100 transition-colors"
+                    >
+                      <MoreHorizontal className="h-5 w-5 text-gray-400" />
+                    </button>
+                  </div>
+                </button>
+
+                {/* List Menu */}
+                {showListMenu === list.id && (
+                  <div className="list-menu-container absolute right-2 top-12 bg-white rounded-lg shadow-lg border border-gray-200 py-2 z-10 min-w-[120px]">
+                    <button
+                      onClick={() => handleEditList(list.id)}
+                      className="w-full px-4 py-2 text-left text-sm text-gray-700 hover:bg-gray-50 transition-colors"
+                    >
+                      Редактировать
+                    </button>
+                    <button
+                      onClick={() => handleDeleteList(list.id)}
+                      className="w-full px-4 py-2 text-left text-sm text-red-600 hover:bg-red-50 transition-colors"
+                    >
+                      Удалить
+                    </button>
+                  </div>
+                )}
+              </div>
             ))}
           </div>
         </div>
