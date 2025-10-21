@@ -2,14 +2,25 @@
 
 import { useState, useEffect } from "react"
 import { Button } from "@/components/ui/button"
-import { Textarea } from "@/components/ui/textarea"
 import { Input } from "@/components/ui/input"
-import { Plus, Info, Calendar, Clock, Tag } from "lucide-react"
+import { Plus, Calendar, Clock, CheckCircle, Trash2, Lightbulb, Archive, MoreHorizontal, X, Flag } from "lucide-react"
 import { cn } from "@/lib/utils"
+
+interface NoteList {
+  id: string
+  name: string
+  icon: string
+  color: string
+  count: number
+  type: 'default' | 'custom'
+  deletable?: boolean
+}
 
 interface Note {
   id: string
   text: string
+  listId: string
+  completed: boolean
   createdAt: number
   executionTime: number
   color: string
@@ -27,32 +38,31 @@ interface Note {
 
 export default function NotesPage() {
   const [notes, setNotes] = useState<Note[]>([])
+  const [lists, setLists] = useState<NoteList[]>([
+    { id: 'today', name: 'Сегодня', icon: 'Calendar', color: '#3B82F6', count: 0, type: 'default' },
+    { id: 'planned', name: 'В планах', icon: 'Clock', color: '#EF4444', count: 0, type: 'default' },
+    { id: 'all', name: 'Все', icon: 'CheckCircle', color: '#1F2937', count: 0, type: 'default' },
+    { id: 'flagged', name: 'С флажком', icon: 'Flag', color: '#F59E0B', count: 0, type: 'default' },
+    { id: 'completed', name: 'Завершено', icon: 'CheckCircle', color: '#10B981', count: 0, type: 'default' },
+  ])
+
+  const [customLists, setCustomLists] = useState<NoteList[]>([
+    { id: 'reminders', name: 'Напоминания', icon: 'Lightbulb', color: '#EF4444', count: 0, type: 'custom', deletable: true },
+    { id: 'legacy', name: 'Legacy', icon: 'Archive', color: '#8B5CF6', count: 1, type: 'custom', deletable: true },
+    { id: 'sort', name: 'Разобрать', icon: 'MoreHorizontal', color: '#3B82F6', count: 0, type: 'custom', deletable: true },
+    { id: 'deleted', name: 'Недавно удаленные', icon: 'Trash2', color: '#6B7280', count: 11, type: 'custom', deletable: true },
+  ])
+
+  const [selectedList, setSelectedList] = useState<string>('all')
   const [editingId, setEditingId] = useState<string | null>(null)
   const [editingText, setEditingText] = useState<string>("")
-  const [showMetadataModal, setShowMetadataModal] = useState<string | null>(null)
-  const [metadataForm, setMetadataForm] = useState<{
-    date: string
-    time: string
-    tags: string
-    location: boolean
-    flag: boolean
-    priority: string
-    list: boolean
-    subitems: number
-  }>({
-    date: '',
-    time: '',
-    tags: '',
-    location: false,
-    flag: false,
-    priority: 'Нет',
-    list: false,
-    subitems: 0
-  })
+  const [showAddList, setShowAddList] = useState<boolean>(false)
+  const [newListName, setNewListName] = useState<string>("")
 
-  // Load notes from localStorage on mount
+  // Load data from localStorage on mount
   useEffect(() => {
     const savedNotes = localStorage.getItem("notes")
+    const savedLists = localStorage.getItem("noteLists")
     if (savedNotes) {
       try {
         setNotes(JSON.parse(savedNotes))
@@ -60,9 +70,16 @@ export default function NotesPage() {
         console.error("Failed to load notes:", error)
       }
     }
+    if (savedLists) {
+      try {
+        setCustomLists(JSON.parse(savedLists))
+      } catch (error) {
+        console.error("Failed to load lists:", error)
+      }
+    }
   }, [])
 
-  // Save notes to localStorage whenever they change
+  // Save data to localStorage whenever they change
   useEffect(() => {
     if (notes.length > 0) {
       localStorage.setItem("notes", JSON.stringify(notes))
@@ -70,6 +87,66 @@ export default function NotesPage() {
       localStorage.removeItem("notes")
     }
   }, [notes])
+
+  useEffect(() => {
+    if (customLists.length > 0) {
+      localStorage.setItem("noteLists", JSON.stringify(customLists))
+    } else {
+      localStorage.removeItem("noteLists")
+    }
+  }, [customLists])
+
+  // Update counts when notes change
+  useEffect(() => {
+    const updateCounts = () => {
+      const allLists = [...lists, ...customLists]
+      const updatedLists = allLists.map(list => ({
+        ...list,
+        count: notes.filter(note => {
+          if (list.id === 'today') {
+            const today = new Date().toDateString()
+            return note.listId === list.id && new Date(note.createdAt).toDateString() === today
+          }
+          if (list.id === 'planned') {
+            return note.listId === list.id && !note.completed
+          }
+          if (list.id === 'all') {
+            return note.listId === list.id
+          }
+          if (list.id === 'flagged') {
+            return note.listId === list.id && note.metadata?.flag
+          }
+          if (list.id === 'completed') {
+            return note.listId === list.id && note.completed
+          }
+          return note.listId === list.id
+        }).length
+      }))
+
+      if (JSON.stringify(updatedLists.slice(0, lists.length)) !== JSON.stringify(lists)) {
+        setLists(updatedLists.slice(0, lists.length) as NoteList[])
+      }
+      if (JSON.stringify(updatedLists.slice(lists.length)) !== JSON.stringify(customLists)) {
+        setCustomLists(updatedLists.slice(lists.length) as NoteList[])
+      }
+    }
+
+    updateCounts()
+  }, [notes, lists, customLists])
+
+  const getIcon = (iconName: string) => {
+    switch (iconName) {
+      case 'Calendar': return <Calendar className="h-5 w-5" />
+      case 'Clock': return <Clock className="h-5 w-5" />
+      case 'CheckCircle': return <CheckCircle className="h-5 w-5" />
+      case 'Flag': return <Flag className="h-5 w-5" />
+      case 'Lightbulb': return <Lightbulb className="h-5 w-5" />
+      case 'Archive': return <Archive className="h-5 w-5" />
+      case 'MoreHorizontal': return <MoreHorizontal className="h-5 w-5" />
+      case 'Trash2': return <Trash2 className="h-5 w-5" />
+      default: return <MoreHorizontal className="h-5 w-5" />
+    }
+  }
 
   const handleStartEdit = (noteId: string) => {
     const note = notes.find((n) => n.id === noteId)
@@ -89,294 +166,233 @@ export default function NotesPage() {
         )
       )
     } else if (editingId && !editingText.trim()) {
-      // Delete empty note
       setNotes(notes.filter((n) => n.id !== editingId))
     }
     setEditingId(null)
     setEditingText("")
   }
 
-  // Removed keyboard handling for mobile
-
-  const handleCancelEdit = () => {
-    setEditingId(null)
-    setEditingText("")
-  }
-
-  const handleOutsideClick = (e: React.MouseEvent) => {
-    if (editingId && !(e.target as Element).closest('.note-item') && !showMetadataModal && !(e.target as Element).closest('.info-button')) {
-      handleSaveEdit()
-    }
-  }
-
   const handleAddNote = () => {
     const newNote: Note = {
       id: Date.now().toString(),
       text: "",
+      listId: selectedList,
+      completed: false,
       createdAt: Date.now(),
-      executionTime: Date.now() + 86400000, // +1 day
+      executionTime: Date.now() + 86400000,
       color: "#6b7280",
     }
     setNotes([newNote, ...notes])
   }
 
-  // Load metadata when modal opens
-  useEffect(() => {
-    if (showMetadataModal) {
-      const note = notes.find(n => n.id === showMetadataModal)
-      if (note?.metadata) {
-        setMetadataForm({
-          date: note.metadata.date || new Date(note.createdAt).toISOString().split('T')[0],
-          time: note.metadata.time || new Date(note.createdAt).toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' }),
-          tags: note.metadata.tags || '',
-          location: note.metadata.location || false,
-          flag: note.metadata.flag || false,
-          priority: note.metadata.priority || 'Нет',
-          list: note.metadata.list || false,
-          subitems: note.metadata.subitems || 0
-        })
-      } else {
-        // Set default values
-        setMetadataForm({
-          date: new Date(note?.createdAt || Date.now()).toISOString().split('T')[0],
-          time: new Date(note?.createdAt || Date.now()).toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' }),
-          tags: '',
-          location: false,
-          flag: false,
-          priority: 'Нет',
-          list: false,
-          subitems: 0
-        })
+  const handleAddList = () => {
+    if (newListName.trim()) {
+      const newList: NoteList = {
+        id: Date.now().toString(),
+        name: newListName.trim(),
+        icon: 'MoreHorizontal',
+        color: '#3B82F6',
+        count: 0,
+        type: 'custom',
+        deletable: true
       }
+      setCustomLists([...customLists, newList])
+      setNewListName("")
+      setShowAddList(false)
     }
-  }, [showMetadataModal, notes])
-
-  const handleSaveMetadata = () => {
-    if (showMetadataModal) {
-      setNotes(notes.map(note =>
-        note.id === showMetadataModal
-          ? { ...note, metadata: metadataForm }
-          : note
-      ))
-    }
-    setShowMetadataModal(null)
   }
 
-  const sortedNotes = [...notes].sort((a, b) => a.executionTime - b.executionTime)
+  const handleDeleteList = (listId: string) => {
+    setCustomLists(customLists.filter(list => list.id !== listId))
+    setNotes(notes.filter(note => note.listId !== listId))
+  }
+
+  const filteredNotes = notes.filter(note => note.listId === selectedList)
+  const currentList = [...lists, ...customLists].find(list => list.id === selectedList)
 
   return (
-    <div className="min-h-screen bg-background mobile-container" onClick={handleOutsideClick}>
-      <div className="max-w-4xl mx-auto">
-        <div className="space-y-0">
-          {sortedNotes.length === 0 ? (
-            <div className="text-center py-12 text-muted-foreground">Click add to create your first note.</div>
-          ) : (
-            sortedNotes.map((note, index) => (
+    <div className="min-h-screen bg-background">
+      <div className="max-w-md mx-auto">
+        {/* Header */}
+        <div className="p-4 border-b">
+          <h1 className="text-xl font-semibold">Мои списки</h1>
+        </div>
+
+        {/* Default Lists */}
+        <div className="p-4 space-y-2">
+          {lists.map((list) => (
+            <button
+              key={list.id}
+              onClick={() => setSelectedList(list.id)}
+              className={cn(
+                "w-full flex items-center justify-between p-3 rounded-lg border transition-colors",
+                selectedList === list.id
+                  ? "bg-blue-50 border-blue-200"
+                  : "bg-white border-gray-200 hover:bg-gray-50"
+              )}
+            >
+              <div className="flex items-center gap-3">
+                <div style={{ color: list.color }}>
+                  {getIcon(list.icon)}
+                </div>
+                <span className="font-medium">{list.name}</span>
+              </div>
+              <span className="text-sm text-gray-500">{list.count}</span>
+            </button>
+          ))}
+        </div>
+
+        {/* Custom Lists */}
+        <div className="px-4 pb-4">
+          <div className="space-y-2">
+            {customLists.map((list) => (
               <div
-                key={note.id}
+                key={list.id}
                 className={cn(
-                  "note-item overflow-hidden transition-all",
-                  index < sortedNotes.length - 1 ? "border-b border-gray-100" : ""
+                  "flex items-center justify-between p-3 rounded-lg border",
+                  selectedList === list.id
+                    ? "bg-blue-50 border-blue-200"
+                    : "bg-white border-gray-200"
                 )}
               >
-                {editingId === note.id ? (
-                  // Editing mode
-                  <div className="px-2 py-1 relative">
-                    <div
-                      className="w-full min-h-[80px] text-foreground bg-transparent border-none resize-none focus:ring-0 focus:outline-none focus:border-none focus:shadow-none p-0 mobile-textarea pr-12 relative editable-content"
-                      contentEditable
-                      suppressContentEditableWarning
-                      onBlur={(e) => {
-                        // Don't save if clicking on the info button
-                        if (!(e.relatedTarget as Element)?.closest('.info-button')) {
-                          handleSaveEdit()
-                        }
-                      }}
-                      onInput={(e) => {
-                        setEditingText(e.currentTarget.textContent || '')
-                      }}
-                      style={{
-                        WebkitAppearance: 'none',
-                        WebkitTapHighlightColor: 'transparent',
-                        WebkitUserModify: 'read-write-plaintext-only',
-                        boxShadow: 'none',
-                        outline: 'none',
-                        whiteSpace: 'pre-wrap',
-                        wordWrap: 'break-word'
-                      }}
-                      data-placeholder="Enter your note text..."
-                    >
-                      {editingText || ''}
-                    </div>
-                    <style dangerouslySetInnerHTML={{
-                      __html: `
-                        .editable-content:first-line {
-                          font-weight: bold;
-                        }
-                        .editable-content:empty:before {
-                          content: attr(data-placeholder);
-                          color: rgb(156 163 175);
-                          position: absolute;
-                          pointer-events: none;
-                        }
-                        .editable-content:focus:before {
-                          display: none;
-                        }
-                      `
-                    }} />
-                    <button
-                      onMouseDown={(e) => {
-                        e.preventDefault()
-                        e.stopPropagation()
-                        setShowMetadataModal(note.id)
-                      }}
-                      className="info-button absolute right-2 top-2 w-10 h-10 rounded-full bg-gray-200 hover:bg-gray-300 flex items-center justify-center"
-                    >
-                      <Info className="h-5 w-5 text-gray-600" />
-                    </button>
+                <button
+                  onClick={() => setSelectedList(list.id)}
+                  className="flex items-center gap-3 flex-1"
+                >
+                  <div style={{ color: list.color }}>
+                    {getIcon(list.icon)}
                   </div>
-                ) : (
-                  // Display mode
+                  <span className="font-medium">{list.name}</span>
+                  <span className="text-sm text-gray-500 ml-auto">{list.count}</span>
+                </button>
+                {list.deletable && (
                   <button
-                    onClick={() => handleStartEdit(note.id)}
-                    className="w-full px-4 py-1 flex items-center gap-3 text-left hover:bg-accent/50"
+                    onClick={() => handleDeleteList(list.id)}
+                    className="ml-2 p-1 text-gray-400 hover:text-red-500"
                   >
-                    <div className="flex items-center gap-3 flex-1 min-w-0">
-                      <div className="min-w-0 flex-1">
-                      <div className="font-bold text-foreground">
-                        {note.text.split('\n')[0] || 'Untitled'}
-                      </div>
-                      </div>
-                    </div>
+                    <X className="h-4 w-4" />
                   </button>
                 )}
               </div>
-            ))
-          )}
+            ))}
+          </div>
         </div>
-      </div>
 
-      {/* Metadata Modal */}
-      {showMetadataModal && (
-        <div className="fixed inset-0 bg-white z-50 flex flex-col" onClick={() => setShowMetadataModal(null)}>
-          <div className="flex items-center justify-between p-4 border-b" onClick={(e) => e.stopPropagation()}>
-            <h3 className="text-lg font-semibold">Подробно</h3>
+        {/* Add List Button */}
+        {showAddList ? (
+          <div className="px-4 pb-4">
+            <div className="flex gap-2">
+              <Input
+                value={newListName}
+                onChange={(e) => setNewListName(e.target.value)}
+                placeholder="Название списка"
+                className="flex-1"
+                onKeyPress={(e) => e.key === 'Enter' && handleAddList()}
+                autoFocus
+              />
+              <Button onClick={handleAddList} size="sm">Добавить</Button>
+              <Button
+                onClick={() => {
+                  setShowAddList(false)
+                  setNewListName("")
+                }}
+                variant="outline"
+                size="sm"
+              >
+                Отмена
+              </Button>
+            </div>
+          </div>
+        ) : (
+          <div className="px-4 pb-4">
             <Button
-              variant="ghost"
-              size="sm"
-              onClick={() => {
-                // Save metadata before closing
-                if (showMetadataModal) {
-                  const currentNote = notes.find(n => n.id === showMetadataModal)
-                  if (currentNote) {
-                    setNotes(notes.map(note =>
-                      note.id === showMetadataModal
-                        ? { ...note, metadata: metadataForm }
-                        : note
-                    ))
-                  }
-                }
-                setShowMetadataModal(null)
-              }}
-              className="w-8 h-8 p-0"
+              onClick={() => setShowAddList(true)}
+              variant="outline"
+              className="w-full flex items-center gap-2"
             >
-              Готово
+              <Plus className="h-4 w-4" />
+              Напоминание
             </Button>
           </div>
+        )}
 
-          <div className="flex-1 overflow-y-auto" onClick={(e) => e.stopPropagation()}>
-
-            <div className="space-y-2 p-4">
-              <div className="flex items-center gap-3">
-                <Calendar className="h-5 w-5 text-gray-500" />
-                <Input
-                  type="date"
-                  className="flex-1"
-                  value={metadataForm.date}
-                  onChange={(e) => setMetadataForm({...metadataForm, date: e.target.value})}
-                />
-                <input
-                  type="checkbox"
-                  className="rounded"
-                  checked={notes.find(n => n.id === showMetadataModal)?.metadata?.date ? true : false}
-                  onChange={(e) => {
-                    const note = notes.find(n => n.id === showMetadataModal)
-                    if (note) {
-                      setNotes(notes.map(n =>
-                        n.id === showMetadataModal
-                          ? { ...n, metadata: { ...n.metadata, date: e.target.checked ? metadataForm.date : undefined } }
-                          : n
-                      ))
-                    }
-                  }}
-                />
-              </div>
-
-              <div className="flex items-center gap-3">
-                <Clock className="h-5 w-5 text-gray-500" />
-                <Input
-                  type="time"
-                  className="flex-1"
-                  value={metadataForm.time}
-                  onChange={(e) => setMetadataForm({...metadataForm, time: e.target.value})}
-                />
-                <input
-                  type="checkbox"
-                  className="rounded"
-                  checked={notes.find(n => n.id === showMetadataModal)?.metadata?.time ? true : false}
-                  onChange={(e) => {
-                    const note = notes.find(n => n.id === showMetadataModal)
-                    if (note) {
-                      setNotes(notes.map(n =>
-                        n.id === showMetadataModal
-                          ? { ...n, metadata: { ...n.metadata, time: e.target.checked ? metadataForm.time : undefined } }
-                          : n
-                      ))
-                    }
-                  }}
-                />
-              </div>
-
-              <div className="flex items-center gap-3">
-                <Tag className="h-5 w-5 text-gray-500" />
-                <Input
-                  type="text"
-                  className="flex-1"
-                  placeholder="Добавить тег"
-                  value={metadataForm.tags}
-                  onChange={(e) => setMetadataForm({...metadataForm, tags: e.target.value})}
-                />
-                <input
-                  type="checkbox"
-                  className="rounded"
-                  checked={notes.find(n => n.id === showMetadataModal)?.metadata?.tags ? true : false}
-                  onChange={(e) => {
-                    const note = notes.find(n => n.id === showMetadataModal)
-                    if (note) {
-                      setNotes(notes.map(n =>
-                        n.id === showMetadataModal
-                          ? { ...n, metadata: { ...n.metadata, tags: e.target.checked ? metadataForm.tags : undefined } }
-                          : n
-                      ))
-                    }
-                  }}
-                />
-              </div>
+        {/* Notes List */}
+        {currentList && (
+          <div className="px-4 pb-20">
+            <div className="space-y-2">
+              {filteredNotes.length === 0 ? (
+                <div className="text-center py-8 text-gray-500">
+                  Нет заметок в списке "{currentList.name}"
+                </div>
+              ) : (
+                filteredNotes.map((note) => (
+                  <div
+                    key={note.id}
+                    className="bg-white border border-gray-200 rounded-lg p-3"
+                  >
+                    {editingId === note.id ? (
+                      <div className="relative">
+                        <div
+                          className="w-full min-h-[60px] text-foreground bg-transparent border-none resize-none focus:ring-0 focus:outline-none focus:border-none focus:shadow-none p-0 editable-content"
+                          contentEditable
+                          suppressContentEditableWarning
+                          onBlur={(e) => {
+                            if (!(e.relatedTarget as Element)?.closest('.info-button')) {
+                              handleSaveEdit()
+                            }
+                          }}
+                          onInput={(e) => {
+                            setEditingText(e.currentTarget.textContent || '')
+                          }}
+                          style={{
+                            WebkitAppearance: 'none',
+                            WebkitTapHighlightColor: 'transparent',
+                            WebkitUserModify: 'read-write-plaintext-only',
+                            boxShadow: 'none',
+                            outline: 'none',
+                            whiteSpace: 'pre-wrap',
+                            wordWrap: 'break-word'
+                          }}
+                        >
+                          {editingText || ''}
+                        </div>
+                        <style dangerouslySetInnerHTML={{
+                          __html: `
+                            .editable-content:first-line {
+                              font-weight: bold;
+                            }
+                          `
+                        }} />
+                      </div>
+                    ) : (
+                      <button
+                        onClick={() => handleStartEdit(note.id)}
+                        className="w-full text-left"
+                      >
+                        <div className="font-bold text-foreground">
+                          {note.text.split('\n')[0] || 'Untitled'}
+                        </div>
+                      </button>
+                    )}
+                  </div>
+                ))
+              )}
             </div>
-
-
           </div>
-        </div>
-      )}
+        )}
 
-      {/* Fixed bottom panel with add button */}
-      <div className="fixed bottom-14 left-0 right-0 flex justify-center">
-        <Button
-          onClick={handleAddNote}
-          className="w-10 h-10 rounded-full bg-gray-200 text-black"
-        >
-          <Plus className="h-8 w-8" />
-        </Button>
+        {/* Fixed bottom panel with add button */}
+        {currentList && (
+          <div className="fixed bottom-4 left-4 right-4 max-w-md mx-auto">
+            <Button
+              onClick={handleAddNote}
+              className="w-full bg-blue-500 hover:bg-blue-600 text-white"
+            >
+              <Plus className="h-4 w-4 mr-2" />
+              Добавить задачу
+            </Button>
+          </div>
+        )}
       </div>
     </div>
   )
