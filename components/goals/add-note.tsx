@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState, useEffect, useMemo } from "react"
 import { Button } from "@/components/ui/button"
 import { Textarea } from "@/components/ui/textarea"
 import { Input } from "@/components/ui/input"
@@ -68,10 +68,14 @@ export default function NotesPage() {
     tags: '',
     location: false,
     flag: false,
-    priority: 'Нет',
+    priority: 'None',
     list: false,
     subitems: 0
   })
+
+  // Computed properties for active and completed notes
+  const activeNotes = useMemo(() => notes.filter(note => note.metadata?.flag !== true), [notes])
+  const completedNotes = useMemo(() => notes.filter(note => note.metadata?.flag === true), [notes])
 
   // Load notes from localStorage on mount
   useEffect(() => {
@@ -171,7 +175,7 @@ export default function NotesPage() {
           tags: note.metadata.tags || '',
           location: note.metadata.location || false,
           flag: note.metadata.flag || false,
-          priority: note.metadata.priority || 'Нет',
+          priority: note.metadata.priority || 'None',
           list: note.metadata.list || false,
           subitems: note.metadata.subitems || 0
         })
@@ -183,7 +187,7 @@ export default function NotesPage() {
           tags: '',
           location: false,
           flag: false,
-          priority: 'Нет',
+          priority: 'None',
           list: false,
           subitems: 0
         })
@@ -277,6 +281,9 @@ export default function NotesPage() {
       case 'today':
         return notes.filter(note => {
           // Today list: notes with active date metadata set to today, or notes without active date that are due today
+          // Exclude completed notes
+          if (note.metadata?.flag === true) return false
+
           if (note.metadata?.date) {
             const noteDate = new Date(note.metadata.date)
             noteDate.setHours(0, 0, 0, 0)
@@ -290,13 +297,14 @@ export default function NotesPage() {
       case 'plan':
         return notes.filter(note => {
           // Plan list: ALL notes WITH active date (regardless of date)
-          return note.metadata?.date !== undefined
+          // Exclude completed notes
+          return note.metadata?.date !== undefined && note.metadata?.flag !== true
         })
       case 'done':
         return notes.filter(note => note.metadata?.flag === true)
       case 'all':
       default:
-        return notes
+        return notes.filter(note => note.metadata?.flag !== true)
     }
   }
 
@@ -312,6 +320,9 @@ export default function NotesPage() {
     switch (listType) {
       case 'today':
         return notes.filter(note => {
+          // Exclude completed notes from count
+          if (note.metadata?.flag === true) return false
+
           // If note has active date metadata, use that date
           if (note.metadata?.date) {
             const noteDate = new Date(note.metadata.date)
@@ -325,6 +336,9 @@ export default function NotesPage() {
         }).length
       case 'plan':
         return notes.filter(note => {
+          // Exclude completed notes from count
+          if (note.metadata?.flag === true) return false
+
           // Plan list: ALL notes WITH active date (regardless of date)
           return note.metadata?.date !== undefined
         }).length
@@ -332,7 +346,7 @@ export default function NotesPage() {
         return notes.filter(note => note.metadata?.flag === true).length
       case 'all':
       default:
-        return notes.length
+        return notes.filter(note => note.metadata?.flag !== true).length
     }
   }
 
@@ -370,7 +384,7 @@ export default function NotesPage() {
         <div className="relative">
           <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-gray-400" />
           <Input
-            placeholder="Поиск"
+            placeholder="Search"
             className="pl-10 bg-gray-100 border-none rounded-lg"
           />
         </div>
@@ -383,7 +397,7 @@ export default function NotesPage() {
           <button
             onClick={() => {
               setCurrentListType('today')
-              setCurrentListTitle('Сегодня')
+              setCurrentListTitle('Today')
               setShowListModal(true)
             }}
             className="bg-white rounded-xl p-4 text-left border border-gray-200 hover:bg-gray-50 transition-all"
@@ -394,14 +408,14 @@ export default function NotesPage() {
               </div>
               <span className="text-2xl font-bold text-gray-900">{getListCount('today')}</span>
             </div>
-            <div className="text-sm text-gray-600 font-medium">Сегодня</div>
+            <div className="text-sm text-gray-600 font-medium">Today</div>
           </button>
 
           {/* Planned */}
           <button
             onClick={() => {
               setCurrentListType('plan')
-              setCurrentListTitle('В планах')
+              setCurrentListTitle('Planned')
               setShowListModal(true)
             }}
             className="bg-white rounded-xl p-4 text-left border border-gray-200 hover:bg-gray-50 transition-all"
@@ -412,14 +426,14 @@ export default function NotesPage() {
               </div>
               <span className="text-2xl font-bold text-gray-900">{getListCount('plan')}</span>
             </div>
-            <div className="text-sm text-gray-600 font-medium">В планах</div>
+            <div className="text-sm text-gray-600 font-medium">Planned</div>
           </button>
 
           {/* All */}
           <button
             onClick={() => {
               setCurrentListType('all')
-              setCurrentListTitle('Все')
+              setCurrentListTitle('All')
               setShowListModal(true)
             }}
             className="bg-white rounded-xl p-4 text-left border border-gray-200 hover:bg-gray-50 transition-all"
@@ -430,14 +444,14 @@ export default function NotesPage() {
               </div>
               <span className="text-2xl font-bold text-gray-900">{getListCount('all')}</span>
             </div>
-            <div className="text-sm text-gray-600 font-medium">Все</div>
+            <div className="text-sm text-gray-600 font-medium">All</div>
           </button>
 
           {/* Done */}
           <button
             onClick={() => {
               setCurrentListType('done')
-              setCurrentListTitle('Завершено')
+              setCurrentListTitle('Completed')
               setShowListModal(true)
             }}
             className="bg-white rounded-xl p-4 text-left border border-gray-200 hover:bg-gray-50 transition-all"
@@ -448,13 +462,13 @@ export default function NotesPage() {
               </div>
               <span className="text-2xl font-bold text-gray-900">{getListCount('done')}</span>
             </div>
-            <div className="text-sm text-gray-600 font-medium">Завершено</div>
+            <div className="text-sm text-gray-600 font-medium">Completed</div>
           </button>
         </div>
 
         {/* My Lists */}
         <div>
-          <h2 className="text-lg font-semibold text-gray-900 mb-3">Мои списки</h2>
+          <h2 className="text-lg font-semibold text-gray-900 mb-3">My Lists</h2>
           <div className="space-y-1">
             {customLists.map((list) => (
               <div key={list.id} className="relative">
@@ -471,14 +485,14 @@ export default function NotesPage() {
                       <>
                         <div
                           onClick={() => {
-                            const emoji = prompt('Введите эмоджи для иконки списка:')
+                            const emoji = prompt('Enter emoji for list icon:')
                             if (emoji && emoji.trim()) {
                               setEditingListIcon(emoji.trim())
                             }
                           }}
                           className="w-8 h-8 rounded-lg flex items-center justify-center text-lg hover:bg-gray-100 transition-colors cursor-pointer"
                           style={{ backgroundColor: list.color + '20' }}
-                          title="Нажмите чтобы изменить эмоджи"
+                          title="Click to change emoji"
                         >
                           {editingListIcon || getListIcon(list.icon)}
                         </div>
@@ -514,33 +528,37 @@ export default function NotesPage() {
                   </div>
                   <div className="flex items-center gap-2">
                     <span className="text-sm text-gray-500">{getCustomListCount(list.id)}</span>
-                    <div
-                      onClick={(e) => {
-                        e.stopPropagation()
-                        handleListMenuToggle(list.id)
-                      }}
-                      className="w-8 h-8 flex items-center justify-center rounded-full hover:bg-gray-100 transition-colors cursor-pointer"
-                    >
-                      <MoreHorizontal className="h-5 w-5 text-gray-400" />
-                    </div>
                   </div>
                 </button>
 
+
+
                 {/* List Menu */}
-                {showListMenu === list.id && (
-                  <div className="list-menu-container absolute right-2 top-12 bg-white rounded-lg shadow-lg border border-gray-200 py-2 z-10 min-w-[120px]">
-                    <button
-                      onClick={() => handleEditList(list.id)}
-                      className="w-full px-4 py-2 text-left text-sm text-gray-700 hover:bg-gray-50 transition-colors"
-                    >
-                      Редактировать
-                    </button>
-                    <button
-                      onClick={() => handleDeleteList(list.id)}
-                      className="w-full px-4 py-2 text-left text-sm text-red-600 hover:bg-red-50 transition-colors"
-                    >
-                      Удалить
-                    </button>
+                {showListMenu === currentListType && (
+                  <div className="absolute right-4 top-16 bg-white rounded-lg shadow-lg border border-gray-200 py-2 z-50 min-w-[120px]">
+                    {currentListType.startsWith('custom-') ? (
+                      <>
+                        <button
+                          onClick={() => handleEditList(currentListType.replace('custom-', ''))}
+                          className="w-full px-4 py-2 text-left text-sm text-gray-700 hover:bg-gray-50 transition-colors"
+                        >
+                          Edit
+                        </button>
+                        <button
+                          onClick={() => handleDeleteList(currentListType.replace('custom-', ''))}
+                          className="w-full px-4 py-2 text-left text-sm text-red-600 hover:bg-red-50 transition-colors"
+                        >
+                          Delete
+                        </button>
+                      </>
+                    ) : (
+                      <button
+                        onClick={() => setShowListMenu(null)}
+                        className="w-full px-4 py-2 text-left text-sm text-gray-700 hover:bg-gray-50 transition-colors"
+                      >
+                        Show completed
+                      </button>
+                    )}
                   </div>
                 )}
               </div>
@@ -555,7 +573,7 @@ export default function NotesPage() {
       {showMetadataModal && (
         <div className="fixed inset-0 bg-white z-[60] flex flex-col">
           <div className="flex items-center justify-between p-4 border-b" onClick={(e) => e.stopPropagation()}>
-            <h3 className="text-lg font-semibold">Подробно</h3>
+            <h3 className="text-lg font-semibold">Details</h3>
             <Button
               variant="ghost"
               size="sm"
@@ -575,7 +593,7 @@ export default function NotesPage() {
               }}
               className="w-8 h-8 p-0"
             >
-              Готово
+              Done
             </Button>
           </div>
 
@@ -637,7 +655,7 @@ export default function NotesPage() {
                 <Input
                   type="text"
                   className="flex-1"
-                  placeholder="Добавить тег"
+                  placeholder="Add tag"
                   value={metadataForm.tags}
                   onChange={(e) => setMetadataForm({...metadataForm, tags: e.target.value})}
                 />
@@ -695,9 +713,9 @@ export default function NotesPage() {
               className="flex items-center gap-2"
             >
               <ArrowLeft className="h-4 w-4" />
-              Назад
+              Back
             </Button>
-            <h3 className="text-lg font-semibold">Все заметки</h3>
+            <h3 className="text-lg font-semibold">All Notes</h3>
             <div className="w-16"></div> {/* Spacer for centering */}
           </div>
 
@@ -705,7 +723,7 @@ export default function NotesPage() {
             <div className="max-w-4xl mx-auto">
               <div className="space-y-0">
                 {sortedNotes.length === 0 ? (
-                  <div className="text-center py-12 text-muted-foreground">Нет заметок</div>
+                  <div className="text-center py-12 text-muted-foreground">No notes</div>
                 ) : (
                   sortedNotes.map((note, index) => (
                     <div
@@ -796,10 +814,18 @@ export default function NotesPage() {
               className="flex items-center gap-2"
             >
               <ArrowLeft className="h-4 w-4" />
-              Назад
+              Back
             </Button>
             <h3 className="text-lg font-semibold">{currentListTitle}</h3>
-            <div className="w-16"></div> {/* Spacer for centering */}
+            <div
+              onClick={(e) => {
+                e.stopPropagation()
+                setShowListMenu(showListMenu === currentListType ? null : currentListType)
+              }}
+              className="w-8 h-8 flex items-center justify-center rounded-full hover:bg-gray-100 transition-colors cursor-pointer"
+            >
+              <MoreHorizontal className="h-5 w-5 text-gray-400" />
+            </div>
           </div>
 
           <div className="flex-1 overflow-y-auto" onClick={(e) => e.stopPropagation()}>
@@ -815,6 +841,9 @@ export default function NotesPage() {
                   switch (currentListType) {
                     case 'today':
                       listNotes = notes.filter(note => {
+                        // Exclude completed notes
+                        if (note.metadata?.flag === true) return false
+
                         // Today list: notes with active date metadata set to today, or notes without active date that are due today
                         if (note.metadata?.date) {
                           const noteDate = new Date(note.metadata.date)
@@ -837,6 +866,9 @@ export default function NotesPage() {
                       break
                     case 'plan':
                       listNotes = notes.filter(note => {
+                        // Exclude completed notes
+                        if (note.metadata?.flag === true) return false
+
                         // Plan list: ALL notes WITH active date (regardless of date)
                         return note.metadata?.date !== undefined
                       })
@@ -846,7 +878,7 @@ export default function NotesPage() {
                       break
                     case 'all':
                     default:
-                      listNotes = notes
+                      listNotes = notes.filter(note => note.metadata?.flag !== true)
                       break
                   }
 
@@ -855,11 +887,12 @@ export default function NotesPage() {
                     const listId = currentListType.replace('custom-', '')
                     // For now, return all notes for custom lists (mock data)
                     // In real app, this would filter by list ID from note metadata
-                    listNotes = notes
+                    // Exclude completed notes
+                    listNotes = notes.filter(note => note.metadata?.flag !== true)
                   }
 
                   if (listNotes.length === 0) {
-                    return <div className="text-center py-12 text-muted-foreground">Нет заметок</div>
+                    return <div className="text-center py-12 text-muted-foreground">No notes</div>
                   }
 
                   return listNotes.map((note, index) => (
@@ -955,7 +988,7 @@ export default function NotesPage() {
               className="w-full bg-blue-500 hover:bg-blue-600 text-white rounded-lg py-3 flex items-center justify-center gap-2 font-medium"
             >
               <Plus className="h-5 w-5" />
-              Добавить напоминание
+              Add Reminder
             </Button>
           </div>
         </div>
@@ -972,16 +1005,16 @@ export default function NotesPage() {
               className="flex items-center gap-2"
             >
               <ArrowLeft className="h-4 w-4" />
-              Назад
+              Back
             </Button>
-            <h3 className="text-lg font-semibold">Новый список</h3>
+            <h3 className="text-lg font-semibold">New List</h3>
             <Button
               variant="ghost"
               size="sm"
               onClick={handleCreateList}
               className="text-blue-600 font-medium"
             >
-              Готово
+              Done
             </Button>
           </div>
 
@@ -990,11 +1023,11 @@ export default function NotesPage() {
               {/* List Name */}
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Название
+                  Name
                 </label>
                 <Input
                   type="text"
-                  placeholder="Название списка"
+                  placeholder="List name"
                   value={newListName}
                   onChange={(e) => setNewListName(e.target.value)}
                   className="w-full"
@@ -1004,14 +1037,14 @@ export default function NotesPage() {
               {/* List Icon */}
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Иконка
+                  Icon
                 </label>
                 <div className="space-y-3">
                   {/* Custom emoji input */}
                   <div className="flex gap-2">
                     <Input
                       type="text"
-                      placeholder="Вставьте эмоджи"
+                      placeholder="Insert emoji"
                       value={newListIcon}
                       onChange={(e) => setNewListIcon(e.target.value)}
                       className="flex-1"
@@ -1024,7 +1057,7 @@ export default function NotesPage() {
 
                   {/* Predefined icons */}
                   <div>
-                    <div className="text-xs text-gray-500 mb-2">или выберите из предложенных:</div>
+                    <div className="text-xs text-gray-500 mb-2">or choose from suggested:</div>
                     <div className="grid grid-cols-6 gap-2">
                       {[
                         { name: 'menu', emoji: '☰' },
@@ -1043,7 +1076,7 @@ export default function NotesPage() {
                               ? "border-blue-500 bg-blue-50"
                               : "border-gray-200 hover:border-gray-300"
                           )}
-                          title={`Выбрать ${icon.emoji}`}
+                          title={`Select ${icon.emoji}`}
                         >
                           {icon.emoji}
                         </button>
@@ -1056,7 +1089,7 @@ export default function NotesPage() {
               {/* List Color */}
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Цвет
+                  Color
                 </label>
                 <div className="grid grid-cols-6 gap-2">
                   {[
