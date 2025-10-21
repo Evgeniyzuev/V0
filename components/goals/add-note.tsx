@@ -182,25 +182,48 @@ export default function NotesPage() {
                 {editingId === note.id ? (
                   // Editing mode
                   <div className="px-2 py-1 relative">
-                    <Textarea
-                      value={editingText}
-                      onChange={(e) => setEditingText(e.target.value)}
-                      className="w-full min-h-[80px] text-foreground bg-transparent border-none resize-none focus:ring-0 focus:outline-none focus:border-none focus:shadow-none p-0 mobile-textarea pr-12"
-                      placeholder="Enter your note text..."
+                    <div
+                      className="w-full min-h-[80px] text-foreground bg-transparent border-none resize-none focus:ring-0 focus:outline-none focus:border-none focus:shadow-none p-0 mobile-textarea pr-12 relative editable-content"
+                      contentEditable
+                      suppressContentEditableWarning
                       onBlur={(e) => {
                         // Don't save if clicking on the info button
                         if (!(e.relatedTarget as Element)?.closest('.info-button')) {
                           handleSaveEdit()
                         }
                       }}
-                      autoFocus
+                      onInput={(e) => {
+                        setEditingText(e.currentTarget.textContent || '')
+                      }}
                       style={{
                         WebkitAppearance: 'none',
                         WebkitTapHighlightColor: 'transparent',
                         WebkitUserModify: 'read-write-plaintext-only',
-                        boxShadow: 'none'
+                        boxShadow: 'none',
+                        outline: 'none',
+                        whiteSpace: 'pre-wrap',
+                        wordWrap: 'break-word'
                       }}
-                    />
+                      data-placeholder="Enter your note text..."
+                    >
+                      {editingText || ''}
+                    </div>
+                    <style dangerouslySetInnerHTML={{
+                      __html: `
+                        .editable-content:first-line {
+                          font-weight: bold;
+                        }
+                        .editable-content:empty:before {
+                          content: attr(data-placeholder);
+                          color: rgb(156 163 175);
+                          position: absolute;
+                          pointer-events: none;
+                        }
+                        .editable-content:focus:before {
+                          display: none;
+                        }
+                      `
+                    }} />
                     <button
                       onMouseDown={(e) => {
                         e.preventDefault()
