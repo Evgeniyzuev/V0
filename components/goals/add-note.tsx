@@ -4,7 +4,7 @@ import { useState, useEffect } from "react"
 import { Button } from "@/components/ui/button"
 import { Textarea } from "@/components/ui/textarea"
 import { Input } from "@/components/ui/input"
-import { Plus, Info, Calendar, Clock, Tag, List, ArrowLeft } from "lucide-react"
+import { Plus, Info, Calendar, Clock, Tag, List, ArrowLeft, Search, CheckCircle2, Trash2, MoreHorizontal } from "lucide-react"
 import { cn } from "@/lib/utils"
 
 interface Note {
@@ -25,12 +25,26 @@ interface Note {
   }
 }
 
+interface CustomList {
+  id: string
+  name: string
+  color: string
+  icon: string
+}
+
 export default function NotesPage() {
   const [notes, setNotes] = useState<Note[]>([])
   const [editingId, setEditingId] = useState<string | null>(null)
   const [editingText, setEditingText] = useState<string>("")
   const [showMetadataModal, setShowMetadataModal] = useState<string | null>(null)
   const [showAllNotesModal, setShowAllNotesModal] = useState<boolean>(false)
+  const [activeList, setActiveList] = useState<string>('all')
+  const [customLists, setCustomLists] = useState<CustomList[]>([
+    { id: '1', name: 'Напоминания', color: '#FF3B30', icon: 'bell' },
+    { id: '2', name: 'Legacy', color: '#34C759', icon: 'flame' },
+    { id: '3', name: 'Разобрать', color: '#007AFF', icon: 'menu' },
+    { id: '4', name: 'Недавно удаленные', color: '#8E8E93', icon: 'trash' }
+  ])
   const [metadataForm, setMetadataForm] = useState<{
     date: string
     time: string
@@ -165,19 +179,203 @@ export default function NotesPage() {
 
   const sortedNotes = [...notes].sort((a, b) => a.executionTime - b.executionTime)
 
+  // Filter notes based on active list
+  const getFilteredNotes = () => {
+    const today = new Date()
+    today.setHours(0, 0, 0, 0)
+    const tomorrow = new Date(today)
+    tomorrow.setDate(tomorrow.getDate() + 1)
+
+    switch (activeList) {
+      case 'today':
+        return notes.filter(note => {
+          const noteDate = new Date(note.executionTime)
+          noteDate.setHours(0, 0, 0, 0)
+          return noteDate.getTime() === today.getTime()
+        })
+      case 'plan':
+        return notes.filter(note => {
+          const noteDate = new Date(note.executionTime)
+          noteDate.setHours(0, 0, 0, 0)
+          return noteDate.getTime() >= tomorrow.getTime()
+        })
+      case 'done':
+        return notes.filter(note => note.metadata?.flag === true)
+      case 'all':
+      default:
+        return notes
+    }
+  }
+
+  const filteredNotes = getFilteredNotes()
+
+  // Get counts for each list
+  const getListCount = (listType: string) => {
+    const today = new Date()
+    today.setHours(0, 0, 0, 0)
+    const tomorrow = new Date(today)
+    tomorrow.setDate(tomorrow.getDate() + 1)
+
+    switch (listType) {
+      case 'today':
+        return notes.filter(note => {
+          const noteDate = new Date(note.executionTime)
+          noteDate.setHours(0, 0, 0, 0)
+          return noteDate.getTime() === today.getTime()
+        }).length
+      case 'plan':
+        return notes.filter(note => {
+          const noteDate = new Date(note.executionTime)
+          noteDate.setHours(0, 0, 0, 0)
+          return noteDate.getTime() >= tomorrow.getTime()
+        }).length
+      case 'done':
+        return notes.filter(note => note.metadata?.flag === true).length
+      case 'all':
+      default:
+        return notes.length
+    }
+  }
+
+  const getCustomListCount = (listId: string) => {
+    // For now, return mock data. In real app, this would filter by list ID
+    const mockCounts: { [key: string]: number } = {
+      '1': 3, '2': 10, '3': 8, '4': 8
+    }
+    return mockCounts[listId] || 0
+  }
+
+  const getListIcon = (iconName: string) => {
+    switch (iconName) {
+      case 'bell': return '🔔'
+      case 'flame': return '🔥'
+      case 'menu': return '☰'
+      case 'trash': return '🗑️'
+      default: return '📝'
+    }
+  }
+
   return (
-    <div className="min-h-screen bg-background mobile-container" onClick={handleOutsideClick}>
-      <div className="max-w-4xl mx-auto">
-        <div className="space-y-0">
-          {sortedNotes.length === 0 ? (
-            <div className="text-center py-12 text-muted-foreground">Click add to create your first note.</div>
-          ) : (
-            sortedNotes.map((note, index) => (
+    <div className="min-h-screen bg-gray-50 mobile-container">
+      {/* Search Bar */}
+      <div className="bg-white border-b border-gray-200 px-4 py-3">
+        <div className="relative">
+          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-gray-400" />
+          <Input
+            placeholder="Поиск"
+            className="pl-10 bg-gray-100 border-none rounded-lg"
+          />
+        </div>
+      </div>
+
+      <div className="max-w-4xl mx-auto p-4 space-y-6">
+        {/* Standard Lists */}
+        <div className="grid grid-cols-2 gap-3">
+          {/* Today */}
+          <button
+            onClick={() => setActiveList('today')}
+            className={cn(
+              "bg-white rounded-xl p-4 text-left border transition-all",
+              activeList === 'today' ? "border-blue-500 bg-blue-50" : "border-gray-200"
+            )}
+          >
+            <div className="flex items-center justify-between mb-2">
+              <div className="w-8 h-8 bg-blue-500 rounded-lg flex items-center justify-center">
+                <span className="text-white text-sm font-bold">21</span>
+              </div>
+              <span className="text-2xl font-bold text-gray-900">{getListCount('today')}</span>
+            </div>
+            <div className="text-sm text-gray-600 font-medium">Сегодня</div>
+          </button>
+
+          {/* Planned */}
+          <button
+            onClick={() => setActiveList('plan')}
+            className={cn(
+              "bg-white rounded-xl p-4 text-left border transition-all",
+              activeList === 'plan' ? "border-red-500 bg-red-50" : "border-gray-200"
+            )}
+          >
+            <div className="flex items-center justify-between mb-2">
+              <div className="w-8 h-8 bg-red-500 rounded-lg flex items-center justify-center">
+                <span className="text-white text-sm font-bold">📅</span>
+              </div>
+              <span className="text-2xl font-bold text-gray-900">{getListCount('plan')}</span>
+            </div>
+            <div className="text-sm text-gray-600 font-medium">В планах</div>
+          </button>
+
+          {/* All */}
+          <button
+            onClick={() => setActiveList('all')}
+            className={cn(
+              "bg-white rounded-xl p-4 text-left border transition-all",
+              activeList === 'all' ? "border-gray-800 bg-gray-50" : "border-gray-200"
+            )}
+          >
+            <div className="flex items-center justify-between mb-2">
+              <div className="w-8 h-8 bg-gray-800 rounded-lg flex items-center justify-center">
+                <span className="text-white text-sm font-bold">📋</span>
+              </div>
+              <span className="text-2xl font-bold text-gray-900">{getListCount('all')}</span>
+            </div>
+            <div className="text-sm text-gray-600 font-medium">Все</div>
+          </button>
+
+          {/* Done */}
+          <button
+            onClick={() => setActiveList('done')}
+            className={cn(
+              "bg-white rounded-xl p-4 text-left border transition-all",
+              activeList === 'done' ? "border-gray-500 bg-gray-50" : "border-gray-200"
+            )}
+          >
+            <div className="flex items-center justify-between mb-2">
+              <div className="w-8 h-8 bg-gray-500 rounded-lg flex items-center justify-center">
+                <CheckCircle2 className="h-4 w-4 text-white" />
+              </div>
+              <span className="text-2xl font-bold text-gray-900">{getListCount('done')}</span>
+            </div>
+            <div className="text-sm text-gray-600 font-medium">Завершено</div>
+          </button>
+        </div>
+
+        {/* My Lists */}
+        <div>
+          <h2 className="text-lg font-semibold text-gray-900 mb-3">Мои списки</h2>
+          <div className="space-y-1">
+            {customLists.map((list) => (
+              <button
+                key={list.id}
+                className="w-full bg-white rounded-lg p-3 flex items-center justify-between border border-gray-200 hover:bg-gray-50 transition-colors"
+              >
+                <div className="flex items-center gap-3">
+                  <div
+                    className="w-8 h-8 rounded-lg flex items-center justify-center text-lg"
+                    style={{ backgroundColor: list.color + '20', color: list.color }}
+                  >
+                    {getListIcon(list.icon)}
+                  </div>
+                  <span className="font-medium text-gray-900">{list.name}</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <span className="text-sm text-gray-500">{getCustomListCount(list.id)}</span>
+                  <MoreHorizontal className="h-5 w-5 text-gray-400" />
+                </div>
+              </button>
+            ))}
+          </div>
+        </div>
+
+        {/* Notes List - Show when a list is selected */}
+        {activeList !== 'all' && filteredNotes.length > 0 && (
+          <div className="space-y-0">
+            {filteredNotes.map((note, index) => (
               <div
                 key={note.id}
                 className={cn(
-                  "note-item overflow-hidden transition-all",
-                  index < sortedNotes.length - 1 ? "border-b border-gray-100" : ""
+                  "note-item overflow-hidden transition-all bg-white border border-gray-200 rounded-lg",
+                  index < filteredNotes.length - 1 ? "mb-2" : ""
                 )}
               >
                 {editingId === note.id ? (
@@ -229,9 +427,9 @@ export default function NotesPage() {
                   </button>
                 )}
               </div>
-            ))
-          )}
-        </div>
+            ))}
+          </div>
+        )}
       </div>
 
       {/* Metadata Modal */}
@@ -348,19 +546,22 @@ export default function NotesPage() {
       )}
 
       {/* Fixed bottom panel with buttons */}
-      <div className="fixed bottom-14 left-0 right-0 flex justify-center gap-4">
-        <Button
-          onClick={() => setShowAllNotesModal(true)}
-          className="w-10 h-10 rounded-full bg-gray-200 text-black flex items-center justify-center"
-        >
-          <List className="h-5 w-5" />
-        </Button>
-        <Button
-          onClick={handleAddNote}
-          className="w-10 h-10 rounded-full bg-gray-200 text-black"
-        >
-          <Plus className="h-8 w-8" />
-        </Button>
+      <div className="fixed bottom-4 left-4 right-4">
+        <div className="flex gap-3">
+          <Button
+            onClick={handleAddNote}
+            className="flex-1 bg-blue-500 hover:bg-blue-600 text-white rounded-lg py-3 flex items-center justify-center gap-2 font-medium"
+          >
+            <Plus className="h-5 w-5" />
+            Напоминание
+          </Button>
+          <Button
+            onClick={() => setShowAllNotesModal(true)}
+            className="px-6 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-lg py-3 font-medium"
+          >
+            Добавить
+          </Button>
+        </div>
       </div>
 
       {/* All Notes Modal */}
@@ -390,32 +591,66 @@ export default function NotesPage() {
                     <div
                       key={note.id}
                       className={cn(
-                        "overflow-hidden transition-all border-b border-gray-100",
-                        "px-4 py-3"
+                        "note-item overflow-hidden transition-all",
+                        index < sortedNotes.length - 1 ? "border-b border-gray-100" : ""
                       )}
                     >
-                      <div className="font-medium text-foreground mb-1">
-                        {note.text.split('\n')[0] || 'Untitled'}
-                      </div>
-                      {note.text.split('\n').length > 1 && (
-                        <div className="text-sm text-muted-foreground mb-2">
-                          {note.text.split('\n').slice(1).join('\n')}
+                      {editingId === note.id ? (
+                        // Editing mode
+                        <div className="px-2 py-1 relative">
+                          <Textarea
+                            value={editingText}
+                            onChange={(e) => setEditingText(e.target.value)}
+                            className="w-full min-h-[80px] text-foreground bg-transparent border-none resize-none focus:ring-0 focus:outline-none focus:border-none focus:shadow-none p-0 mobile-textarea pr-12"
+                            placeholder="Enter your note text..."
+                            onBlur={(e) => {
+                              // Don't save if clicking on the info button
+                              if (!(e.relatedTarget as Element)?.closest('.info-button')) {
+                                handleSaveEdit()
+                              }
+                            }}
+                            autoFocus
+                            style={{
+                              WebkitAppearance: 'none',
+                              WebkitTapHighlightColor: 'transparent',
+                              WebkitUserModify: 'read-write-plaintext-only',
+                              boxShadow: 'none'
+                            }}
+                          />
+                          <button
+                            onMouseDown={(e) => {
+                              e.preventDefault()
+                              e.stopPropagation()
+                              setShowMetadataModal(note.id)
+                            }}
+                            className="info-button absolute right-2 top-2 w-10 h-10 rounded-full bg-gray-200 hover:bg-gray-300 flex items-center justify-center"
+                          >
+                            <Info className="h-5 w-5 text-gray-600" />
+                          </button>
                         </div>
+                      ) : (
+                        // Display mode
+                        <button
+                          onClick={() => handleStartEdit(note.id)}
+                          className="w-full px-4 py-1 flex items-center gap-3 text-left hover:bg-accent/50"
+                        >
+                          <div className="flex items-center gap-3 flex-1 min-w-0">
+                            <div className="min-w-0 flex-1">
+                            <div className="font-bold text-foreground">
+                              {note.text.split('\n')[0] || 'Untitled'}
+                            </div>
+                            </div>
+                          </div>
+                        </button>
                       )}
-                      <div className="flex items-center gap-4 text-xs text-muted-foreground">
-                        <span>{new Date(note.createdAt).toLocaleDateString('ru-RU')}</span>
-                        {note.metadata?.tags && (
-                          <span className="bg-gray-100 px-2 py-1 rounded">
-                            {note.metadata.tags}
-                          </span>
-                        )}
-                      </div>
                     </div>
                   ))
                 )}
               </div>
             </div>
           </div>
+
+
         </div>
       )}
     </div>
