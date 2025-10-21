@@ -51,10 +51,7 @@ export default function NotesPage() {
   const [editingListName, setEditingListName] = useState<string>('')
   const [editingListIcon, setEditingListIcon] = useState<string>('')
   const [customLists, setCustomLists] = useState<CustomList[]>([
-    { id: '1', name: 'Напоминания', color: '#FF3B30', icon: 'bell' },
-    { id: '2', name: 'Legacy', color: '#34C759', icon: 'flame' },
-    { id: '3', name: 'Разобрать', color: '#007AFF', icon: 'menu' },
-    { id: '4', name: 'Недавно удаленные', color: '#8E8E93', icon: 'trash' }
+    { id: '1', name: 'NEW', color: '#007AFF', icon: 'menu' }
   ])
   const [metadataForm, setMetadataForm] = useState<{
     date: string
@@ -342,7 +339,7 @@ export default function NotesPage() {
   const getCustomListCount = (listId: string) => {
     // For now, return mock data. In real app, this would filter by list ID
     const mockCounts: { [key: string]: number } = {
-      '1': 3, '2': 10, '3': 8, '4': 8
+      '1': 0 // NEW list starts with 0 notes
     }
     return mockCounts[listId] || 0
   }
