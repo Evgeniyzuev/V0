@@ -472,19 +472,19 @@ export default function NotesPage() {
                   <div className="flex items-center gap-3">
                     {editingList === list.id ? (
                       <>
-                        <button
+                        <div
                           onClick={() => {
                             const emoji = prompt('Введите эмоджи для иконки списка:')
                             if (emoji && emoji.trim()) {
                               setEditingListIcon(emoji.trim())
                             }
                           }}
-                          className="w-8 h-8 rounded-lg flex items-center justify-center text-lg hover:bg-gray-100 transition-colors"
+                          className="w-8 h-8 rounded-lg flex items-center justify-center text-lg hover:bg-gray-100 transition-colors cursor-pointer"
                           style={{ backgroundColor: list.color + '20' }}
                           title="Нажмите чтобы изменить эмоджи"
                         >
                           {editingListIcon || getListIcon(list.icon)}
-                        </button>
+                        </div>
                         <Input
                           type="text"
                           value={editingListName}
@@ -517,15 +517,15 @@ export default function NotesPage() {
                   </div>
                   <div className="flex items-center gap-2">
                     <span className="text-sm text-gray-500">{getCustomListCount(list.id)}</span>
-                    <button
+                    <div
                       onClick={(e) => {
                         e.stopPropagation()
                         handleListMenuToggle(list.id)
                       }}
-                      className="w-8 h-8 flex items-center justify-center rounded-full hover:bg-gray-100 transition-colors"
+                      className="w-8 h-8 flex items-center justify-center rounded-full hover:bg-gray-100 transition-colors cursor-pointer"
                     >
                       <MoreHorizontal className="h-5 w-5 text-gray-400" />
-                    </button>
+                    </div>
                   </div>
                 </button>
 
@@ -740,16 +740,16 @@ export default function NotesPage() {
                               boxShadow: 'none'
                             }}
                           />
-                          <button
+                          <div
                             onMouseDown={(e) => {
                               e.preventDefault()
                               e.stopPropagation()
                               setShowMetadataModal(note.id)
                             }}
-                            className="info-button absolute right-2 top-2 w-10 h-10 rounded-full bg-gray-200 hover:bg-gray-300 flex items-center justify-center"
+                            className="info-button absolute right-2 top-2 w-10 h-10 rounded-full bg-gray-200 hover:bg-gray-300 flex items-center justify-center cursor-pointer"
                           >
                             <Info className="h-5 w-5 text-gray-600" />
-                          </button>
+                          </div>
                         </div>
                       ) : (
                         // Display mode
@@ -758,17 +758,17 @@ export default function NotesPage() {
                           className="w-full px-4 py-1 flex items-center gap-3 text-left hover:bg-accent/50"
                         >
                           <div className="flex items-center gap-3 flex-1 min-w-0">
-                            <button
+                            <div
                               onClick={(e) => {
                                 e.stopPropagation()
                                 handleToggleComplete(note.id)
                               }}
-                              className="flex-shrink-0 w-6 h-6 rounded-full border-2 border-gray-300 flex items-center justify-center hover:border-blue-500 transition-colors"
+                              className="flex-shrink-0 w-6 h-6 rounded-full border-2 border-gray-300 flex items-center justify-center hover:border-blue-500 transition-colors cursor-pointer"
                             >
                               {note.metadata?.flag && (
                                 <CheckCircle2 className="h-4 w-4 text-blue-500" />
                               )}
-                            </button>
+                            </div>
                             <div className="min-w-0 flex-1">
                             <div className="font-bold text-foreground">
                               {note.text.split('\n')[0] || 'Untitled'}
@@ -895,16 +895,16 @@ export default function NotesPage() {
                               boxShadow: 'none'
                             }}
                           />
-                          <button
+                          <div
                             onMouseDown={(e) => {
                               e.preventDefault()
                               e.stopPropagation()
                               setShowMetadataModal(note.id)
                             }}
-                            className="info-button absolute right-2 top-2 w-10 h-10 rounded-full bg-gray-200 hover:bg-gray-300 flex items-center justify-center"
+                            className="info-button absolute right-2 top-2 w-10 h-10 rounded-full bg-gray-200 hover:bg-gray-300 flex items-center justify-center cursor-pointer"
                           >
                             <Info className="h-5 w-5 text-gray-600" />
-                          </button>
+                          </div>
                         </div>
                       ) : (
                         // Display mode
@@ -913,17 +913,17 @@ export default function NotesPage() {
                           className="w-full px-4 py-1 flex items-center gap-3 text-left hover:bg-accent/50"
                         >
                           <div className="flex items-center gap-3 flex-1 min-w-0">
-                            <button
+                            <div
                               onClick={(e) => {
                                 e.stopPropagation()
                                 handleToggleComplete(note.id)
                               }}
-                              className="flex-shrink-0 w-6 h-6 rounded-full border-2 border-gray-300 flex items-center justify-center hover:border-blue-500 transition-colors"
+                              className="flex-shrink-0 w-6 h-6 rounded-full border-2 border-gray-300 flex items-center justify-center hover:border-blue-500 transition-colors cursor-pointer"
                             >
                               {note.metadata?.flag && (
                                 <CheckCircle2 className="h-4 w-4 text-blue-500" />
                               )}
-                            </button>
+                            </div>
                             <div className="min-w-0 flex-1">
                             <div className="font-bold text-foreground">
                               {note.text.split('\n')[0] || 'Untitled'}
