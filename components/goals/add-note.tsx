@@ -220,14 +220,9 @@ export default function NotesPage() {
                   >
                     <div className="flex items-center gap-3 flex-1 min-w-0">
                       <div className="min-w-0 flex-1">
-                        <div className="font-medium text-foreground">
-                          {note.text.split('\n')[0] || 'Untitled'}
-                        </div>
-                        {note.text.split('\n').slice(1, 4).map((line, index) => (
-                          <div key={index} className="text-sm text-muted-foreground mt-0.5">
-                            {line}
-                          </div>
-                        ))}
+                      <div className="font-medium text-foreground">
+                        {note.text.split('\n')[0] || 'Untitled'}
+                      </div>
                       </div>
                     </div>
                   </button>

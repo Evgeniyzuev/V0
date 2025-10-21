@@ -385,7 +385,7 @@ export default function FinanceTab() {
           }`}
           onClick={() => setActiveTab("wallet")}
         >
-          Wallet
+          Wallet👛
           {hasUnviewedInterest && <NotificationDot />}
         </button>
         <button
@@ -394,7 +394,7 @@ export default function FinanceTab() {
           }`}
           onClick={() => setActiveTab("core")}
         >
-          Core
+          Core⚛️
           {hasUnviewedInterest && <NotificationDot />}
         </button>
       </div>
