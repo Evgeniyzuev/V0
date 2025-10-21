@@ -4,7 +4,7 @@ import { useState, useEffect } from "react"
 import { Button } from "@/components/ui/button"
 import { Textarea } from "@/components/ui/textarea"
 import { Input } from "@/components/ui/input"
-import { Plus, Info, Calendar, Clock, Tag, List, ArrowLeft, Search, CheckCircle2, Trash2, MoreHorizontal } from "lucide-react"
+import { Plus, Info, Calendar, Clock, Tag, List, ArrowLeft, Search, CheckCircle2, Trash2, MoreHorizontal, Circle } from "lucide-react"
 import { cn } from "@/lib/utils"
 
 interface Note {
@@ -200,6 +200,20 @@ export default function NotesPage() {
     }
   }
 
+  const handleToggleComplete = (noteId: string) => {
+    setNotes(notes.map(note =>
+      note.id === noteId
+        ? {
+            ...note,
+            metadata: {
+              ...note.metadata,
+              flag: !note.metadata?.flag
+            }
+          }
+        : note
+    ))
+  }
+
   const sortedNotes = [...notes].sort((a, b) => a.executionTime - b.executionTime)
 
   // Filter notes based on active list
@@ -212,11 +226,9 @@ export default function NotesPage() {
     switch (activeList) {
       case 'today':
         return notes.filter(note => {
-          // If note has active date metadata, use that date
+          // Today list: notes WITHOUT active date that are due today
           if (note.metadata?.date) {
-            const noteDate = new Date(note.metadata.date)
-            noteDate.setHours(0, 0, 0, 0)
-            return noteDate.getTime() === today.getTime()
+            return false // Notes with active date don't go to "Today"
           }
           // Otherwise use execution time
           const noteDate = new Date(note.executionTime)
@@ -225,16 +237,8 @@ export default function NotesPage() {
         })
       case 'plan':
         return notes.filter(note => {
-          // If note has active date metadata, use that date
-          if (note.metadata?.date) {
-            const noteDate = new Date(note.metadata.date)
-            noteDate.setHours(0, 0, 0, 0)
-            return noteDate.getTime() >= tomorrow.getTime()
-          }
-          // Otherwise use execution time
-          const noteDate = new Date(note.executionTime)
-          noteDate.setHours(0, 0, 0, 0)
-          return noteDate.getTime() >= tomorrow.getTime()
+          // Plan list: ALL notes WITH active date (regardless of date)
+          return note.metadata?.date !== undefined
         })
       case 'done':
         return notes.filter(note => note.metadata?.flag === true)
@@ -269,16 +273,8 @@ export default function NotesPage() {
         }).length
       case 'plan':
         return notes.filter(note => {
-          // If note has active date metadata, use that date
-          if (note.metadata?.date) {
-            const noteDate = new Date(note.metadata.date)
-            noteDate.setHours(0, 0, 0, 0)
-            return noteDate.getTime() >= tomorrow.getTime()
-          }
-          // Otherwise use execution time
-          const noteDate = new Date(note.executionTime)
-          noteDate.setHours(0, 0, 0, 0)
-          return noteDate.getTime() >= tomorrow.getTime()
+          // Plan list: ALL notes WITH active date (regardless of date)
+          return note.metadata?.date !== undefined
         }).length
       case 'done':
         return notes.filter(note => note.metadata?.flag === true).length
@@ -637,6 +633,17 @@ export default function NotesPage() {
                           className="w-full px-4 py-1 flex items-center gap-3 text-left hover:bg-accent/50"
                         >
                           <div className="flex items-center gap-3 flex-1 min-w-0">
+                            <button
+                              onClick={(e) => {
+                                e.stopPropagation()
+                                handleToggleComplete(note.id)
+                              }}
+                              className="flex-shrink-0 w-6 h-6 rounded-full border-2 border-gray-300 flex items-center justify-center hover:border-blue-500 transition-colors"
+                            >
+                              {note.metadata?.flag && (
+                                <CheckCircle2 className="h-4 w-4 text-blue-500" />
+                              )}
+                            </button>
                             <div className="min-w-0 flex-1">
                             <div className="font-bold text-foreground">
                               {note.text.split('\n')[0] || 'Untitled'}
@@ -686,11 +693,9 @@ export default function NotesPage() {
                   switch (currentListType) {
                     case 'today':
                       listNotes = notes.filter(note => {
-                        // If note has active date metadata, use that date
+                        // Today list: notes WITHOUT active date that are due today
                         if (note.metadata?.date) {
-                          const noteDate = new Date(note.metadata.date)
-                          noteDate.setHours(0, 0, 0, 0)
-                          return noteDate.getTime() === today.getTime()
+                          return false // Notes with active date don't go to "Today"
                         }
                         // Otherwise use execution time
                         const noteDate = new Date(note.executionTime)
@@ -700,16 +705,8 @@ export default function NotesPage() {
                       break
                     case 'plan':
                       listNotes = notes.filter(note => {
-                        // If note has active date metadata, use that date
-                        if (note.metadata?.date) {
-                          const noteDate = new Date(note.metadata.date)
-                          noteDate.setHours(0, 0, 0, 0)
-                          return noteDate.getTime() >= tomorrow.getTime()
-                        }
-                        // Otherwise use execution time
-                        const noteDate = new Date(note.executionTime)
-                        noteDate.setHours(0, 0, 0, 0)
-                        return noteDate.getTime() >= tomorrow.getTime()
+                        // Plan list: ALL notes WITH active date (regardless of date)
+                        return note.metadata?.date !== undefined
                       })
                       break
                     case 'done':
@@ -781,6 +778,17 @@ export default function NotesPage() {
                           className="w-full px-4 py-1 flex items-center gap-3 text-left hover:bg-accent/50"
                         >
                           <div className="flex items-center gap-3 flex-1 min-w-0">
+                            <button
+                              onClick={(e) => {
+                                e.stopPropagation()
+                                handleToggleComplete(note.id)
+                              }}
+                              className="flex-shrink-0 w-6 h-6 rounded-full border-2 border-gray-300 flex items-center justify-center hover:border-blue-500 transition-colors"
+                            >
+                              {note.metadata?.flag && (
+                                <CheckCircle2 className="h-4 w-4 text-blue-500" />
+                              )}
+                            </button>
                             <div className="min-w-0 flex-1">
                             <div className="font-bold text-foreground">
                               {note.text.split('\n')[0] || 'Untitled'}
