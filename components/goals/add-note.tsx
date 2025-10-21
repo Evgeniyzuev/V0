@@ -384,7 +384,7 @@ export default function NotesPage() {
 
       {/* Metadata Modal */}
       {showMetadataModal && (
-        <div className="fixed inset-0 bg-white z-50 flex flex-col" onClick={() => setShowMetadataModal(null)}>
+        <div className="fixed inset-0 bg-white z-[60] flex flex-col">
           <div className="flex items-center justify-between p-4 border-b" onClick={(e) => e.stopPropagation()}>
             <h3 className="text-lg font-semibold">Подробно</h3>
             <Button
@@ -516,7 +516,7 @@ export default function NotesPage() {
 
       {/* All Notes Modal */}
       {showAllNotesModal && (
-        <div className="fixed inset-0 bg-white z-50 flex flex-col" onClick={() => setShowAllNotesModal(false)}>
+        <div className="fixed inset-0 bg-white z-[55] flex flex-col" onClick={() => setShowAllNotesModal(false)}>
           <div className="flex items-center justify-between p-4 border-b" onClick={(e) => e.stopPropagation()}>
             <Button
               variant="ghost"
