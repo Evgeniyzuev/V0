@@ -17,6 +17,8 @@ import {
   CheckCircle2,
   MoreHorizontal,
   GripVertical,
+  ChevronRight,
+  List,
 } from "lucide-react"
 import { cn } from "@/lib/utils"
 
@@ -26,6 +28,7 @@ interface Note {
   createdAt: number
   executionTime: number
   color: string
+  listId?: string // Added listId to track which custom list the note belongs to
   metadata?: {
     date?: string
     time?: string
@@ -66,6 +69,7 @@ export default function NotesPage() {
   const [showEditListModal, setShowEditListModal] = useState<boolean>(false)
   const [editingListModal, setEditingListModal] = useState<CustomList | null>(null)
   const [customLists, setCustomLists] = useState<CustomList[]>([])
+  const [showListSelectionModal, setShowListSelectionModal] = useState<boolean>(false)
   const [metadataForm, setMetadataForm] = useState<{
     date: string
     time: string
@@ -317,6 +321,8 @@ export default function NotesPage() {
     if (currentListType === `custom-${listId}`) {
       setShowListModal(false)
     }
+    // Also remove listId from notes belonging to the deleted list
+    setNotes(notes.map((note) => (note.listId === listId ? { ...note, listId: undefined } : note)))
   }
 
   const handleListMenuToggle = (listId: string) => {
@@ -406,11 +412,7 @@ export default function NotesPage() {
   }
 
   const getCustomListCount = (listId: string) => {
-    // For now, return mock data. In real app, this would filter by list ID
-    const mockCounts: { [key: string]: number } = {
-      "1": 0, // NEW list starts with 0 notes
-    }
-    return mockCounts[listId] || 0
+    return notes.filter((note) => note.listId === listId && note.metadata?.flag !== true).length
   }
 
   const getListIcon = (iconName: string) => {
@@ -837,6 +839,27 @@ export default function NotesPage() {
                   }}
                 />
               </div>
+
+              <button
+                onClick={() => setShowListSelectionModal(true)}
+                className="w-full flex items-center gap-3 py-3 px-0 hover:bg-gray-50 rounded-lg transition-colors"
+              >
+                <List className="h-5 w-5 text-gray-500" />
+                <div className="flex-1 flex items-center justify-between">
+                  <span className="text-sm text-gray-700">List</span>
+                  <div className="flex items-center gap-2">
+                    <span className="text-sm text-gray-500">
+                      {(() => {
+                        const note = notes.find((n) => n.id === showMetadataModal)
+                        if (!note?.listId) return "All Notes"
+                        const list = customLists.find((l) => l.id === note.listId)
+                        return list?.name || "All Notes"
+                      })()}
+                    </span>
+                    <ChevronRight className="h-4 w-4 text-gray-400" />
+                  </div>
+                </div>
+              </button>
             </div>
           </div>
         </div>
@@ -1085,10 +1108,7 @@ export default function NotesPage() {
                   // Handle custom lists
                   if (currentListType.startsWith("custom-")) {
                     const listId = currentListType.replace("custom-", "")
-                    // For now, return all notes for custom lists (mock data)
-                    // In real app, this would filter by list ID from note metadata
-                    // Exclude completed notes
-                    listNotes = notes.filter((note) => note.metadata?.flag !== true)
+                    listNotes = notes.filter((note) => note.listId === listId && note.metadata?.flag !== true)
                   }
 
                   if (listNotes.length === 0) {
@@ -1431,6 +1451,84 @@ export default function NotesPage() {
                   )}
                 </div>
               </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {showListSelectionModal && (
+        <div className="fixed inset-0 bg-white z-[70] flex flex-col">
+          <div className="flex items-center justify-between p-4 border-b" onClick={(e) => e.stopPropagation()}>
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => setShowListSelectionModal(false)}
+              className="flex items-center gap-2"
+            >
+              <ArrowLeft className="h-4 w-4" />
+              Back
+            </Button>
+            <h3 className="text-lg font-semibold">List</h3>
+            <div className="w-16"></div>
+          </div>
+
+          <div className="flex-1 overflow-y-auto" onClick={(e) => e.stopPropagation()}>
+            <div className="space-y-1 p-4">
+              {/* All Notes option */}
+              <button
+                onClick={() => {
+                  if (showMetadataModal) {
+                    setNotes(
+                      notes.map((note) => (note.id === showMetadataModal ? { ...note, listId: undefined } : note)),
+                    )
+                  }
+                  setShowListSelectionModal(false)
+                }}
+                className={cn(
+                  "w-full flex items-center justify-between p-3 rounded-lg hover:bg-gray-50 transition-colors",
+                  !notes.find((n) => n.id === showMetadataModal)?.listId && "bg-blue-50",
+                )}
+              >
+                <div className="flex items-center gap-3">
+                  <div className="w-8 h-8 bg-gray-800 rounded-lg flex items-center justify-center text-lg">📋</div>
+                  <span className="font-medium text-gray-900">All Notes</span>
+                </div>
+                {!notes.find((n) => n.id === showMetadataModal)?.listId && (
+                  <CheckCircle2 className="h-5 w-5 text-blue-500" />
+                )}
+              </button>
+
+              {/* Custom lists */}
+              {customLists.map((list) => (
+                <button
+                  key={list.id}
+                  onClick={() => {
+                    if (showMetadataModal) {
+                      setNotes(
+                        notes.map((note) => (note.id === showMetadataModal ? { ...note, listId: list.id } : note)),
+                      )
+                    }
+                    setShowListSelectionModal(false)
+                  }}
+                  className={cn(
+                    "w-full flex items-center justify-between p-3 rounded-lg hover:bg-gray-50 transition-colors",
+                    notes.find((n) => n.id === showMetadataModal)?.listId === list.id && "bg-blue-50",
+                  )}
+                >
+                  <div className="flex items-center gap-3">
+                    <div
+                      className="w-8 h-8 rounded-lg flex items-center justify-center text-lg"
+                      style={{ backgroundColor: list.color + "20", color: list.color }}
+                    >
+                      {getListIcon(list.icon)}
+                    </div>
+                    <span className="font-medium text-gray-900">{list.name}</span>
+                  </div>
+                  {notes.find((n) => n.id === showMetadataModal)?.listId === list.id && (
+                    <CheckCircle2 className="h-5 w-5 text-blue-500" />
+                  )}
+                </button>
+              ))}
             </div>
           </div>
         </div>
