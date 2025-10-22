@@ -30,11 +30,11 @@ interface Note {
     date?: string
     time?: string
     tags?: string
-    location?: boolean
-    flag?: boolean
-    priority?: string
-    list?: boolean
-    subitems?: number
+    location: boolean
+    flag: boolean
+    priority: string
+    list: boolean
+    subitems: number
   }
 }
 
@@ -63,9 +63,9 @@ export default function NotesPage() {
   const [editingList, setEditingList] = useState<string | null>(null)
   const [editingListName, setEditingListName] = useState<string>("")
   const [editingListIcon, setEditingListIcon] = useState<string>("")
-  const [customLists, setCustomLists] = useState<CustomList[]>([
-    { id: "1", name: "NEW", color: "#007AFF", icon: "menu" },
-  ])
+  const [showEditListModal, setShowEditListModal] = useState<boolean>(false)
+  const [editingListModal, setEditingListModal] = useState<CustomList | null>(null)
+  const [customLists, setCustomLists] = useState<CustomList[]>([])
   const [metadataForm, setMetadataForm] = useState<{
     date: string
     time: string
@@ -88,6 +88,8 @@ export default function NotesPage() {
 
   const [draggedNoteId, setDraggedNoteId] = useState<string | null>(null)
   const [dragOverNoteId, setDragOverNoteId] = useState<string | null>(null)
+  const [isDragActive, setIsDragActive] = useState<boolean>(false)
+  const longPressTimer = useRef<NodeJS.Timeout | null>(null)
   const touchStartY = useRef<number>(0)
   const touchCurrentY = useRef<number>(0)
 
@@ -115,6 +117,25 @@ export default function NotesPage() {
       localStorage.removeItem("notes")
     }
   }, [notes])
+
+  useEffect(() => {
+    const savedLists = localStorage.getItem("customLists")
+    if (savedLists) {
+      try {
+        setCustomLists(JSON.parse(savedLists))
+      } catch (error) {
+        console.error("Failed to load custom lists:", error)
+      }
+    }
+  }, [])
+
+  useEffect(() => {
+    if (customLists.length > 0) {
+      localStorage.setItem("customLists", JSON.stringify(customLists))
+    } else {
+      localStorage.removeItem("customLists")
+    }
+  }, [customLists])
 
   const handleStartEdit = (noteId: string) => {
     const note = notes.find((n) => n.id === noteId)
@@ -257,11 +278,21 @@ export default function NotesPage() {
   const handleEditList = (listId: string) => {
     const list = customLists.find((l) => l.id === listId)
     if (list) {
-      setEditingList(listId)
-      setEditingListName(list.name)
-      setEditingListIcon(list.icon)
+      setEditingListModal(list)
+      setShowEditListModal(true)
       setShowListMenu(null)
     }
+  }
+
+  const handleSaveListEditModal = () => {
+    if (editingListModal) {
+      setCustomLists(customLists.map((list) => (list.id === editingListModal.id ? editingListModal : list)))
+      if (currentListType === `custom-${editingListModal.id}`) {
+        setCurrentListTitle(editingListModal.name)
+      }
+    }
+    setShowEditListModal(false)
+    setEditingListModal(null)
   }
 
   const handleSaveListEdit = () => {
@@ -271,6 +302,9 @@ export default function NotesPage() {
           list.id === editingList ? { ...list, name: editingListName.trim(), icon: editingListIcon } : list,
         ),
       )
+      if (currentListType === `custom-${editingList}`) {
+        setCurrentListTitle(editingListName.trim())
+      }
     }
     setEditingList(null)
     setEditingListName("")
@@ -280,6 +314,9 @@ export default function NotesPage() {
   const handleDeleteList = (listId: string) => {
     setCustomLists(customLists.filter((list) => list.id !== listId))
     setShowListMenu(null)
+    if (currentListType === `custom-${listId}`) {
+      setShowListModal(false)
+    }
   }
 
   const handleListMenuToggle = (listId: string) => {
@@ -421,6 +458,10 @@ export default function NotesPage() {
 
   // Drag handlers
   const handleDragStart = (e: React.DragEvent, noteId: string) => {
+    if (!isDragActive) {
+      e.preventDefault()
+      return
+    }
     setDraggedNoteId(noteId)
     e.dataTransfer.effectAllowed = "move"
   }
@@ -443,16 +484,27 @@ export default function NotesPage() {
   const handleDragEnd = () => {
     setDraggedNoteId(null)
     setDragOverNoteId(null)
+    setIsDragActive(false)
   }
 
   // Touch handlers for mobile drag-and-drop
   const handleTouchStart = (e: React.TouchEvent, noteId: string) => {
     touchStartY.current = e.touches[0].clientY
-    setDraggedNoteId(noteId)
+
+    longPressTimer.current = setTimeout(() => {
+      setIsDragActive(true)
+      setDraggedNoteId(noteId)
+    }, 1000) // 1 second
   }
 
   const handleTouchMove = (e: React.TouchEvent) => {
-    if (!draggedNoteId) return
+    if (longPressTimer.current && !isDragActive) {
+      clearTimeout(longPressTimer.current)
+      longPressTimer.current = null
+      return
+    }
+
+    if (!draggedNoteId || !isDragActive) return
 
     touchCurrentY.current = e.touches[0].clientY
     const element = document.elementFromPoint(e.touches[0].clientX, e.touches[0].clientY)
@@ -467,11 +519,30 @@ export default function NotesPage() {
   }
 
   const handleTouchEnd = () => {
-    if (draggedNoteId && dragOverNoteId) {
+    if (longPressTimer.current) {
+      clearTimeout(longPressTimer.current)
+      longPressTimer.current = null
+    }
+
+    if (draggedNoteId && dragOverNoteId && isDragActive) {
       handleReorderNotes(draggedNoteId, dragOverNoteId)
     }
     setDraggedNoteId(null)
     setDragOverNoteId(null)
+    setIsDragActive(false)
+  }
+
+  const handleMouseDown = (noteId: string) => {
+    longPressTimer.current = setTimeout(() => {
+      setIsDragActive(true)
+    }, 1000)
+  }
+
+  const handleMouseUp = () => {
+    if (longPressTimer.current) {
+      clearTimeout(longPressTimer.current)
+      longPressTimer.current = null
+    }
   }
 
   return (
@@ -626,31 +697,20 @@ export default function NotesPage() {
                 </button>
 
                 {/* List Menu */}
-                {showListMenu === currentListType && (
-                  <div className="absolute right-4 top-16 bg-white rounded-lg shadow-lg border border-gray-200 py-2 z-50 min-w-[120px]">
-                    {currentListType.startsWith("custom-") ? (
-                      <>
-                        <button
-                          onClick={() => handleEditList(currentListType.replace("custom-", ""))}
-                          className="w-full px-4 py-2 text-left text-sm text-gray-700 hover:bg-gray-50 transition-colors"
-                        >
-                          Edit
-                        </button>
-                        <button
-                          onClick={() => handleDeleteList(currentListType.replace("custom-", ""))}
-                          className="w-full px-4 py-2 text-left text-sm text-red-600 hover:bg-red-50 transition-colors"
-                        >
-                          Delete
-                        </button>
-                      </>
-                    ) : (
-                      <button
-                        onClick={() => setShowListMenu(null)}
-                        className="w-full px-4 py-2 text-left text-sm text-gray-700 hover:bg-gray-50 transition-colors"
-                      >
-                        Show completed
-                      </button>
-                    )}
+                {showListMenu === `custom-${list.id}` && (
+                  <div className="absolute right-4 top-16 bg-white rounded-lg shadow-lg border border-gray-200 py-2 z-50 min-w-[120px] list-menu-container">
+                    <button
+                      onClick={() => handleEditList(list.id)}
+                      className="w-full px-4 py-2 text-left text-sm text-gray-700 hover:bg-gray-50 transition-colors"
+                    >
+                      Edit
+                    </button>
+                    <button
+                      onClick={() => handleDeleteList(list.id)}
+                      className="w-full px-4 py-2 text-left text-sm text-red-600 hover:bg-red-50 transition-colors"
+                    >
+                      Delete
+                    </button>
                   </div>
                 )}
               </div>
@@ -829,7 +889,7 @@ export default function NotesPage() {
                     <div
                       key={note.id}
                       data-note-id={note.id}
-                      draggable={editingId !== note.id}
+                      draggable={editingId !== note.id && isDragActive}
                       onDragStart={(e) => handleDragStart(e, note.id)}
                       onDragOver={(e) => handleDragOver(e, note.id)}
                       onDrop={(e) => handleDrop(e, note.id)}
@@ -837,6 +897,8 @@ export default function NotesPage() {
                       onTouchStart={(e) => handleTouchStart(e, note.id)}
                       onTouchMove={handleTouchMove}
                       onTouchEnd={handleTouchEnd}
+                      onMouseDown={() => handleMouseDown(note.id)}
+                      onMouseUp={handleMouseUp}
                       className={cn(
                         "note-item overflow-hidden transition-all",
                         index < sortedNotes.length - 1 ? "border-b border-gray-100" : "",
@@ -884,7 +946,9 @@ export default function NotesPage() {
                           className="w-full px-4 py-1 flex items-center gap-3 text-left hover:bg-accent/50"
                         >
                           <div className="flex items-center gap-3 flex-1 min-w-0">
-                            <GripVertical className="h-4 w-4 text-gray-400 flex-shrink-0 cursor-grab active:cursor-grabbing" />
+                            {isDragActive && (
+                              <GripVertical className="h-4 w-4 text-gray-400 flex-shrink-0 cursor-grab active:cursor-grabbing" />
+                            )}
                             <div
                               onClick={(e) => {
                                 e.stopPropagation()
@@ -925,15 +989,43 @@ export default function NotesPage() {
               Back
             </Button>
             <h3 className="text-lg font-semibold">{currentListTitle}</h3>
-            <div
-              onClick={(e) => {
-                e.stopPropagation()
-                setShowListMenu(showListMenu === currentListType ? null : currentListType)
-              }}
-              className="w-8 h-8 flex items-center justify-center rounded-full hover:bg-gray-100 transition-colors cursor-pointer"
-            >
-              <MoreHorizontal className="h-5 w-5 text-gray-400" />
-            </div>
+            {currentListType.startsWith("custom-") ? (
+              <div className="list-menu-container relative">
+                <div
+                  onClick={(e) => {
+                    e.stopPropagation()
+                    setShowListMenu(showListMenu === currentListType ? null : currentListType)
+                  }}
+                  className="w-8 h-8 flex items-center justify-center rounded-full hover:bg-gray-100 transition-colors cursor-pointer"
+                >
+                  <MoreHorizontal className="h-5 w-5 text-gray-400" />
+                </div>
+                {showListMenu === currentListType && (
+                  <div className="absolute right-0 top-10 bg-white rounded-lg shadow-lg border border-gray-200 py-2 z-50 min-w-[120px]">
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation()
+                        handleEditList(currentListType.replace("custom-", ""))
+                      }}
+                      className="w-full px-4 py-2 text-left text-sm text-gray-700 hover:bg-gray-50 transition-colors"
+                    >
+                      Edit
+                    </button>
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation()
+                        handleDeleteList(currentListType.replace("custom-", ""))
+                      }}
+                      className="w-full px-4 py-2 text-left text-sm text-red-600 hover:bg-red-50 transition-colors"
+                    >
+                      Delete
+                    </button>
+                  </div>
+                )}
+              </div>
+            ) : (
+              <div className="w-8"></div>
+            )}
           </div>
 
           <div className="flex-1 overflow-y-auto" onClick={(e) => e.stopPropagation()}>
@@ -1007,7 +1099,7 @@ export default function NotesPage() {
                     <div
                       key={note.id}
                       data-note-id={note.id}
-                      draggable={editingId !== note.id}
+                      draggable={editingId !== note.id && isDragActive}
                       onDragStart={(e) => handleDragStart(e, note.id)}
                       onDragOver={(e) => handleDragOver(e, note.id)}
                       onDrop={(e) => handleDrop(e, note.id)}
@@ -1015,6 +1107,8 @@ export default function NotesPage() {
                       onTouchStart={(e) => handleTouchStart(e, note.id)}
                       onTouchMove={handleTouchMove}
                       onTouchEnd={handleTouchEnd}
+                      onMouseDown={() => handleMouseDown(note.id)}
+                      onMouseUp={handleMouseUp}
                       className={cn(
                         "note-item overflow-hidden transition-all",
                         index < listNotes.length - 1 ? "border-b border-gray-100" : "",
@@ -1062,7 +1156,9 @@ export default function NotesPage() {
                           className="w-full px-4 py-1 flex items-center gap-3 text-left hover:bg-accent/50"
                         >
                           <div className="flex items-center gap-3 flex-1 min-w-0">
-                            <GripVertical className="h-4 w-4 text-gray-400 flex-shrink-0 cursor-grab active:cursor-grabbing" />
+                            {isDragActive && (
+                              <GripVertical className="h-4 w-4 text-gray-400 flex-shrink-0 cursor-grab active:cursor-grabbing" />
+                            )}
                             <div
                               onClick={(e) => {
                                 e.stopPropagation()
@@ -1141,7 +1237,13 @@ export default function NotesPage() {
                   placeholder="List name"
                   value={newListName}
                   onChange={(e) => setNewListName(e.target.value)}
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter" && newListName.trim()) {
+                      handleCreateList()
+                    }
+                  }}
                   className="w-full"
+                  autoFocus
                 />
               </div>
 
@@ -1207,6 +1309,121 @@ export default function NotesPage() {
                         className={cn(
                           "w-12 h-12 rounded-lg border-2 transition-all",
                           newListColor === color ? "border-gray-800" : "border-gray-200",
+                        )}
+                        style={{ backgroundColor: color }}
+                      />
+                    ),
+                  )}
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {showEditListModal && editingListModal && (
+        <div className="fixed inset-0 bg-white z-[65] flex flex-col">
+          <div className="flex items-center justify-between p-4 border-b" onClick={(e) => e.stopPropagation()}>
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => {
+                setShowEditListModal(false)
+                setEditingListModal(null)
+              }}
+              className="flex items-center gap-2"
+            >
+              <ArrowLeft className="h-4 w-4" />
+              Back
+            </Button>
+            <h3 className="text-lg font-semibold">Edit List</h3>
+            <Button variant="ghost" size="sm" onClick={handleSaveListEditModal} className="text-blue-600 font-medium">
+              Done
+            </Button>
+          </div>
+
+          <div className="flex-1 overflow-y-auto p-4" onClick={(e) => e.stopPropagation()}>
+            <div className="space-y-4">
+              {/* List Name */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">Name</label>
+                <Input
+                  type="text"
+                  placeholder="List name"
+                  value={editingListModal.name}
+                  onChange={(e) => setEditingListModal({ ...editingListModal, name: e.target.value })}
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter" && editingListModal.name.trim()) {
+                      handleSaveListEditModal()
+                    }
+                  }}
+                  className="w-full"
+                  autoFocus
+                />
+              </div>
+
+              {/* List Icon */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">Icon</label>
+                <div className="space-y-3">
+                  {/* Custom emoji input */}
+                  <div className="flex gap-2">
+                    <Input
+                      type="text"
+                      placeholder="Insert emoji"
+                      value={editingListModal.icon}
+                      onChange={(e) => setEditingListModal({ ...editingListModal, icon: e.target.value })}
+                      className="flex-1"
+                      maxLength={2}
+                    />
+                    <div className="w-12 h-10 rounded-lg border-2 border-gray-200 flex items-center justify-center text-2xl">
+                      {getListIcon(editingListModal.icon)}
+                    </div>
+                  </div>
+
+                  {/* Predefined icons */}
+                  <div>
+                    <div className="text-xs text-gray-500 mb-2">or choose from suggested:</div>
+                    <div className="grid grid-cols-6 gap-2">
+                      {[
+                        { name: "menu", emoji: "☰" },
+                        { name: "bell", emoji: "🔔" },
+                        { name: "flame", emoji: "🔥" },
+                        { name: "star", emoji: "⭐" },
+                        { name: "heart", emoji: "❤️" },
+                        { name: "check", emoji: "✅" },
+                      ].map((icon) => (
+                        <button
+                          key={icon.name}
+                          onClick={() => setEditingListModal({ ...editingListModal, icon: icon.emoji })}
+                          className={cn(
+                            "w-12 h-12 rounded-lg border-2 flex items-center justify-center text-2xl transition-all",
+                            editingListModal.icon === icon.emoji
+                              ? "border-blue-500 bg-blue-50"
+                              : "border-gray-200 hover:border-gray-300",
+                          )}
+                          title={`Select ${icon.emoji}`}
+                        >
+                          {icon.emoji}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* List Color */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">Color</label>
+                <div className="grid grid-cols-6 gap-2">
+                  {["#FF3B30", "#FF9500", "#FFCC00", "#34C759", "#00D4AA", "#007AFF", "#5856D6", "#AF52DE"].map(
+                    (color) => (
+                      <button
+                        key={color}
+                        onClick={() => setEditingListModal({ ...editingListModal, color })}
+                        className={cn(
+                          "w-12 h-12 rounded-lg border-2 transition-all",
+                          editingListModal.color === color ? "border-gray-800" : "border-gray-200",
                         )}
                         style={{ backgroundColor: color }}
                       />
