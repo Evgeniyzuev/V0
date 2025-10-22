@@ -202,6 +202,11 @@ export default function NotesPage() {
       color: "#6b7280",
     }
     setNotes([newNote, ...notes])
+    setEditingId(newNote.id)
+    setEditingText("")
+    setCurrentListType("all")
+    setCurrentListTitle("All")
+    setShowListModal(true)
   }
 
   // Load metadata when modal opens
@@ -1208,6 +1213,9 @@ export default function NotesPage() {
             <Button
               onClick={(e) => {
                 e.stopPropagation()
+                const today = new Date()
+                today.setHours(0, 0, 0, 0)
+
                 const newNote: Note = {
                   id: Date.now().toString(),
                   text: "",
@@ -1215,6 +1223,25 @@ export default function NotesPage() {
                   executionTime: Date.now() + 86400000, // +1 day
                   color: "#6b7280",
                 }
+
+                // Set properties based on current list type
+                if (currentListType === "done") {
+                  // Create completed note
+                  newNote.metadata = {
+                    ...newNote.metadata,
+                    flag: true,
+                  }
+                } else if (currentListType === "today") {
+                  // Create note with today's date
+                  newNote.metadata = {
+                    ...newNote.metadata,
+                    date: today.toISOString().split("T")[0],
+                  }
+                } else if (currentListType.startsWith("custom-")) {
+                  // Assign to current custom list
+                  newNote.listId = currentListType.replace("custom-", "")
+                }
+
                 setNotes([newNote, ...notes])
                 setEditingId(newNote.id)
                 setEditingText("")
@@ -1222,7 +1249,7 @@ export default function NotesPage() {
               className="w-full bg-blue-500 hover:bg-blue-600 text-white rounded-lg py-3 flex items-center justify-center gap-2 font-medium"
             >
               <Plus className="h-5 w-5" />
-              Add Reminder
+              Note
             </Button>
           </div>
         </div>
