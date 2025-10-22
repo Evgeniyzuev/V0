@@ -1,10 +1,23 @@
 "use client"
 
-import { useState, useEffect, useMemo } from "react"
+import type React from "react"
+
+import { useState, useEffect, useMemo, useRef } from "react"
 import { Button } from "@/components/ui/button"
 import { Textarea } from "@/components/ui/textarea"
 import { Input } from "@/components/ui/input"
-import { Plus, Info, Calendar, Clock, Tag, List, ArrowLeft, Search, CheckCircle2, Trash2, MoreHorizontal, Circle } from "lucide-react"
+import {
+  Plus,
+  Info,
+  Calendar,
+  Clock,
+  Tag,
+  ArrowLeft,
+  Search,
+  CheckCircle2,
+  MoreHorizontal,
+  GripVertical,
+} from "lucide-react"
 import { cn } from "@/lib/utils"
 
 interface Note {
@@ -38,20 +51,20 @@ export default function NotesPage() {
   const [editingText, setEditingText] = useState<string>("")
   const [showMetadataModal, setShowMetadataModal] = useState<string | null>(null)
   const [showAllNotesModal, setShowAllNotesModal] = useState<boolean>(false)
-  const [activeList, setActiveList] = useState<string>('all')
+  const [activeList, setActiveList] = useState<string>("all")
   const [showListModal, setShowListModal] = useState<boolean>(false)
-  const [currentListType, setCurrentListType] = useState<string>('')
-  const [currentListTitle, setCurrentListTitle] = useState<string>('')
+  const [currentListType, setCurrentListType] = useState<string>("")
+  const [currentListTitle, setCurrentListTitle] = useState<string>("")
   const [showCreateListModal, setShowCreateListModal] = useState<boolean>(false)
-  const [newListName, setNewListName] = useState<string>('')
-  const [newListColor, setNewListColor] = useState<string>('#007AFF')
-  const [newListIcon, setNewListIcon] = useState<string>('menu')
+  const [newListName, setNewListName] = useState<string>("")
+  const [newListColor, setNewListColor] = useState<string>("#007AFF")
+  const [newListIcon, setNewListIcon] = useState<string>("menu")
   const [showListMenu, setShowListMenu] = useState<string | null>(null)
   const [editingList, setEditingList] = useState<string | null>(null)
-  const [editingListName, setEditingListName] = useState<string>('')
-  const [editingListIcon, setEditingListIcon] = useState<string>('')
+  const [editingListName, setEditingListName] = useState<string>("")
+  const [editingListIcon, setEditingListIcon] = useState<string>("")
   const [customLists, setCustomLists] = useState<CustomList[]>([
-    { id: '1', name: 'NEW', color: '#007AFF', icon: 'menu' }
+    { id: "1", name: "NEW", color: "#007AFF", icon: "menu" },
   ])
   const [metadataForm, setMetadataForm] = useState<{
     date: string
@@ -63,19 +76,24 @@ export default function NotesPage() {
     list: boolean
     subitems: number
   }>({
-    date: '',
-    time: '',
-    tags: '',
+    date: "",
+    time: "",
+    tags: "",
     location: false,
     flag: false,
-    priority: 'None',
+    priority: "None",
     list: false,
-    subitems: 0
+    subitems: 0,
   })
 
+  const [draggedNoteId, setDraggedNoteId] = useState<string | null>(null)
+  const [dragOverNoteId, setDragOverNoteId] = useState<string | null>(null)
+  const touchStartY = useRef<number>(0)
+  const touchCurrentY = useRef<number>(0)
+
   // Computed properties for active and completed notes
-  const activeNotes = useMemo(() => notes.filter(note => note.metadata?.flag !== true), [notes])
-  const completedNotes = useMemo(() => notes.filter(note => note.metadata?.flag === true), [notes])
+  const activeNotes = useMemo(() => notes.filter((note) => note.metadata?.flag !== true), [notes])
+  const completedNotes = useMemo(() => notes.filter((note) => note.metadata?.flag === true), [notes])
 
   // Load notes from localStorage on mount
   useEffect(() => {
@@ -108,13 +126,7 @@ export default function NotesPage() {
 
   const handleSaveEdit = () => {
     if (editingId && editingText.trim()) {
-      setNotes(
-        notes.map((note) =>
-          note.id === editingId
-            ? { ...note, text: editingText.trim() }
-            : note
-        )
-      )
+      setNotes(notes.map((note) => (note.id === editingId ? { ...note, text: editingText.trim() } : note)))
     } else if (editingId && !editingText.trim()) {
       // Delete empty note
       setNotes(notes.filter((n) => n.id !== editingId))
@@ -123,15 +135,18 @@ export default function NotesPage() {
     setEditingText("")
   }
 
-  // Removed keyboard handling for mobile
-
   const handleCancelEdit = () => {
     setEditingId(null)
     setEditingText("")
   }
 
   const handleOutsideClick = (e: React.MouseEvent) => {
-    if (editingId && !(e.target as Element).closest('.note-item') && !showMetadataModal && !(e.target as Element).closest('.info-button')) {
+    if (
+      editingId &&
+      !(e.target as Element).closest(".note-item") &&
+      !showMetadataModal &&
+      !(e.target as Element).closest(".info-button")
+    ) {
       handleSaveEdit()
     }
   }
@@ -139,17 +154,17 @@ export default function NotesPage() {
   // Close list menu when clicking outside
   useEffect(() => {
     const handleClickOutside = (e: MouseEvent) => {
-      if (showListMenu && !(e.target as Element).closest('.list-menu-container')) {
+      if (showListMenu && !(e.target as Element).closest(".list-menu-container")) {
         setShowListMenu(null)
       }
     }
 
     if (showListMenu) {
-      document.addEventListener('mousedown', handleClickOutside)
+      document.addEventListener("mousedown", handleClickOutside)
     }
 
     return () => {
-      document.removeEventListener('mousedown', handleClickOutside)
+      document.removeEventListener("mousedown", handleClickOutside)
     }
   }, [showListMenu])
 
@@ -167,29 +182,34 @@ export default function NotesPage() {
   // Load metadata when modal opens
   useEffect(() => {
     if (showMetadataModal) {
-      const note = notes.find(n => n.id === showMetadataModal)
+      const note = notes.find((n) => n.id === showMetadataModal)
       if (note?.metadata) {
         setMetadataForm({
-          date: note.metadata.date || new Date(note.createdAt).toISOString().split('T')[0],
-          time: note.metadata.time || new Date(note.createdAt).toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' }),
-          tags: note.metadata.tags || '',
+          date: note.metadata.date || new Date(note.createdAt).toISOString().split("T")[0],
+          time:
+            note.metadata.time ||
+            new Date(note.createdAt).toLocaleTimeString("en-GB", { hour: "2-digit", minute: "2-digit" }),
+          tags: note.metadata.tags || "",
           location: note.metadata.location || false,
           flag: note.metadata.flag || false,
-          priority: note.metadata.priority || 'None',
+          priority: note.metadata.priority || "None",
           list: note.metadata.list || false,
-          subitems: note.metadata.subitems || 0
+          subitems: note.metadata.subitems || 0,
         })
       } else {
         // Set default values
         setMetadataForm({
-          date: new Date(note?.createdAt || Date.now()).toISOString().split('T')[0],
-          time: new Date(note?.createdAt || Date.now()).toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' }),
-          tags: '',
+          date: new Date(note?.createdAt || Date.now()).toISOString().split("T")[0],
+          time: new Date(note?.createdAt || Date.now()).toLocaleTimeString("en-GB", {
+            hour: "2-digit",
+            minute: "2-digit",
+          }),
+          tags: "",
           location: false,
           flag: false,
-          priority: 'None',
+          priority: "None",
           list: false,
-          subitems: 0
+          subitems: 0,
         })
       }
     }
@@ -197,11 +217,7 @@ export default function NotesPage() {
 
   const handleSaveMetadata = () => {
     if (showMetadataModal) {
-      setNotes(notes.map(note =>
-        note.id === showMetadataModal
-          ? { ...note, metadata: metadataForm }
-          : note
-      ))
+      setNotes(notes.map((note) => (note.id === showMetadataModal ? { ...note, metadata: metadataForm } : note)))
     }
     setShowMetadataModal(null)
   }
@@ -212,32 +228,34 @@ export default function NotesPage() {
         id: Date.now().toString(),
         name: newListName.trim(),
         color: newListColor,
-        icon: newListIcon
+        icon: newListIcon,
       }
       setCustomLists([...customLists, newList])
-      setNewListName('')
-      setNewListColor('#007AFF')
-      setNewListIcon('menu')
+      setNewListName("")
+      setNewListColor("#007AFF")
+      setNewListIcon("menu")
       setShowCreateListModal(false)
     }
   }
 
   const handleToggleComplete = (noteId: string) => {
-    setNotes(notes.map(note =>
-      note.id === noteId
-        ? {
-            ...note,
-            metadata: {
-              ...note.metadata,
-              flag: !note.metadata?.flag
+    setNotes(
+      notes.map((note) =>
+        note.id === noteId
+          ? {
+              ...note,
+              metadata: {
+                ...note.metadata,
+                flag: !note.metadata?.flag,
+              },
             }
-          }
-        : note
-    ))
+          : note,
+      ),
+    )
   }
 
   const handleEditList = (listId: string) => {
-    const list = customLists.find(l => l.id === listId)
+    const list = customLists.find((l) => l.id === listId)
     if (list) {
       setEditingList(listId)
       setEditingListName(list.name)
@@ -248,19 +266,19 @@ export default function NotesPage() {
 
   const handleSaveListEdit = () => {
     if (editingList && editingListName.trim()) {
-      setCustomLists(customLists.map(list =>
-        list.id === editingList
-          ? { ...list, name: editingListName.trim(), icon: editingListIcon }
-          : list
-      ))
+      setCustomLists(
+        customLists.map((list) =>
+          list.id === editingList ? { ...list, name: editingListName.trim(), icon: editingListIcon } : list,
+        ),
+      )
     }
     setEditingList(null)
-    setEditingListName('')
-    setEditingListIcon('')
+    setEditingListName("")
+    setEditingListIcon("")
   }
 
   const handleDeleteList = (listId: string) => {
-    setCustomLists(customLists.filter(list => list.id !== listId))
+    setCustomLists(customLists.filter((list) => list.id !== listId))
     setShowListMenu(null)
   }
 
@@ -278,8 +296,8 @@ export default function NotesPage() {
     tomorrow.setDate(tomorrow.getDate() + 1)
 
     switch (activeList) {
-      case 'today':
-        return notes.filter(note => {
+      case "today":
+        return notes.filter((note) => {
           // Today list: notes with active date metadata set to today, or notes without active date that are due today
           // Exclude completed notes
           if (note.metadata?.flag === true) return false
@@ -294,17 +312,17 @@ export default function NotesPage() {
           noteDate.setHours(0, 0, 0, 0)
           return noteDate.getTime() === today.getTime()
         })
-      case 'plan':
-        return notes.filter(note => {
+      case "plan":
+        return notes.filter((note) => {
           // Plan list: ALL notes WITH active date (regardless of date)
           // Exclude completed notes
           return note.metadata?.date !== undefined && note.metadata?.flag !== true
         })
-      case 'done':
-        return notes.filter(note => note.metadata?.flag === true)
-      case 'all':
+      case "done":
+        return notes.filter((note) => note.metadata?.flag === true)
+      case "all":
       default:
-        return notes.filter(note => note.metadata?.flag !== true)
+        return notes.filter((note) => note.metadata?.flag !== true)
     }
   }
 
@@ -318,8 +336,8 @@ export default function NotesPage() {
     tomorrow.setDate(tomorrow.getDate() + 1)
 
     switch (listType) {
-      case 'today':
-        return notes.filter(note => {
+      case "today":
+        return notes.filter((note) => {
           // Exclude completed notes from count
           if (note.metadata?.flag === true) return false
 
@@ -334,26 +352,26 @@ export default function NotesPage() {
           noteDate.setHours(0, 0, 0, 0)
           return noteDate.getTime() === today.getTime()
         }).length
-      case 'plan':
-        return notes.filter(note => {
+      case "plan":
+        return notes.filter((note) => {
           // Exclude completed notes from count
           if (note.metadata?.flag === true) return false
 
           // Plan list: ALL notes WITH active date (regardless of date)
           return note.metadata?.date !== undefined
         }).length
-      case 'done':
-        return notes.filter(note => note.metadata?.flag === true).length
-      case 'all':
+      case "done":
+        return notes.filter((note) => note.metadata?.flag === true).length
+      case "all":
       default:
-        return notes.filter(note => note.metadata?.flag !== true).length
+        return notes.filter((note) => note.metadata?.flag !== true).length
     }
   }
 
   const getCustomListCount = (listId: string) => {
     // For now, return mock data. In real app, this would filter by list ID
     const mockCounts: { [key: string]: number } = {
-      '1': 0 // NEW list starts with 0 notes
+      "1": 0, // NEW list starts with 0 notes
     }
     return mockCounts[listId] || 0
   }
@@ -366,15 +384,94 @@ export default function NotesPage() {
 
     // Otherwise, map predefined icon names to emojis
     switch (iconName) {
-      case 'bell': return '🔔'
-      case 'flame': return '🔥'
-      case 'menu': return '☰'
-      case 'trash': return '🗑️'
-      case 'star': return '⭐'
-      case 'heart': return '❤️'
-      case 'check': return '✅'
-      default: return iconName || '📝'
+      case "bell":
+        return "🔔"
+      case "flame":
+        return "🔥"
+      case "menu":
+        return "☰"
+      case "trash":
+        return "🗑️"
+      case "star":
+        return "⭐"
+      case "heart":
+        return "❤️"
+      case "check":
+        return "✅"
+      default:
+        return iconName || "📝"
     }
+  }
+
+  // Reorder function for drag-and-drop
+  const handleReorderNotes = (draggedId: string, targetId: string) => {
+    if (draggedId === targetId) return
+
+    const draggedIndex = notes.findIndex((n) => n.id === draggedId)
+    const targetIndex = notes.findIndex((n) => n.id === targetId)
+
+    if (draggedIndex === -1 || targetIndex === -1) return
+
+    const newNotes = [...notes]
+    const [draggedNote] = newNotes.splice(draggedIndex, 1)
+    newNotes.splice(targetIndex, 0, draggedNote)
+
+    setNotes(newNotes)
+  }
+
+  // Drag handlers
+  const handleDragStart = (e: React.DragEvent, noteId: string) => {
+    setDraggedNoteId(noteId)
+    e.dataTransfer.effectAllowed = "move"
+  }
+
+  const handleDragOver = (e: React.DragEvent, noteId: string) => {
+    e.preventDefault()
+    e.dataTransfer.dropEffect = "move"
+    setDragOverNoteId(noteId)
+  }
+
+  const handleDrop = (e: React.DragEvent, noteId: string) => {
+    e.preventDefault()
+    if (draggedNoteId) {
+      handleReorderNotes(draggedNoteId, noteId)
+    }
+    setDraggedNoteId(null)
+    setDragOverNoteId(null)
+  }
+
+  const handleDragEnd = () => {
+    setDraggedNoteId(null)
+    setDragOverNoteId(null)
+  }
+
+  // Touch handlers for mobile drag-and-drop
+  const handleTouchStart = (e: React.TouchEvent, noteId: string) => {
+    touchStartY.current = e.touches[0].clientY
+    setDraggedNoteId(noteId)
+  }
+
+  const handleTouchMove = (e: React.TouchEvent) => {
+    if (!draggedNoteId) return
+
+    touchCurrentY.current = e.touches[0].clientY
+    const element = document.elementFromPoint(e.touches[0].clientX, e.touches[0].clientY)
+    const noteElement = element?.closest("[data-note-id]")
+
+    if (noteElement) {
+      const noteId = noteElement.getAttribute("data-note-id")
+      if (noteId) {
+        setDragOverNoteId(noteId)
+      }
+    }
+  }
+
+  const handleTouchEnd = () => {
+    if (draggedNoteId && dragOverNoteId) {
+      handleReorderNotes(draggedNoteId, dragOverNoteId)
+    }
+    setDraggedNoteId(null)
+    setDragOverNoteId(null)
   }
 
   return (
@@ -383,10 +480,7 @@ export default function NotesPage() {
       <div className="bg-white border-b border-gray-200 px-4 py-3">
         <div className="relative">
           <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-gray-400" />
-          <Input
-            placeholder="Search"
-            className="pl-10 bg-gray-100 border-none rounded-lg"
-          />
+          <Input placeholder="Search" className="pl-10 bg-gray-100 border-none rounded-lg" />
         </div>
       </div>
 
@@ -396,8 +490,8 @@ export default function NotesPage() {
           {/* Today */}
           <button
             onClick={() => {
-              setCurrentListType('today')
-              setCurrentListTitle('Today')
+              setCurrentListType("today")
+              setCurrentListTitle("Today")
               setShowListModal(true)
             }}
             className="bg-white rounded-xl p-4 text-left border border-gray-200 hover:bg-gray-50 transition-all"
@@ -406,7 +500,7 @@ export default function NotesPage() {
               <div className="w-8 h-8 bg-blue-500 rounded-lg flex items-center justify-center">
                 <span className="text-white text-sm font-bold">{new Date().getDate()}</span>
               </div>
-              <span className="text-2xl font-bold text-gray-900">{getListCount('today')}</span>
+              <span className="text-2xl font-bold text-gray-900">{getListCount("today")}</span>
             </div>
             <div className="text-sm text-gray-600 font-medium">Today</div>
           </button>
@@ -414,8 +508,8 @@ export default function NotesPage() {
           {/* Planned */}
           <button
             onClick={() => {
-              setCurrentListType('plan')
-              setCurrentListTitle('Planned')
+              setCurrentListType("plan")
+              setCurrentListTitle("Planned")
               setShowListModal(true)
             }}
             className="bg-white rounded-xl p-4 text-left border border-gray-200 hover:bg-gray-50 transition-all"
@@ -424,7 +518,7 @@ export default function NotesPage() {
               <div className="w-8 h-8 bg-red-500 rounded-lg flex items-center justify-center">
                 <span className="text-white text-sm font-bold">📅</span>
               </div>
-              <span className="text-2xl font-bold text-gray-900">{getListCount('plan')}</span>
+              <span className="text-2xl font-bold text-gray-900">{getListCount("plan")}</span>
             </div>
             <div className="text-sm text-gray-600 font-medium">Planned</div>
           </button>
@@ -432,8 +526,8 @@ export default function NotesPage() {
           {/* All */}
           <button
             onClick={() => {
-              setCurrentListType('all')
-              setCurrentListTitle('All')
+              setCurrentListType("all")
+              setCurrentListTitle("All")
               setShowListModal(true)
             }}
             className="bg-white rounded-xl p-4 text-left border border-gray-200 hover:bg-gray-50 transition-all"
@@ -442,7 +536,7 @@ export default function NotesPage() {
               <div className="w-8 h-8 bg-gray-800 rounded-lg flex items-center justify-center">
                 <span className="text-white text-sm font-bold">📋</span>
               </div>
-              <span className="text-2xl font-bold text-gray-900">{getListCount('all')}</span>
+              <span className="text-2xl font-bold text-gray-900">{getListCount("all")}</span>
             </div>
             <div className="text-sm text-gray-600 font-medium">All</div>
           </button>
@@ -450,8 +544,8 @@ export default function NotesPage() {
           {/* Done */}
           <button
             onClick={() => {
-              setCurrentListType('done')
-              setCurrentListTitle('Completed')
+              setCurrentListType("done")
+              setCurrentListTitle("Completed")
               setShowListModal(true)
             }}
             className="bg-white rounded-xl p-4 text-left border border-gray-200 hover:bg-gray-50 transition-all"
@@ -460,7 +554,7 @@ export default function NotesPage() {
               <div className="w-8 h-8 bg-gray-500 rounded-lg flex items-center justify-center">
                 <CheckCircle2 className="h-4 w-4 text-white" />
               </div>
-              <span className="text-2xl font-bold text-gray-900">{getListCount('done')}</span>
+              <span className="text-2xl font-bold text-gray-900">{getListCount("done")}</span>
             </div>
             <div className="text-sm text-gray-600 font-medium">Completed</div>
           </button>
@@ -485,13 +579,13 @@ export default function NotesPage() {
                       <>
                         <div
                           onClick={() => {
-                            const emoji = prompt('Enter emoji for list icon:')
+                            const emoji = prompt("Enter emoji for list icon:")
                             if (emoji && emoji.trim()) {
                               setEditingListIcon(emoji.trim())
                             }
                           }}
                           className="w-8 h-8 rounded-lg flex items-center justify-center text-lg hover:bg-gray-100 transition-colors cursor-pointer"
-                          style={{ backgroundColor: list.color + '20' }}
+                          style={{ backgroundColor: list.color + "20" }}
                           title="Click to change emoji"
                         >
                           {editingListIcon || getListIcon(list.icon)}
@@ -502,12 +596,12 @@ export default function NotesPage() {
                           onChange={(e) => setEditingListName(e.target.value)}
                           onBlur={handleSaveListEdit}
                           onKeyDown={(e) => {
-                            if (e.key === 'Enter') {
+                            if (e.key === "Enter") {
                               handleSaveListEdit()
-                            } else if (e.key === 'Escape') {
+                            } else if (e.key === "Escape") {
                               setEditingList(null)
-                              setEditingListName('')
-                              setEditingListIcon('')
+                              setEditingListName("")
+                              setEditingListIcon("")
                             }
                           }}
                           className="font-medium text-gray-900 border-none bg-transparent p-0 h-auto focus:ring-0"
@@ -518,7 +612,7 @@ export default function NotesPage() {
                       <>
                         <div
                           className="w-8 h-8 rounded-lg flex items-center justify-center text-lg"
-                          style={{ backgroundColor: list.color + '20', color: list.color }}
+                          style={{ backgroundColor: list.color + "20", color: list.color }}
                         >
                           {getListIcon(list.icon)}
                         </div>
@@ -531,21 +625,19 @@ export default function NotesPage() {
                   </div>
                 </button>
 
-
-
                 {/* List Menu */}
                 {showListMenu === currentListType && (
                   <div className="absolute right-4 top-16 bg-white rounded-lg shadow-lg border border-gray-200 py-2 z-50 min-w-[120px]">
-                    {currentListType.startsWith('custom-') ? (
+                    {currentListType.startsWith("custom-") ? (
                       <>
                         <button
-                          onClick={() => handleEditList(currentListType.replace('custom-', ''))}
+                          onClick={() => handleEditList(currentListType.replace("custom-", ""))}
                           className="w-full px-4 py-2 text-left text-sm text-gray-700 hover:bg-gray-50 transition-colors"
                         >
                           Edit
                         </button>
                         <button
-                          onClick={() => handleDeleteList(currentListType.replace('custom-', ''))}
+                          onClick={() => handleDeleteList(currentListType.replace("custom-", ""))}
                           className="w-full px-4 py-2 text-left text-sm text-red-600 hover:bg-red-50 transition-colors"
                         >
                           Delete
@@ -565,8 +657,6 @@ export default function NotesPage() {
             ))}
           </div>
         </div>
-
-
       </div>
 
       {/* Metadata Modal */}
@@ -580,13 +670,11 @@ export default function NotesPage() {
               onClick={() => {
                 // Save metadata before closing
                 if (showMetadataModal) {
-                  const currentNote = notes.find(n => n.id === showMetadataModal)
+                  const currentNote = notes.find((n) => n.id === showMetadataModal)
                   if (currentNote) {
-                    setNotes(notes.map(note =>
-                      note.id === showMetadataModal
-                        ? { ...note, metadata: metadataForm }
-                        : note
-                    ))
+                    setNotes(
+                      notes.map((note) => (note.id === showMetadataModal ? { ...note, metadata: metadataForm } : note)),
+                    )
                   }
                 }
                 setShowMetadataModal(null)
@@ -598,7 +686,6 @@ export default function NotesPage() {
           </div>
 
           <div className="flex-1 overflow-y-auto" onClick={(e) => e.stopPropagation()}>
-
             <div className="space-y-2 p-4">
               <div className="flex items-center gap-3">
                 <Calendar className="h-5 w-5 text-gray-500" />
@@ -606,20 +693,25 @@ export default function NotesPage() {
                   type="date"
                   className="flex-1"
                   value={metadataForm.date}
-                  onChange={(e) => setMetadataForm({...metadataForm, date: e.target.value})}
+                  onChange={(e) => setMetadataForm({ ...metadataForm, date: e.target.value })}
                 />
                 <input
                   type="checkbox"
                   className="rounded"
-                  checked={notes.find(n => n.id === showMetadataModal)?.metadata?.date ? true : false}
+                  checked={notes.find((n) => n.id === showMetadataModal)?.metadata?.date ? true : false}
                   onChange={(e) => {
-                    const note = notes.find(n => n.id === showMetadataModal)
+                    const note = notes.find((n) => n.id === showMetadataModal)
                     if (note) {
-                      setNotes(notes.map(n =>
-                        n.id === showMetadataModal
-                          ? { ...n, metadata: { ...n.metadata, date: e.target.checked ? metadataForm.date : undefined } }
-                          : n
-                      ))
+                      setNotes(
+                        notes.map((n) =>
+                          n.id === showMetadataModal
+                            ? {
+                                ...n,
+                                metadata: { ...n.metadata, date: e.target.checked ? metadataForm.date : undefined },
+                              }
+                            : n,
+                        ),
+                      )
                     }
                   }}
                 />
@@ -631,20 +723,25 @@ export default function NotesPage() {
                   type="time"
                   className="flex-1"
                   value={metadataForm.time}
-                  onChange={(e) => setMetadataForm({...metadataForm, time: e.target.value})}
+                  onChange={(e) => setMetadataForm({ ...metadataForm, time: e.target.value })}
                 />
                 <input
                   type="checkbox"
                   className="rounded"
-                  checked={notes.find(n => n.id === showMetadataModal)?.metadata?.time ? true : false}
+                  checked={notes.find((n) => n.id === showMetadataModal)?.metadata?.time ? true : false}
                   onChange={(e) => {
-                    const note = notes.find(n => n.id === showMetadataModal)
+                    const note = notes.find((n) => n.id === showMetadataModal)
                     if (note) {
-                      setNotes(notes.map(n =>
-                        n.id === showMetadataModal
-                          ? { ...n, metadata: { ...n.metadata, time: e.target.checked ? metadataForm.time : undefined } }
-                          : n
-                      ))
+                      setNotes(
+                        notes.map((n) =>
+                          n.id === showMetadataModal
+                            ? {
+                                ...n,
+                                metadata: { ...n.metadata, time: e.target.checked ? metadataForm.time : undefined },
+                              }
+                            : n,
+                        ),
+                      )
                     }
                   }}
                 />
@@ -657,27 +754,30 @@ export default function NotesPage() {
                   className="flex-1"
                   placeholder="Add tag"
                   value={metadataForm.tags}
-                  onChange={(e) => setMetadataForm({...metadataForm, tags: e.target.value})}
+                  onChange={(e) => setMetadataForm({ ...metadataForm, tags: e.target.value })}
                 />
                 <input
                   type="checkbox"
                   className="rounded"
-                  checked={notes.find(n => n.id === showMetadataModal)?.metadata?.tags ? true : false}
+                  checked={notes.find((n) => n.id === showMetadataModal)?.metadata?.tags ? true : false}
                   onChange={(e) => {
-                    const note = notes.find(n => n.id === showMetadataModal)
+                    const note = notes.find((n) => n.id === showMetadataModal)
                     if (note) {
-                      setNotes(notes.map(n =>
-                        n.id === showMetadataModal
-                          ? { ...n, metadata: { ...n.metadata, tags: e.target.checked ? metadataForm.tags : undefined } }
-                          : n
-                      ))
+                      setNotes(
+                        notes.map((n) =>
+                          n.id === showMetadataModal
+                            ? {
+                                ...n,
+                                metadata: { ...n.metadata, tags: e.target.checked ? metadataForm.tags : undefined },
+                              }
+                            : n,
+                        ),
+                      )
                     }
                   }}
                 />
               </div>
             </div>
-
-
           </div>
         </div>
       )}
@@ -728,9 +828,20 @@ export default function NotesPage() {
                   sortedNotes.map((note, index) => (
                     <div
                       key={note.id}
+                      data-note-id={note.id}
+                      draggable={editingId !== note.id}
+                      onDragStart={(e) => handleDragStart(e, note.id)}
+                      onDragOver={(e) => handleDragOver(e, note.id)}
+                      onDrop={(e) => handleDrop(e, note.id)}
+                      onDragEnd={handleDragEnd}
+                      onTouchStart={(e) => handleTouchStart(e, note.id)}
+                      onTouchMove={handleTouchMove}
+                      onTouchEnd={handleTouchEnd}
                       className={cn(
                         "note-item overflow-hidden transition-all",
-                        index < sortedNotes.length - 1 ? "border-b border-gray-100" : ""
+                        index < sortedNotes.length - 1 ? "border-b border-gray-100" : "",
+                        draggedNoteId === note.id && "opacity-50",
+                        dragOverNoteId === note.id && draggedNoteId !== note.id && "border-t-2 border-blue-500",
                       )}
                     >
                       {editingId === note.id ? (
@@ -743,16 +854,16 @@ export default function NotesPage() {
                             placeholder="Enter your note text..."
                             onBlur={(e) => {
                               // Don't save if clicking on the info button
-                              if (!(e.relatedTarget as Element)?.closest('.info-button')) {
+                              if (!(e.relatedTarget as Element)?.closest(".info-button")) {
                                 handleSaveEdit()
                               }
                             }}
                             autoFocus
                             style={{
-                              WebkitAppearance: 'none',
-                              WebkitTapHighlightColor: 'transparent',
-                              WebkitUserModify: 'read-write-plaintext-only',
-                              boxShadow: 'none'
+                              WebkitAppearance: "none",
+                              WebkitTapHighlightColor: "transparent",
+                              WebkitUserModify: "read-write-plaintext-only",
+                              boxShadow: "none",
                             }}
                           />
                           <div
@@ -773,6 +884,7 @@ export default function NotesPage() {
                           className="w-full px-4 py-1 flex items-center gap-3 text-left hover:bg-accent/50"
                         >
                           <div className="flex items-center gap-3 flex-1 min-w-0">
+                            <GripVertical className="h-4 w-4 text-gray-400 flex-shrink-0 cursor-grab active:cursor-grabbing" />
                             <div
                               onClick={(e) => {
                                 e.stopPropagation()
@@ -780,14 +892,12 @@ export default function NotesPage() {
                               }}
                               className="flex-shrink-0 w-6 h-6 rounded-full border-2 border-gray-300 flex items-center justify-center hover:border-blue-500 transition-colors cursor-pointer"
                             >
-                              {note.metadata?.flag && (
-                                <CheckCircle2 className="h-4 w-4 text-blue-500" />
-                              )}
+                              {note.metadata?.flag && <CheckCircle2 className="h-4 w-4 text-blue-500" />}
                             </div>
                             <div className="min-w-0 flex-1">
-                            <div className="font-bold text-foreground">
-                              {note.text.split('\n')[0] || 'Untitled'}
-                            </div>
+                              <div className="font-bold text-foreground truncate line-clamp-1">
+                                {note.text.split("\n")[0] || "Untitled"}
+                              </div>
                             </div>
                           </div>
                         </button>
@@ -798,8 +908,6 @@ export default function NotesPage() {
               </div>
             </div>
           </div>
-
-
         </div>
       )}
 
@@ -839,8 +947,8 @@ export default function NotesPage() {
 
                   let listNotes = []
                   switch (currentListType) {
-                    case 'today':
-                      listNotes = notes.filter(note => {
+                    case "today":
+                      listNotes = notes.filter((note) => {
                         // Exclude completed notes
                         if (note.metadata?.flag === true) return false
 
@@ -864,8 +972,8 @@ export default function NotesPage() {
                         return isCreatedToday || isDueToday
                       })
                       break
-                    case 'plan':
-                      listNotes = notes.filter(note => {
+                    case "plan":
+                      listNotes = notes.filter((note) => {
                         // Exclude completed notes
                         if (note.metadata?.flag === true) return false
 
@@ -873,22 +981,22 @@ export default function NotesPage() {
                         return note.metadata?.date !== undefined
                       })
                       break
-                    case 'done':
-                      listNotes = notes.filter(note => note.metadata?.flag === true)
+                    case "done":
+                      listNotes = notes.filter((note) => note.metadata?.flag === true)
                       break
-                    case 'all':
+                    case "all":
                     default:
-                      listNotes = notes.filter(note => note.metadata?.flag !== true)
+                      listNotes = notes.filter((note) => note.metadata?.flag !== true)
                       break
                   }
 
                   // Handle custom lists
-                  if (currentListType.startsWith('custom-')) {
-                    const listId = currentListType.replace('custom-', '')
+                  if (currentListType.startsWith("custom-")) {
+                    const listId = currentListType.replace("custom-", "")
                     // For now, return all notes for custom lists (mock data)
                     // In real app, this would filter by list ID from note metadata
                     // Exclude completed notes
-                    listNotes = notes.filter(note => note.metadata?.flag !== true)
+                    listNotes = notes.filter((note) => note.metadata?.flag !== true)
                   }
 
                   if (listNotes.length === 0) {
@@ -898,9 +1006,20 @@ export default function NotesPage() {
                   return listNotes.map((note, index) => (
                     <div
                       key={note.id}
+                      data-note-id={note.id}
+                      draggable={editingId !== note.id}
+                      onDragStart={(e) => handleDragStart(e, note.id)}
+                      onDragOver={(e) => handleDragOver(e, note.id)}
+                      onDrop={(e) => handleDrop(e, note.id)}
+                      onDragEnd={handleDragEnd}
+                      onTouchStart={(e) => handleTouchStart(e, note.id)}
+                      onTouchMove={handleTouchMove}
+                      onTouchEnd={handleTouchEnd}
                       className={cn(
                         "note-item overflow-hidden transition-all",
-                        index < listNotes.length - 1 ? "border-b border-gray-100" : ""
+                        index < listNotes.length - 1 ? "border-b border-gray-100" : "",
+                        draggedNoteId === note.id && "opacity-50",
+                        dragOverNoteId === note.id && draggedNoteId !== note.id && "border-t-2 border-blue-500",
                       )}
                     >
                       {editingId === note.id ? (
@@ -913,16 +1032,16 @@ export default function NotesPage() {
                             placeholder="Enter your note text..."
                             onBlur={(e) => {
                               // Don't save if clicking on the info button
-                              if (!(e.relatedTarget as Element)?.closest('.info-button')) {
+                              if (!(e.relatedTarget as Element)?.closest(".info-button")) {
                                 handleSaveEdit()
                               }
                             }}
                             autoFocus
                             style={{
-                              WebkitAppearance: 'none',
-                              WebkitTapHighlightColor: 'transparent',
-                              WebkitUserModify: 'read-write-plaintext-only',
-                              boxShadow: 'none'
+                              WebkitAppearance: "none",
+                              WebkitTapHighlightColor: "transparent",
+                              WebkitUserModify: "read-write-plaintext-only",
+                              boxShadow: "none",
                             }}
                           />
                           <div
@@ -943,6 +1062,7 @@ export default function NotesPage() {
                           className="w-full px-4 py-1 flex items-center gap-3 text-left hover:bg-accent/50"
                         >
                           <div className="flex items-center gap-3 flex-1 min-w-0">
+                            <GripVertical className="h-4 w-4 text-gray-400 flex-shrink-0 cursor-grab active:cursor-grabbing" />
                             <div
                               onClick={(e) => {
                                 e.stopPropagation()
@@ -950,14 +1070,12 @@ export default function NotesPage() {
                               }}
                               className="flex-shrink-0 w-6 h-6 rounded-full border-2 border-gray-300 flex items-center justify-center hover:border-blue-500 transition-colors cursor-pointer"
                             >
-                              {note.metadata?.flag && (
-                                <CheckCircle2 className="h-4 w-4 text-blue-500" />
-                              )}
+                              {note.metadata?.flag && <CheckCircle2 className="h-4 w-4 text-blue-500" />}
                             </div>
                             <div className="min-w-0 flex-1">
-                            <div className="font-bold text-foreground">
-                              {note.text.split('\n')[0] || 'Untitled'}
-                            </div>
+                              <div className="font-bold text-foreground truncate line-clamp-1">
+                                {note.text.split("\n")[0] || "Untitled"}
+                              </div>
                             </div>
                           </div>
                         </button>
@@ -1008,12 +1126,7 @@ export default function NotesPage() {
               Back
             </Button>
             <h3 className="text-lg font-semibold">New List</h3>
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={handleCreateList}
-              className="text-blue-600 font-medium"
-            >
+            <Button variant="ghost" size="sm" onClick={handleCreateList} className="text-blue-600 font-medium">
               Done
             </Button>
           </div>
@@ -1022,9 +1135,7 @@ export default function NotesPage() {
             <div className="space-y-4">
               {/* List Name */}
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Name
-                </label>
+                <label className="block text-sm font-medium text-gray-700 mb-2">Name</label>
                 <Input
                   type="text"
                   placeholder="List name"
@@ -1036,9 +1147,7 @@ export default function NotesPage() {
 
               {/* List Icon */}
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Icon
-                </label>
+                <label className="block text-sm font-medium text-gray-700 mb-2">Icon</label>
                 <div className="space-y-3">
                   {/* Custom emoji input */}
                   <div className="flex gap-2">
@@ -1051,7 +1160,7 @@ export default function NotesPage() {
                       maxLength={2}
                     />
                     <div className="w-12 h-10 rounded-lg border-2 border-gray-200 flex items-center justify-center text-2xl">
-                      {newListIcon || '📝'}
+                      {newListIcon || "📝"}
                     </div>
                   </div>
 
@@ -1060,12 +1169,12 @@ export default function NotesPage() {
                     <div className="text-xs text-gray-500 mb-2">or choose from suggested:</div>
                     <div className="grid grid-cols-6 gap-2">
                       {[
-                        { name: 'menu', emoji: '☰' },
-                        { name: 'bell', emoji: '🔔' },
-                        { name: 'flame', emoji: '🔥' },
-                        { name: 'star', emoji: '⭐' },
-                        { name: 'heart', emoji: '❤️' },
-                        { name: 'check', emoji: '✅' }
+                        { name: "menu", emoji: "☰" },
+                        { name: "bell", emoji: "🔔" },
+                        { name: "flame", emoji: "🔥" },
+                        { name: "star", emoji: "⭐" },
+                        { name: "heart", emoji: "❤️" },
+                        { name: "check", emoji: "✅" },
                       ].map((icon) => (
                         <button
                           key={icon.name}
@@ -1074,7 +1183,7 @@ export default function NotesPage() {
                             "w-12 h-12 rounded-lg border-2 flex items-center justify-center text-2xl transition-all",
                             newListIcon === icon.emoji
                               ? "border-blue-500 bg-blue-50"
-                              : "border-gray-200 hover:border-gray-300"
+                              : "border-gray-200 hover:border-gray-300",
                           )}
                           title={`Select ${icon.emoji}`}
                         >
@@ -1088,26 +1197,21 @@ export default function NotesPage() {
 
               {/* List Color */}
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Color
-                </label>
+                <label className="block text-sm font-medium text-gray-700 mb-2">Color</label>
                 <div className="grid grid-cols-6 gap-2">
-                  {[
-                    '#FF3B30', '#FF9500', '#FFCC00', '#34C759',
-                    '#00D4AA', '#007AFF', '#5856D6', '#AF52DE'
-                  ].map((color) => (
-                    <button
-                      key={color}
-                      onClick={() => setNewListColor(color)}
-                      className={cn(
-                        "w-12 h-12 rounded-lg border-2 transition-all",
-                        newListColor === color
-                          ? "border-gray-800"
-                          : "border-gray-200"
-                      )}
-                      style={{ backgroundColor: color }}
-                    />
-                  ))}
+                  {["#FF3B30", "#FF9500", "#FFCC00", "#34C759", "#00D4AA", "#007AFF", "#5856D6", "#AF52DE"].map(
+                    (color) => (
+                      <button
+                        key={color}
+                        onClick={() => setNewListColor(color)}
+                        className={cn(
+                          "w-12 h-12 rounded-lg border-2 transition-all",
+                          newListColor === color ? "border-gray-800" : "border-gray-200",
+                        )}
+                        style={{ backgroundColor: color }}
+                      />
+                    ),
+                  )}
                 </div>
               </div>
             </div>
