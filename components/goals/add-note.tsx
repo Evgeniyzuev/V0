@@ -19,6 +19,7 @@ import {
   GripVertical,
   ChevronRight,
   List,
+  Trash2,
 } from "lucide-react"
 import { cn } from "@/lib/utils"
 
@@ -28,7 +29,7 @@ interface Note {
   createdAt: number
   executionTime: number
   color: string
-  listId?: string // Added listId to track which custom list the note belongs to
+  listId?: string
   metadata?: {
     date?: string
     time?: string
@@ -93,9 +94,11 @@ export default function NotesPage() {
   const [draggedNoteId, setDraggedNoteId] = useState<string | null>(null)
   const [dragOverNoteId, setDragOverNoteId] = useState<string | null>(null)
   const [isDragActive, setIsDragActive] = useState<boolean>(false)
+  const [selectedNotes, setSelectedNotes] = useState<string[]>([])
   const longPressTimer = useRef<NodeJS.Timeout | null>(null)
   const touchStartY = useRef<number>(0)
   const touchCurrentY = useRef<number>(0)
+  const longPressTriggered = useRef<boolean>(false)
 
   // Computed properties for active and completed notes
   const activeNotes = useMemo(() => notes.filter((note) => note.metadata?.flag !== true), [notes])
@@ -346,8 +349,6 @@ export default function NotesPage() {
     switch (activeList) {
       case "today":
         return notes.filter((note) => {
-          // Today list: notes with active date metadata set to today, or notes without active date that are due today
-          // Exclude completed notes
           if (note.metadata?.flag === true) return false
 
           if (note.metadata?.date) {
@@ -355,15 +356,12 @@ export default function NotesPage() {
             noteDate.setHours(0, 0, 0, 0)
             return noteDate.getTime() === today.getTime()
           }
-          // Otherwise use execution time
           const noteDate = new Date(note.executionTime)
           noteDate.setHours(0, 0, 0, 0)
           return noteDate.getTime() === today.getTime()
         })
       case "plan":
         return notes.filter((note) => {
-          // Plan list: ALL notes WITH active date (regardless of date)
-          // Exclude completed notes
           return note.metadata?.date !== undefined && note.metadata?.flag !== true
         })
       case "done":
@@ -386,26 +384,20 @@ export default function NotesPage() {
     switch (listType) {
       case "today":
         return notes.filter((note) => {
-          // Exclude completed notes from count
           if (note.metadata?.flag === true) return false
 
-          // If note has active date metadata, use that date
           if (note.metadata?.date) {
             const noteDate = new Date(note.metadata.date)
             noteDate.setHours(0, 0, 0, 0)
             return noteDate.getTime() === today.getTime()
           }
-          // Otherwise use execution time
           const noteDate = new Date(note.executionTime)
           noteDate.setHours(0, 0, 0, 0)
           return noteDate.getTime() === today.getTime()
         }).length
       case "plan":
         return notes.filter((note) => {
-          // Exclude completed notes from count
           if (note.metadata?.flag === true) return false
-
-          // Plan list: ALL notes WITH active date (regardless of date)
           return note.metadata?.date !== undefined
         }).length
       case "done":
@@ -421,12 +413,10 @@ export default function NotesPage() {
   }
 
   const getListIcon = (iconName: string) => {
-    // If it's a single emoji character, return it as is
     if (iconName && iconName.length <= 2 && /\p{Emoji}/u.test(iconName)) {
       return iconName
     }
 
-    // Otherwise, map predefined icon names to emojis
     switch (iconName) {
       case "bell":
         return "🔔"
@@ -494,13 +484,15 @@ export default function NotesPage() {
     setIsDragActive(false)
   }
 
-  // Touch handlers for mobile drag-and-drop
   const handleTouchStart = (e: React.TouchEvent, noteId: string) => {
     touchStartY.current = e.touches[0].clientY
+    longPressTriggered.current = false
 
     longPressTimer.current = setTimeout(() => {
+      longPressTriggered.current = true
       setIsDragActive(true)
       setDraggedNoteId(noteId)
+      setSelectedNotes([noteId])
     }, 1000) // 1 second
   }
 
@@ -536,12 +528,15 @@ export default function NotesPage() {
     }
     setDraggedNoteId(null)
     setDragOverNoteId(null)
-    setIsDragActive(false)
+    // Don't reset isDragActive here - keep selection mode active
   }
 
   const handleMouseDown = (noteId: string) => {
+    longPressTriggered.current = false
     longPressTimer.current = setTimeout(() => {
+      longPressTriggered.current = true
       setIsDragActive(true)
+      setSelectedNotes([noteId])
     }, 1000)
   }
 
@@ -550,10 +545,67 @@ export default function NotesPage() {
       clearTimeout(longPressTimer.current)
       longPressTimer.current = null
     }
+    // Don't reset isDragActive here - keep selection mode active
+  }
+
+  const handleNoteClick = (noteId: string) => {
+    if (isDragActive) {
+      // In selection mode, check if this was a short click
+      if (!longPressTriggered.current) {
+        // Short click - exit selection mode
+        setIsDragActive(false)
+        setSelectedNotes([])
+      } else {
+        // Long press was triggered - toggle selection
+        handleToggleSelection(noteId)
+      }
+    } else {
+      // Not in selection mode - start editing
+      handleStartEdit(noteId)
+    }
+  }
+
+  const handleToggleSelection = (noteId: string) => {
+    setSelectedNotes((prev) => {
+      if (prev.includes(noteId)) {
+        return prev.filter((id) => id !== noteId)
+      } else {
+        return [...prev, noteId]
+      }
+    })
+  }
+
+  const handleDeleteSelected = () => {
+    setNotes((prev) => prev.filter((note) => !selectedNotes.includes(note.id)))
+    setSelectedNotes([])
+    setIsDragActive(false)
+  }
+
+  const handleCancelSelection = () => {
+    setIsDragActive(false)
+    setSelectedNotes([])
   }
 
   return (
     <div className="min-h-screen bg-gray-50 mobile-container">
+      {isDragActive && (
+        <div className="fixed top-0 left-0 right-0 bg-red-500 text-white px-4 py-3 flex items-center justify-between z-[100] shadow-lg">
+          <Button variant="ghost" size="sm" onClick={handleCancelSelection} className="text-white hover:bg-red-600">
+            Cancel
+          </Button>
+          <span className="font-medium">{selectedNotes.length} selected</span>
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={handleDeleteSelected}
+            disabled={selectedNotes.length === 0}
+            className="text-white hover:bg-red-600 disabled:opacity-50"
+          >
+            <Trash2 className="h-5 w-5" />
+          </Button>
+        </div>
+      )}
+
       {/* Search Bar */}
       <div className="bg-white border-b border-gray-200 px-4 py-3">
         <div className="relative">
@@ -724,6 +776,23 @@ export default function NotesPage() {
             ))}
           </div>
         </div>
+
+        <div className="flex gap-3 pt-4">
+          <Button
+            onClick={handleAddNote}
+            className="flex-1 bg-gray-100 hover:bg-gray-200 text-blue-600 rounded-lg py-2.5 flex items-center justify-center gap-2 font-medium"
+          >
+            <Plus className="h-5 w-5" />
+            note
+          </Button>
+          <Button
+            onClick={() => setShowCreateListModal(true)}
+            className="flex-1 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-lg py-2.5 flex items-center justify-center gap-2 font-medium"
+          >
+            <Plus className="h-5 w-5" />
+            list
+          </Button>
+        </div>
       </div>
 
       {/* Metadata Modal */}
@@ -735,7 +804,6 @@ export default function NotesPage() {
               variant="ghost"
               size="sm"
               onClick={() => {
-                // Save metadata before closing
                 if (showMetadataModal) {
                   const currentNote = notes.find((n) => n.id === showMetadataModal)
                   if (currentNote) {
@@ -870,26 +938,6 @@ export default function NotesPage() {
         </div>
       )}
 
-      {/* Fixed bottom panel with buttons */}
-      <div className="fixed bottom-20 left-4 right-4">
-        <div className="flex gap-3">
-          <Button
-            onClick={handleAddNote}
-            className="flex-1 bg-gray-100 hover:bg-gray-200 text-blue-600 rounded-lg py-3 flex items-center justify-center gap-2 font-medium"
-          >
-            <Plus className="h-5 w-5" />
-            note
-          </Button>
-          <Button
-            onClick={() => setShowCreateListModal(true)}
-            className="flex-1 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-lg py-3 flex items-center justify-center gap-2 font-medium"
-          >
-            <Plus className="h-5 w-5" />
-            list
-          </Button>
-        </div>
-      </div>
-
       {/* All Notes Modal */}
       {showAllNotesModal && (
         <div className="fixed inset-0 bg-white z-[55] flex flex-col" onClick={() => setShowAllNotesModal(false)}>
@@ -904,7 +952,7 @@ export default function NotesPage() {
               Back
             </Button>
             <h3 className="text-lg font-semibold">All Notes</h3>
-            <div className="w-16"></div> {/* Spacer for centering */}
+            <div className="w-16"></div>
           </div>
 
           <div className="flex-1 overflow-y-auto" onClick={(e) => e.stopPropagation()}>
@@ -932,10 +980,10 @@ export default function NotesPage() {
                         index < sortedNotes.length - 1 ? "border-b border-gray-100" : "",
                         draggedNoteId === note.id && "opacity-50",
                         dragOverNoteId === note.id && draggedNoteId !== note.id && "border-t-2 border-blue-500",
+                        selectedNotes.includes(note.id) && isDragActive && "bg-blue-50",
                       )}
                     >
                       {editingId === note.id ? (
-                        // Editing mode
                         <div className="px-2 py-1 relative">
                           <Textarea
                             value={editingText}
@@ -943,7 +991,6 @@ export default function NotesPage() {
                             className="w-full min-h-[80px] text-foreground bg-transparent border-none resize-none focus:ring-0 focus:outline-none focus:border-none focus:shadow-none p-0 mobile-textarea pr-12"
                             placeholder="Enter your note text..."
                             onBlur={(e) => {
-                              // Don't save if clicking on the info button
                               if (!(e.relatedTarget as Element)?.closest(".info-button")) {
                                 handleSaveEdit()
                               }
@@ -968,24 +1015,36 @@ export default function NotesPage() {
                           </div>
                         </div>
                       ) : (
-                        // Display mode
                         <button
-                          onClick={() => handleStartEdit(note.id)}
+                          onClick={() => handleNoteClick(note.id)}
                           className="w-full px-4 py-1 flex items-center gap-3 text-left hover:bg-accent/50"
+                          style={{ userSelect: "none", WebkitUserSelect: "none" }}
                         >
                           <div className="flex items-center gap-3 flex-1 min-w-0">
                             {isDragActive && (
-                              <GripVertical className="h-4 w-4 text-gray-400 flex-shrink-0 cursor-grab active:cursor-grabbing" />
+                              <>
+                                <div
+                                  className={cn(
+                                    "flex-shrink-0 w-6 h-6 rounded-full border-2 flex items-center justify-center transition-colors",
+                                    selectedNotes.includes(note.id) ? "border-blue-500 bg-blue-500" : "border-gray-300",
+                                  )}
+                                >
+                                  {selectedNotes.includes(note.id) && <CheckCircle2 className="h-4 w-4 text-white" />}
+                                </div>
+                                <GripVertical className="h-4 w-4 text-gray-400 flex-shrink-0 cursor-grab active:cursor-grabbing" />
+                              </>
                             )}
-                            <div
-                              onClick={(e) => {
-                                e.stopPropagation()
-                                handleToggleComplete(note.id)
-                              }}
-                              className="flex-shrink-0 w-6 h-6 rounded-full border-2 border-gray-300 flex items-center justify-center hover:border-blue-500 transition-colors cursor-pointer"
-                            >
-                              {note.metadata?.flag && <CheckCircle2 className="h-4 w-4 text-blue-500" />}
-                            </div>
+                            {!isDragActive && (
+                              <div
+                                onClick={(e) => {
+                                  e.stopPropagation()
+                                  handleToggleComplete(note.id)
+                                }}
+                                className="flex-shrink-0 w-6 h-6 rounded-full border-2 border-gray-300 flex items-center justify-center hover:border-blue-500 transition-colors cursor-pointer"
+                              >
+                                {note.metadata?.flag && <CheckCircle2 className="h-4 w-4 text-blue-500" />}
+                              </div>
+                            )}
                             <div className="min-w-0 flex-1">
                               <div className="font-bold text-foreground truncate line-clamp-1">
                                 {note.text.split("\n")[0] || "Untitled"}
@@ -1069,22 +1128,18 @@ export default function NotesPage() {
                   switch (currentListType) {
                     case "today":
                       listNotes = notes.filter((note) => {
-                        // Exclude completed notes
                         if (note.metadata?.flag === true) return false
 
-                        // Today list: notes with active date metadata set to today, or notes without active date that are due today
                         if (note.metadata?.date) {
                           const noteDate = new Date(note.metadata.date)
                           noteDate.setHours(0, 0, 0, 0)
                           return noteDate.getTime() === today.getTime()
                         }
 
-                        // Check if note was created today
                         const createdToday = new Date(note.createdAt)
                         createdToday.setHours(0, 0, 0, 0)
                         const isCreatedToday = createdToday.getTime() === today.getTime()
 
-                        // Check if note is due today
                         const noteDate = new Date(note.executionTime)
                         noteDate.setHours(0, 0, 0, 0)
                         const isDueToday = noteDate.getTime() === today.getTime()
@@ -1094,10 +1149,7 @@ export default function NotesPage() {
                       break
                     case "plan":
                       listNotes = notes.filter((note) => {
-                        // Exclude completed notes
                         if (note.metadata?.flag === true) return false
-
-                        // Plan list: ALL notes WITH active date (regardless of date)
                         return note.metadata?.date !== undefined
                       })
                       break
@@ -1110,7 +1162,6 @@ export default function NotesPage() {
                       break
                   }
 
-                  // Handle custom lists
                   if (currentListType.startsWith("custom-")) {
                     const listId = currentListType.replace("custom-", "")
                     listNotes = notes.filter((note) => note.listId === listId && note.metadata?.flag !== true)
@@ -1139,10 +1190,10 @@ export default function NotesPage() {
                         index < listNotes.length - 1 ? "border-b border-gray-100" : "",
                         draggedNoteId === note.id && "opacity-50",
                         dragOverNoteId === note.id && draggedNoteId !== note.id && "border-t-2 border-blue-500",
+                        selectedNotes.includes(note.id) && isDragActive && "bg-blue-50",
                       )}
                     >
                       {editingId === note.id ? (
-                        // Editing mode
                         <div className="px-2 py-1 relative">
                           <Textarea
                             value={editingText}
@@ -1150,7 +1201,6 @@ export default function NotesPage() {
                             className="w-full min-h-[80px] text-foreground bg-transparent border-none resize-none focus:ring-0 focus:outline-none focus:border-none focus:shadow-none p-0 mobile-textarea pr-12"
                             placeholder="Enter your note text..."
                             onBlur={(e) => {
-                              // Don't save if clicking on the info button
                               if (!(e.relatedTarget as Element)?.closest(".info-button")) {
                                 handleSaveEdit()
                               }
@@ -1175,24 +1225,36 @@ export default function NotesPage() {
                           </div>
                         </div>
                       ) : (
-                        // Display mode
                         <button
-                          onClick={() => handleStartEdit(note.id)}
+                          onClick={() => handleNoteClick(note.id)}
                           className="w-full px-4 py-1 flex items-center gap-3 text-left hover:bg-accent/50"
+                          style={{ userSelect: "none", WebkitUserSelect: "none" }}
                         >
                           <div className="flex items-center gap-3 flex-1 min-w-0">
                             {isDragActive && (
-                              <GripVertical className="h-4 w-4 text-gray-400 flex-shrink-0 cursor-grab active:cursor-grabbing" />
+                              <>
+                                <div
+                                  className={cn(
+                                    "flex-shrink-0 w-6 h-6 rounded-full border-2 flex items-center justify-center transition-colors",
+                                    selectedNotes.includes(note.id) ? "border-blue-500 bg-blue-500" : "border-gray-300",
+                                  )}
+                                >
+                                  {selectedNotes.includes(note.id) && <CheckCircle2 className="h-4 w-4 text-white" />}
+                                </div>
+                                <GripVertical className="h-4 w-4 text-gray-400 flex-shrink-0 cursor-grab active:cursor-grabbing" />
+                              </>
                             )}
-                            <div
-                              onClick={(e) => {
-                                e.stopPropagation()
-                                handleToggleComplete(note.id)
-                              }}
-                              className="flex-shrink-0 w-6 h-6 rounded-full border-2 border-gray-300 flex items-center justify-center hover:border-blue-500 transition-colors cursor-pointer"
-                            >
-                              {note.metadata?.flag && <CheckCircle2 className="h-4 w-4 text-blue-500" />}
-                            </div>
+                            {!isDragActive && (
+                              <div
+                                onClick={(e) => {
+                                  e.stopPropagation()
+                                  handleToggleComplete(note.id)
+                                }}
+                                className="flex-shrink-0 w-6 h-6 rounded-full border-2 border-gray-300 flex items-center justify-center hover:border-blue-500 transition-colors cursor-pointer"
+                              >
+                                {note.metadata?.flag && <CheckCircle2 className="h-4 w-4 text-blue-500" />}
+                              </div>
+                            )}
                             <div className="min-w-0 flex-1">
                               <div className="font-bold text-foreground truncate line-clamp-1">
                                 {note.text.split("\n")[0] || "Untitled"}
@@ -1208,7 +1270,6 @@ export default function NotesPage() {
             </div>
           </div>
 
-          {/* Add note button in list modal */}
           <div className="p-4 border-t border-gray-200">
             <Button
               onClick={(e) => {
@@ -1220,25 +1281,21 @@ export default function NotesPage() {
                   id: Date.now().toString(),
                   text: "",
                   createdAt: Date.now(),
-                  executionTime: Date.now() + 86400000, // +1 day
+                  executionTime: Date.now() + 86400000,
                   color: "#6b7280",
                 }
 
-                // Set properties based on current list type
                 if (currentListType === "done") {
-                  // Create completed note
                   newNote.metadata = {
                     ...newNote.metadata,
                     flag: true,
                   }
                 } else if (currentListType === "today") {
-                  // Create note with today's date
                   newNote.metadata = {
                     ...newNote.metadata,
                     date: today.toISOString().split("T")[0],
                   }
                 } else if (currentListType.startsWith("custom-")) {
-                  // Assign to current custom list
                   newNote.listId = currentListType.replace("custom-", "")
                 }
 
@@ -1276,7 +1333,6 @@ export default function NotesPage() {
 
           <div className="flex-1 overflow-y-auto p-4" onClick={(e) => e.stopPropagation()}>
             <div className="space-y-4">
-              {/* List Name */}
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">Name</label>
                 <Input
@@ -1294,11 +1350,9 @@ export default function NotesPage() {
                 />
               </div>
 
-              {/* List Icon */}
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">Icon</label>
                 <div className="space-y-3">
-                  {/* Custom emoji input */}
                   <div className="flex gap-2">
                     <Input
                       type="text"
@@ -1313,7 +1367,6 @@ export default function NotesPage() {
                     </div>
                   </div>
 
-                  {/* Predefined icons */}
                   <div>
                     <div className="text-xs text-gray-500 mb-2">or choose from suggested:</div>
                     <div className="grid grid-cols-6 gap-2">
@@ -1344,7 +1397,6 @@ export default function NotesPage() {
                 </div>
               </div>
 
-              {/* List Color */}
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">Color</label>
                 <div className="grid grid-cols-6 gap-2">
@@ -1391,7 +1443,6 @@ export default function NotesPage() {
 
           <div className="flex-1 overflow-y-auto p-4" onClick={(e) => e.stopPropagation()}>
             <div className="space-y-4">
-              {/* List Name */}
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">Name</label>
                 <Input
@@ -1409,11 +1460,9 @@ export default function NotesPage() {
                 />
               </div>
 
-              {/* List Icon */}
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">Icon</label>
                 <div className="space-y-3">
-                  {/* Custom emoji input */}
                   <div className="flex gap-2">
                     <Input
                       type="text"
@@ -1428,7 +1477,6 @@ export default function NotesPage() {
                     </div>
                   </div>
 
-                  {/* Predefined icons */}
                   <div>
                     <div className="text-xs text-gray-500 mb-2">or choose from suggested:</div>
                     <div className="grid grid-cols-6 gap-2">
@@ -1459,7 +1507,6 @@ export default function NotesPage() {
                 </div>
               </div>
 
-              {/* List Color */}
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">Color</label>
                 <div className="grid grid-cols-6 gap-2">
@@ -1501,7 +1548,6 @@ export default function NotesPage() {
 
           <div className="flex-1 overflow-y-auto" onClick={(e) => e.stopPropagation()}>
             <div className="space-y-1 p-4">
-              {/* All Notes option */}
               <button
                 onClick={() => {
                   if (showMetadataModal) {
@@ -1525,7 +1571,6 @@ export default function NotesPage() {
                 )}
               </button>
 
-              {/* Custom lists */}
               {customLists.map((list) => (
                 <button
                   key={list.id}
