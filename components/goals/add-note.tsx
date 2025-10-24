@@ -635,7 +635,7 @@ export default function NotesPage() {
         </div>
       </div>
 
-      <div className="max-w-4xl mx-auto p-4 space-y-6">
+      <div className="max-w-4xl mx-auto p-4 space-y-6 pb-20">
         {/* Standard Lists */}
         <div className="grid grid-cols-2 gap-3">
           {/* Today */}
@@ -798,22 +798,26 @@ export default function NotesPage() {
           </div>
         </div>
 
-        <div className="flex gap-3 pt-4">
-          <Button
-            onClick={handleAddNote}
-            className="flex-1 bg-gray-100 hover:bg-gray-200 text-blue-600 rounded-lg py-2.5 flex items-center justify-center gap-2 font-medium"
-          >
-            <Plus className="h-5 w-5" />
-            note
-          </Button>
-          <Button
-            onClick={() => setShowCreateListModal(true)}
-            className="flex-1 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-lg py-2.5 flex items-center justify-center gap-2 font-medium"
-          >
-            <Plus className="h-5 w-5" />
-            list
-          </Button>
+        {/* Fixed Bottom Buttons */}
+        <div className="fixed bottom-8 left-0 right-0 p-4 z-50">
+          <div className="max-w-4xl mx-auto flex gap-3">
+            <Button
+              onClick={handleAddNote}
+              className="flex-1 bg-gray-100 hover:bg-gray-200 text-blue-600 rounded-lg py-2.5 flex items-center justify-center gap-2 font-medium"
+            >
+              <Plus className="h-5 w-5" />
+              note
+            </Button>
+            <Button
+              onClick={() => setShowCreateListModal(true)}
+              className="flex-1 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-lg py-2.5 flex items-center justify-center gap-2 font-medium"
+            >
+              <Plus className="h-5 w-5" />
+              list
+            </Button>
+          </div>
         </div>
+
       </div>
 
       {/* Metadata Modal */}
