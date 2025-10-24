@@ -505,6 +505,7 @@ export default function NotesPage() {
 
   const handleTouchStart = (e: React.TouchEvent, noteId: string) => {
     e.preventDefault() // Prevent default touch behavior
+    e.stopPropagation() // Prevent event bubbling
     touchStartY.current = e.touches[0].clientY
     longPressTriggered.current = false
 
@@ -518,6 +519,7 @@ export default function NotesPage() {
 
   const handleTouchMove = (e: React.TouchEvent) => {
     e.preventDefault() // Prevent scrolling during drag
+    e.stopPropagation() // Prevent event bubbling
     if (longPressTimer.current && !isDragActive) {
       clearTimeout(longPressTimer.current)
       longPressTimer.current = null
@@ -538,7 +540,8 @@ export default function NotesPage() {
     }
   }
 
-  const handleTouchEnd = () => {
+  const handleTouchEnd = (e: React.TouchEvent) => {
+    e.preventDefault() // Prevent default touch behavior
     if (longPressTimer.current) {
       clearTimeout(longPressTimer.current)
       longPressTimer.current = null
@@ -1024,6 +1027,7 @@ export default function NotesPage() {
                       onTouchEnd={handleTouchEnd}
                       onMouseDown={() => handleMouseDown(note.id)}
                       onMouseUp={handleMouseUp}
+                      style={{ touchAction: isDragActive ? 'none' : 'auto' }}
                       className={cn(
                         "note-item overflow-hidden transition-all",
                         index < sortedNotes.length - 1 ? "border-b border-gray-100" : "",
@@ -1234,6 +1238,7 @@ export default function NotesPage() {
                       onTouchEnd={handleTouchEnd}
                       onMouseDown={() => handleMouseDown(note.id)}
                       onMouseUp={handleMouseUp}
+                      style={{ touchAction: isDragActive ? 'none' : 'auto' }}
                       className={cn(
                         "note-item overflow-hidden transition-all",
                         index < listNotes.length - 1 ? "border-b border-gray-100" : "",
