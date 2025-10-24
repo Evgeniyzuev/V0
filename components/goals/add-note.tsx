@@ -219,10 +219,8 @@ export default function NotesPage() {
       const note = notes.find((n) => n.id === showMetadataModal)
       if (note?.metadata) {
         setMetadataForm({
-          date: note.metadata.date || new Date(note.createdAt).toISOString().split("T")[0],
-          time:
-            note.metadata.time ||
-            new Date(note.createdAt).toLocaleTimeString("en-GB", { hour: "2-digit", minute: "2-digit" }),
+          date: note.metadata.date || "",
+          time: note.metadata.time || "",
           tags: note.metadata.tags || "",
           location: note.metadata.location || false,
           flag: note.metadata.flag || false,
@@ -233,11 +231,8 @@ export default function NotesPage() {
       } else {
         // Set default values
         setMetadataForm({
-          date: new Date(note?.createdAt || Date.now()).toISOString().split("T")[0],
-          time: new Date(note?.createdAt || Date.now()).toLocaleTimeString("en-GB", {
-            hour: "2-digit",
-            minute: "2-digit",
-          }),
+          date: "",
+          time: "",
           tags: "",
           location: false,
           flag: false,
@@ -455,9 +450,7 @@ export default function NotesPage() {
             noteDate.setHours(0, 0, 0, 0)
             return noteDate.getTime() === today.getTime()
           }
-          const noteDate = new Date(note.executionTime)
-          noteDate.setHours(0, 0, 0, 0)
-          return noteDate.getTime() === today.getTime()
+          return false
         })
       case "plan":
         return notes.filter((note) => {
@@ -490,9 +483,7 @@ export default function NotesPage() {
             noteDate.setHours(0, 0, 0, 0)
             return noteDate.getTime() === today.getTime()
           }
-          const noteDate = new Date(note.executionTime)
-          noteDate.setHours(0, 0, 0, 0)
-          return noteDate.getTime() === today.getTime()
+          return false
         }).length
       case "plan":
         return notes.filter((note) => {
@@ -847,28 +838,50 @@ export default function NotesPage() {
                 <input
                   type="checkbox"
                   className="rounded"
-                  checked={notes.find((n) => n.id === showMetadataModal)?.metadata?.time ? true : false}
+                  checked={!!notes.find((n) => n.id === showMetadataModal)?.metadata?.time}
                   onChange={(e) => {
                     const note = notes.find((n) => n.id === showMetadataModal)
                     if (note) {
-                      setNotes(
-                        notes.map((n) =>
-                          n.id === showMetadataModal
-                            ? {
-                                ...n,
-                                metadata: {
-                                  ...n.metadata,
-                                  time: e.target.checked ? metadataForm.time : undefined,
-                                  location: n.metadata?.location ?? false,
-                                  flag: n.metadata?.flag ?? false,
-                                  priority: n.metadata?.priority ?? "None",
-                                  list: n.metadata?.list ?? false,
-                                  subitems: n.metadata?.subitems ?? 0,
-                                },
-                              }
-                            : n,
-                        ),
-                      )
+                      if (e.target.checked) {
+                        setNotes(
+                          notes.map((n) =>
+                            n.id === showMetadataModal
+                              ? {
+                                  ...n,
+                                  metadata: {
+                                    ...n.metadata,
+                                    time: metadataForm.time,
+                                    location: n.metadata?.location ?? false,
+                                    flag: n.metadata?.flag ?? false,
+                                    priority: n.metadata?.priority ?? "None",
+                                    list: n.metadata?.list ?? false,
+                                    subitems: n.metadata?.subitems ?? 0,
+                                  },
+                                }
+                              : n,
+                          ),
+                        )
+                      } else {
+                        setNotes(
+                          notes.map((n) =>
+                            n.id === showMetadataModal
+                              ? {
+                                  ...n,
+                                  metadata: {
+                                    ...n.metadata,
+                                    time: undefined,
+                                    location: n.metadata?.location ?? false,
+                                    flag: n.metadata?.flag ?? false,
+                                    priority: n.metadata?.priority ?? "None",
+                                    list: n.metadata?.list ?? false,
+                                    subitems: n.metadata?.subitems ?? 0,
+                                  },
+                                }
+                              : n,
+                          ),
+                        )
+                        setMetadataForm({ ...metadataForm, time: "" })
+                      }
                     }
                   }}
                 />
@@ -886,28 +899,50 @@ export default function NotesPage() {
                 <input
                   type="checkbox"
                   className="rounded"
-                  checked={notes.find((n) => n.id === showMetadataModal)?.metadata?.tags ? true : false}
+                  checked={!!notes.find((n) => n.id === showMetadataModal)?.metadata?.tags}
                   onChange={(e) => {
                     const note = notes.find((n) => n.id === showMetadataModal)
                     if (note) {
-                      setNotes(
-                        notes.map((n) =>
-                          n.id === showMetadataModal
-                            ? {
-                                ...n,
-                                metadata: {
-                                  ...n.metadata,
-                                  tags: e.target.checked ? metadataForm.tags : undefined,
-                                  location: n.metadata?.location ?? false,
-                                  flag: n.metadata?.flag ?? false,
-                                  priority: n.metadata?.priority ?? "None",
-                                  list: n.metadata?.list ?? false,
-                                  subitems: n.metadata?.subitems ?? 0,
-                                },
-                              }
-                            : n,
-                        ),
-                      )
+                      if (e.target.checked) {
+                        setNotes(
+                          notes.map((n) =>
+                            n.id === showMetadataModal
+                              ? {
+                                  ...n,
+                                  metadata: {
+                                    ...n.metadata,
+                                    tags: metadataForm.tags,
+                                    location: n.metadata?.location ?? false,
+                                    flag: n.metadata?.flag ?? false,
+                                    priority: n.metadata?.priority ?? "None",
+                                    list: n.metadata?.list ?? false,
+                                    subitems: n.metadata?.subitems ?? 0,
+                                  },
+                                }
+                              : n,
+                          ),
+                        )
+                      } else {
+                        setNotes(
+                          notes.map((n) =>
+                            n.id === showMetadataModal
+                              ? {
+                                  ...n,
+                                  metadata: {
+                                    ...n.metadata,
+                                    tags: undefined,
+                                    location: n.metadata?.location ?? false,
+                                    flag: n.metadata?.flag ?? false,
+                                    priority: n.metadata?.priority ?? "None",
+                                    list: n.metadata?.list ?? false,
+                                    subitems: n.metadata?.subitems ?? 0,
+                                  },
+                                }
+                              : n,
+                          ),
+                        )
+                        setMetadataForm({ ...metadataForm, tags: "" })
+                      }
                     }
                   }}
                 />
@@ -1128,15 +1163,7 @@ export default function NotesPage() {
                           return noteDate.getTime() === today.getTime()
                         }
 
-                        const createdToday = new Date(note.createdAt)
-                        createdToday.setHours(0, 0, 0, 0)
-                        const isCreatedToday = createdToday.getTime() === today.getTime()
-
-                        const noteDate = new Date(note.executionTime)
-                        noteDate.setHours(0, 0, 0, 0)
-                        const isDueToday = noteDate.getTime() === today.getTime()
-
-                        return isCreatedToday || isDueToday
+                        return false
                       })
                       break
                     case "plan":
@@ -1161,6 +1188,219 @@ export default function NotesPage() {
 
                   if (listNotes.length === 0) {
                     return <div className="text-center py-12 text-muted-foreground">No notes</div>
+                  }
+
+                  // For planned list, split into current and overdue
+                  if (currentListType === "plan") {
+                    const currentNotes = listNotes.filter(note => {
+                      if (note.metadata?.date) {
+                        const noteDate = new Date(note.metadata.date)
+                        return noteDate >= today
+                      }
+                      return false
+                    }).sort((a, b) => {
+                      if (a.metadata?.date && b.metadata?.date) {
+                        return new Date(a.metadata.date).getTime() - new Date(b.metadata.date).getTime()
+                      }
+                      return 0
+                    })
+
+                    const overdueNotes = listNotes.filter(note => {
+                      if (note.metadata?.date) {
+                        const noteDate = new Date(note.metadata.date)
+                        return noteDate < today
+                      }
+                      return false
+                    }).sort((a, b) => {
+                      if (a.metadata?.date && b.metadata?.date) {
+                        return new Date(a.metadata.date).getTime() - new Date(b.metadata.date).getTime()
+                      }
+                      return 0
+                    })
+
+                    return (
+                      <>
+                        {currentNotes.map((note, index) => (
+                          <div
+                            key={note.id}
+                            data-note-id={note.id}
+                            onMouseDown={() => handleMouseDown(note.id)}
+                            onMouseUp={handleMouseUp}
+                            onTouchStart={() => handleTouchStart(note.id)}
+                            onTouchEnd={handleTouchEnd}
+                            className={cn(
+                              "note-item overflow-hidden transition-all",
+                              index < currentNotes.length - 1 ? "border-b border-gray-100" : "",
+                              selectedNotes.includes(note.id) && isSelectionActive && "bg-blue-50",
+                            )}
+                          >
+                            {editingId === note.id ? (
+                              <div className="px-2 py-1 relative">
+                                <Textarea
+                                  value={editingText}
+                                  onChange={(e) => setEditingText(e.target.value)}
+                                  className="w-full min-h-[80px] text-foreground bg-transparent border-none resize-none focus:ring-0 focus:outline-none focus:border-none focus:shadow-none p-0 mobile-textarea pr-12"
+                                  placeholder="Enter your note text..."
+                                  onBlur={(e) => {
+                                    if (!(e.relatedTarget as Element)?.closest(".info-button")) {
+                                      handleSaveEdit()
+                                    }
+                                  }}
+                                  autoFocus
+                                  style={{
+                                    WebkitAppearance: "none",
+                                    WebkitTapHighlightColor: "transparent",
+                                    WebkitUserModify: "read-write-plaintext-only",
+                                    boxShadow: "none",
+                                  }}
+                                />
+                                <div
+                                  onMouseDown={(e) => {
+                                    e.preventDefault()
+                                    e.stopPropagation()
+                                    setShowMetadataModal(note.id)
+                                  }}
+                                  className="info-button absolute right-2 top-2 w-10 h-10 rounded-full bg-gray-200 hover:bg-gray-300 flex items-center justify-center cursor-pointer"
+                                >
+                                  <Info className="h-5 w-5 text-gray-600" />
+                                </div>
+                              </div>
+                            ) : (
+                              <button
+                                onClick={() => handleNoteClick(note.id)}
+                                className="w-full px-4 py-1 flex items-center gap-3 text-left hover:bg-accent/50"
+                                style={{ userSelect: "none", WebkitUserSelect: "none" }}
+                              >
+                                <div className="flex items-center gap-3 flex-1 min-w-0">
+                                  {isSelectionActive ? (
+                                    <div
+                                      className={cn(
+                                        "flex-shrink-0 w-6 h-6 rounded-full border-2 flex items-center justify-center transition-colors cursor-pointer",
+                                        selectedNotes.includes(note.id) ? "border-blue-500 bg-blue-500" : "border-gray-300",
+                                      )}
+                                      onClick={(e) => {
+                                        e.stopPropagation()
+                                        handleToggleSelection(note.id)
+                                      }}
+                                    >
+                                      {selectedNotes.includes(note.id) && <CheckCircle2 className="h-4 w-4 text-white" />}
+                                    </div>
+                                  ) : (
+                                    <div
+                                      onClick={(e) => {
+                                        e.stopPropagation()
+                                        handleToggleComplete(note.id)
+                                      }}
+                                      className="flex-shrink-0 w-6 h-6 rounded-full border-2 border-gray-300 flex items-center justify-center hover:border-blue-500 transition-colors cursor-pointer"
+                                    >
+                                      {note.metadata?.flag && <CheckCircle2 className="h-4 w-4 text-blue-500" />}
+                                    </div>
+                                  )}
+                                  <div className="min-w-0 flex-1">
+                                    <div className="font-bold text-foreground truncate line-clamp-1">
+                                      {note.text.split("\n")[0] || "Untitled"}
+                                    </div>
+                                  </div>
+                                </div>
+                              </button>
+                            )}
+                          </div>
+                        ))}
+                        {overdueNotes.length > 0 && (
+                          <>
+                            <div className="px-4 py-2 bg-red-50 text-red-600 text-sm font-medium border-b border-gray-100">
+                              Overdue
+                            </div>
+                            {overdueNotes.map((note, index) => (
+                              <div
+                                key={note.id}
+                                data-note-id={note.id}
+                                onMouseDown={() => handleMouseDown(note.id)}
+                                onMouseUp={handleMouseUp}
+                                onTouchStart={() => handleTouchStart(note.id)}
+                                onTouchEnd={handleTouchEnd}
+                                className={cn(
+                                  "note-item overflow-hidden transition-all",
+                                  index < overdueNotes.length - 1 ? "border-b border-gray-100" : "",
+                                  selectedNotes.includes(note.id) && isSelectionActive && "bg-blue-50",
+                                )}
+                              >
+                                {editingId === note.id ? (
+                                  <div className="px-2 py-1 relative">
+                                    <Textarea
+                                      value={editingText}
+                                      onChange={(e) => setEditingText(e.target.value)}
+                                      className="w-full min-h-[80px] text-foreground bg-transparent border-none resize-none focus:ring-0 focus:outline-none focus:border-none focus:shadow-none p-0 mobile-textarea pr-12"
+                                      placeholder="Enter your note text..."
+                                      onBlur={(e) => {
+                                        if (!(e.relatedTarget as Element)?.closest(".info-button")) {
+                                          handleSaveEdit()
+                                        }
+                                      }}
+                                      autoFocus
+                                      style={{
+                                        WebkitAppearance: "none",
+                                        WebkitTapHighlightColor: "transparent",
+                                        WebkitUserModify: "read-write-plaintext-only",
+                                        boxShadow: "none",
+                                      }}
+                                    />
+                                    <div
+                                      onMouseDown={(e) => {
+                                        e.preventDefault()
+                                        e.stopPropagation()
+                                        setShowMetadataModal(note.id)
+                                      }}
+                                      className="info-button absolute right-2 top-2 w-10 h-10 rounded-full bg-gray-200 hover:bg-gray-300 flex items-center justify-center cursor-pointer"
+                                    >
+                                      <Info className="h-5 w-5 text-gray-600" />
+                                    </div>
+                                  </div>
+                                ) : (
+                                  <button
+                                    onClick={() => handleNoteClick(note.id)}
+                                    className="w-full px-4 py-1 flex items-center gap-3 text-left hover:bg-accent/50"
+                                    style={{ userSelect: "none", WebkitUserSelect: "none" }}
+                                  >
+                                    <div className="flex items-center gap-3 flex-1 min-w-0">
+                                      {isSelectionActive ? (
+                                        <div
+                                          className={cn(
+                                            "flex-shrink-0 w-6 h-6 rounded-full border-2 flex items-center justify-center transition-colors cursor-pointer",
+                                            selectedNotes.includes(note.id) ? "border-blue-500 bg-blue-500" : "border-gray-300",
+                                          )}
+                                          onClick={(e) => {
+                                            e.stopPropagation()
+                                            handleToggleSelection(note.id)
+                                          }}
+                                        >
+                                          {selectedNotes.includes(note.id) && <CheckCircle2 className="h-4 w-4 text-white" />}
+                                        </div>
+                                      ) : (
+                                        <div
+                                          onClick={(e) => {
+                                            e.stopPropagation()
+                                            handleToggleComplete(note.id)
+                                          }}
+                                          className="flex-shrink-0 w-6 h-6 rounded-full border-2 border-gray-300 flex items-center justify-center hover:border-blue-500 transition-colors cursor-pointer"
+                                        >
+                                          {note.metadata?.flag && <CheckCircle2 className="h-4 w-4 text-blue-500" />}
+                                        </div>
+                                      )}
+                                      <div className="min-w-0 flex-1">
+                                        <div className="font-bold text-foreground truncate line-clamp-1">
+                                          {note.text.split("\n")[0] || "Untitled"}
+                                        </div>
+                                      </div>
+                                    </div>
+                                  </button>
+                                )}
+                              </div>
+                            ))}
+                          </>
+                        )}
+                      </>
+                    )
                   }
 
                   return listNotes.map((note, index) => (
