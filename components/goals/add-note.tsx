@@ -438,6 +438,7 @@ export default function NotesPage() {
   const filterNotesByType = (listType: string, listId?: string) => {
     const today = new Date()
     today.setHours(0, 0, 0, 0)
+    const todayTime = today.getTime()
 
     switch (listType) {
       case "today":
@@ -446,7 +447,7 @@ export default function NotesPage() {
           if (note.metadata?.date) {
             const noteDate = new Date(note.metadata.date)
             noteDate.setHours(0, 0, 0, 0)
-            return noteDate.getTime() === today.getTime()
+            return noteDate.getTime() === todayTime
           }
           return false
         })
@@ -478,6 +479,30 @@ export default function NotesPage() {
     if (listType.startsWith("custom-")) {
       const listId = listType.replace("custom-", "")
       return notes.filter((note) => note.listId === listId && note.metadata?.flag !== true).length
+    }
+    if (listType === "plan") {
+      const listNotes = filterNotesByType("plan")
+      const today = new Date()
+      today.setHours(0, 0, 0, 0)
+      const todayTime = today.getTime()
+
+      const currentNotes = listNotes.filter(note => {
+        if (note.metadata?.date) {
+          const noteDate = new Date(note.metadata.date)
+          return noteDate.getTime() >= todayTime
+        }
+        return false
+      })
+
+      const overdueNotes = listNotes.filter(note => {
+        if (note.metadata?.date) {
+          const noteDate = new Date(note.metadata.date)
+          return noteDate.getTime() < todayTime
+        }
+        return false
+      })
+
+      return currentNotes.length + overdueNotes.length
     }
     return filterNotesByType(listType).length
   }
@@ -894,6 +919,7 @@ export default function NotesPage() {
                             : n,
                         ),
                       )
+                      setMetadataForm({ ...metadataForm, date: e.target.checked ? metadataForm.date : "" })
                     }
                   }}
                 />
@@ -1156,11 +1182,12 @@ export default function NotesPage() {
                   if (currentListType === "plan") {
                     const today = new Date()
                     today.setHours(0, 0, 0, 0)
+                    const todayTime = today.getTime()
 
                     const currentNotes = listNotes.filter(note => {
                       if (note.metadata?.date) {
                         const noteDate = new Date(note.metadata.date)
-                        return noteDate >= today
+                        return noteDate.getTime() >= todayTime
                       }
                       return false
                     }).sort((a, b) => {
@@ -1173,7 +1200,7 @@ export default function NotesPage() {
                     const overdueNotes = listNotes.filter(note => {
                       if (note.metadata?.date) {
                         const noteDate = new Date(note.metadata.date)
-                        return noteDate < today
+                        return noteDate.getTime() < todayTime
                       }
                       return false
                     }).sort((a, b) => {
