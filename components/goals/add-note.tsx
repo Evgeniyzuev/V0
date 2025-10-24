@@ -50,16 +50,17 @@ interface CustomList {
   icon: string
 }
 
+type ListType = "today" | "plan" | "done" | "all" | `custom-${string}`
+
 export default function NotesPage() {
   const [notes, setNotes] = useState<Note[]>([])
   const [editingId, setEditingId] = useState<string | null>(null)
   const [editingText, setEditingText] = useState<string>("")
   const [showMetadataModal, setShowMetadataModal] = useState<string | null>(null)
   const [showAllNotesModal, setShowAllNotesModal] = useState<boolean>(false)
-  const [activeList, setActiveList] = useState<string>("all")
   const [showListModal, setShowListModal] = useState<boolean>(false)
-  const [currentListType, setCurrentListType] = useState<string>("")
-  const [currentListTitle, setCurrentListTitle] = useState<string>("")
+  const [currentListType, setCurrentListType] = useState<ListType>("all")
+  const [currentListTitle, setCurrentListTitle] = useState<string>("All")
   const [showCreateListModal, setShowCreateListModal] = useState<boolean>(false)
   const [newListName, setNewListName] = useState<string>("")
   const [newListColor, setNewListColor] = useState<string>("#007AFF")
@@ -433,18 +434,15 @@ export default function NotesPage() {
 
   const sortedNotes = [...notes].sort((a, b) => a.executionTime - b.executionTime)
 
-  // Filter notes based on active list
-  const getFilteredNotes = () => {
+  // Utility function to filter notes by type
+  const filterNotesByType = (listType: string, listId?: string) => {
     const today = new Date()
     today.setHours(0, 0, 0, 0)
-    const tomorrow = new Date(today)
-    tomorrow.setDate(tomorrow.getDate() + 1)
 
-    switch (activeList) {
+    switch (listType) {
       case "today":
         return notes.filter((note) => {
           if (note.metadata?.flag === true) return false
-
           if (note.metadata?.date) {
             const noteDate = new Date(note.metadata.date)
             noteDate.setHours(0, 0, 0, 0)
@@ -464,38 +462,24 @@ export default function NotesPage() {
     }
   }
 
+  // Filter notes based on active list
+  const getFilteredNotes = () => {
+    if (currentListType.startsWith("custom-")) {
+      const listId = currentListType.replace("custom-", "")
+      return notes.filter((note) => note.listId === listId && note.metadata?.flag !== true)
+    }
+    return filterNotesByType(currentListType)
+  }
+
   const filteredNotes = getFilteredNotes()
 
   // Get counts for each list
   const getListCount = (listType: string) => {
-    const today = new Date()
-    today.setHours(0, 0, 0, 0)
-    const tomorrow = new Date(today)
-    tomorrow.setDate(tomorrow.getDate() + 1)
-
-    switch (listType) {
-      case "today":
-        return notes.filter((note) => {
-          if (note.metadata?.flag === true) return false
-
-          if (note.metadata?.date) {
-            const noteDate = new Date(note.metadata.date)
-            noteDate.setHours(0, 0, 0, 0)
-            return noteDate.getTime() === today.getTime()
-          }
-          return false
-        }).length
-      case "plan":
-        return notes.filter((note) => {
-          if (note.metadata?.flag === true) return false
-          return note.metadata?.date !== undefined
-        }).length
-      case "done":
-        return notes.filter((note) => note.metadata?.flag === true).length
-      case "all":
-      default:
-        return notes.filter((note) => note.metadata?.flag !== true).length
+    if (listType.startsWith("custom-")) {
+      const listId = listType.replace("custom-", "")
+      return notes.filter((note) => note.listId === listId && note.metadata?.flag !== true).length
     }
+    return filterNotesByType(listType).length
   }
 
   const getCustomListCount = (listId: string) => {
@@ -526,6 +510,94 @@ export default function NotesPage() {
         return iconName || "📝"
     }
   }
+
+  // Extract NoteItem component to reduce duplication
+  const NoteItem = ({ note, index, isLast }: { note: Note; index: number; isLast: boolean }) => (
+    <div
+      key={note.id}
+      data-note-id={note.id}
+      onMouseDown={() => handleMouseDown(note.id)}
+      onMouseUp={handleMouseUp}
+      onTouchStart={() => handleTouchStart(note.id)}
+      onTouchEnd={handleTouchEnd}
+      className={cn(
+        "note-item overflow-hidden transition-all",
+        !isLast ? "border-b border-gray-100" : "",
+        selectedNotes.includes(note.id) && isSelectionActive && "bg-blue-50",
+      )}
+    >
+      {editingId === note.id ? (
+        <div className="px-2 py-1 relative">
+          <Textarea
+            value={editingText}
+            onChange={(e) => setEditingText(e.target.value)}
+            className="w-full min-h-[80px] text-foreground bg-transparent border-none resize-none focus:ring-0 focus:outline-none focus:border-none focus:shadow-none p-0 mobile-textarea pr-12"
+            placeholder="Enter your note text..."
+            onBlur={(e) => {
+              if (!(e.relatedTarget as Element)?.closest(".info-button")) {
+                handleSaveEdit()
+              }
+            }}
+            autoFocus
+            style={{
+              WebkitAppearance: "none",
+              WebkitTapHighlightColor: "transparent",
+              WebkitUserModify: "read-write-plaintext-only",
+              boxShadow: "none",
+            }}
+          />
+          <div
+            onMouseDown={(e) => {
+              e.preventDefault()
+              e.stopPropagation()
+              setShowMetadataModal(note.id)
+            }}
+            className="info-button absolute right-2 top-2 w-10 h-10 rounded-full bg-gray-200 hover:bg-gray-300 flex items-center justify-center cursor-pointer"
+          >
+            <Info className="h-5 w-5 text-gray-600" />
+          </div>
+        </div>
+      ) : (
+        <button
+          onClick={() => handleNoteClick(note.id)}
+          className="w-full px-4 py-1 flex items-center gap-3 text-left hover:bg-accent/50"
+          style={{ userSelect: "none", WebkitUserSelect: "none" }}
+        >
+          <div className="flex items-center gap-3 flex-1 min-w-0">
+            {isSelectionActive ? (
+              <div
+                className={cn(
+                  "flex-shrink-0 w-6 h-6 rounded-full border-2 flex items-center justify-center transition-colors cursor-pointer",
+                  selectedNotes.includes(note.id) ? "border-blue-500 bg-blue-500" : "border-gray-300",
+                )}
+                onClick={(e) => {
+                  e.stopPropagation()
+                  handleToggleSelection(note.id)
+                }}
+              >
+                {selectedNotes.includes(note.id) && <CheckCircle2 className="h-4 w-4 text-white" />}
+              </div>
+            ) : (
+              <div
+                onClick={(e) => {
+                  e.stopPropagation()
+                  handleToggleComplete(note.id)
+                }}
+                className="flex-shrink-0 w-6 h-6 rounded-full border-2 border-gray-300 flex items-center justify-center hover:border-blue-500 transition-colors cursor-pointer"
+              >
+                {note.metadata?.flag && <CheckCircle2 className="h-4 w-4 text-blue-500" />}
+              </div>
+            )}
+            <div className="min-w-0 flex-1">
+              <div className="font-bold text-foreground truncate line-clamp-1">
+                {note.text.split("\n")[0] || "Untitled"}
+              </div>
+            </div>
+          </div>
+        </button>
+      )}
+    </div>
+  )
 
 
 
@@ -997,90 +1069,12 @@ export default function NotesPage() {
                   <div className="text-center py-12 text-muted-foreground">No notes</div>
                 ) : (
                   sortedNotes.map((note, index) => (
-                    <div
+                    <NoteItem
                       key={note.id}
-                      data-note-id={note.id}
-                      onMouseDown={() => handleMouseDown(note.id)}
-                      onMouseUp={handleMouseUp}
-                      onTouchStart={() => handleTouchStart(note.id)}
-                      onTouchEnd={handleTouchEnd}
-                      className={cn(
-                        "note-item overflow-hidden transition-all",
-                        index < sortedNotes.length - 1 ? "border-b border-gray-100" : "",
-                        selectedNotes.includes(note.id) && isSelectionActive && "bg-blue-50",
-                      )}
-                    >
-                      {editingId === note.id ? (
-                        <div className="px-2 py-1 relative">
-                          <Textarea
-                            value={editingText}
-                            onChange={(e) => setEditingText(e.target.value)}
-                            className="w-full min-h-[80px] text-foreground bg-transparent border-none resize-none focus:ring-0 focus:outline-none focus:border-none focus:shadow-none p-0 mobile-textarea pr-12"
-                            placeholder="Enter your note text..."
-                            onBlur={(e) => {
-                              if (!(e.relatedTarget as Element)?.closest(".info-button")) {
-                                handleSaveEdit()
-                              }
-                            }}
-                            autoFocus
-                            style={{
-                              WebkitAppearance: "none",
-                              WebkitTapHighlightColor: "transparent",
-                              WebkitUserModify: "read-write-plaintext-only",
-                              boxShadow: "none",
-                            }}
-                          />
-                          <div
-                            onMouseDown={(e) => {
-                              e.preventDefault()
-                              e.stopPropagation()
-                              setShowMetadataModal(note.id)
-                            }}
-                            className="info-button absolute right-2 top-2 w-10 h-10 rounded-full bg-gray-200 hover:bg-gray-300 flex items-center justify-center cursor-pointer"
-                          >
-                            <Info className="h-5 w-5 text-gray-600" />
-                          </div>
-                        </div>
-                      ) : (
-                        <button
-                          onClick={() => handleNoteClick(note.id)}
-                          className="w-full px-4 py-1 flex items-center gap-3 text-left hover:bg-accent/50"
-                          style={{ userSelect: "none", WebkitUserSelect: "none" }}
-                        >
-                          <div className="flex items-center gap-3 flex-1 min-w-0">
-                            {isSelectionActive ? (
-                              <div
-                                className={cn(
-                                  "flex-shrink-0 w-6 h-6 rounded-full border-2 flex items-center justify-center transition-colors cursor-pointer",
-                                  selectedNotes.includes(note.id) ? "border-blue-500 bg-blue-500" : "border-gray-300",
-                                )}
-                                onClick={(e) => {
-                                  e.stopPropagation()
-                                  handleToggleSelection(note.id)
-                                }}
-                              >
-                                {selectedNotes.includes(note.id) && <CheckCircle2 className="h-4 w-4 text-white" />}
-                              </div>
-                            ) : (
-                              <div
-                                onClick={(e) => {
-                                  e.stopPropagation()
-                                  handleToggleComplete(note.id)
-                                }}
-                                className="flex-shrink-0 w-6 h-6 rounded-full border-2 border-gray-300 flex items-center justify-center hover:border-blue-500 transition-colors cursor-pointer"
-                              >
-                                {note.metadata?.flag && <CheckCircle2 className="h-4 w-4 text-blue-500" />}
-                              </div>
-                            )}
-                                  <div className="min-w-0 flex-1">
-                                    <div className="font-bold text-foreground truncate line-clamp-1">
-                                      {note.text.split("\n")[0] || "Untitled"}
-                                    </div>
-                                  </div>
-                          </div>
-                        </button>
-                      )}
-                    </div>
+                      note={note}
+                      index={index}
+                      isLast={index === sortedNotes.length - 1}
+                    />
                   ))
                 )}
               </div>
@@ -1146,44 +1140,12 @@ export default function NotesPage() {
             <div className="max-w-4xl mx-auto">
               <div className="space-y-0">
                 {(() => {
-                  const today = new Date()
-                  today.setHours(0, 0, 0, 0)
-                  const tomorrow = new Date(today)
-                  tomorrow.setDate(tomorrow.getDate() + 1)
-
                   let listNotes = []
-                  switch (currentListType) {
-                    case "today":
-                      listNotes = notes.filter((note) => {
-                        if (note.metadata?.flag === true) return false
-
-                        if (note.metadata?.date) {
-                          const noteDate = new Date(note.metadata.date)
-                          noteDate.setHours(0, 0, 0, 0)
-                          return noteDate.getTime() === today.getTime()
-                        }
-
-                        return false
-                      })
-                      break
-                    case "plan":
-                      listNotes = notes.filter((note) => {
-                        if (note.metadata?.flag === true) return false
-                        return note.metadata?.date !== undefined
-                      })
-                      break
-                    case "done":
-                      listNotes = notes.filter((note) => note.metadata?.flag === true)
-                      break
-                    case "all":
-                    default:
-                      listNotes = notes.filter((note) => note.metadata?.flag !== true)
-                      break
-                  }
-
                   if (currentListType.startsWith("custom-")) {
                     const listId = currentListType.replace("custom-", "")
                     listNotes = notes.filter((note) => note.listId === listId && note.metadata?.flag !== true)
+                  } else {
+                    listNotes = filterNotesByType(currentListType)
                   }
 
                   if (listNotes.length === 0) {
@@ -1192,6 +1154,9 @@ export default function NotesPage() {
 
                   // For planned list, split into current and overdue
                   if (currentListType === "plan") {
+                    const today = new Date()
+                    today.setHours(0, 0, 0, 0)
+
                     const currentNotes = listNotes.filter(note => {
                       if (note.metadata?.date) {
                         const noteDate = new Date(note.metadata.date)
@@ -1221,97 +1186,12 @@ export default function NotesPage() {
                     return (
                       <>
                         {currentNotes.map((note, index) => (
-                          <div
+                          <NoteItem
                             key={note.id}
-                            data-note-id={note.id}
-                            onMouseDown={() => handleMouseDown(note.id)}
-                            onMouseUp={handleMouseUp}
-                            onTouchStart={() => handleTouchStart(note.id)}
-                            onTouchEnd={handleTouchEnd}
-                            className={cn(
-                              "note-item overflow-hidden transition-all",
-                              index < currentNotes.length - 1 ? "border-b border-gray-100" : "",
-                              selectedNotes.includes(note.id) && isSelectionActive && "bg-blue-50",
-                            )}
-                          >
-                            {editingId === note.id ? (
-                              <div className="px-2 py-1 relative">
-                                <Textarea
-                                  value={editingText}
-                                  onChange={(e) => setEditingText(e.target.value)}
-                                  className="w-full min-h-[80px] text-foreground bg-transparent border-none resize-none focus:ring-0 focus:outline-none focus:border-none focus:shadow-none p-0 mobile-textarea pr-12"
-                                  placeholder="Enter your note text..."
-                                  onBlur={(e) => {
-                                    if (!(e.relatedTarget as Element)?.closest(".info-button")) {
-                                      handleSaveEdit()
-                                    }
-                                  }}
-                                  autoFocus
-                                  style={{
-                                    WebkitAppearance: "none",
-                                    WebkitTapHighlightColor: "transparent",
-                                    WebkitUserModify: "read-write-plaintext-only",
-                                    boxShadow: "none",
-                                  }}
-                                />
-                                <div
-                                  onMouseDown={(e) => {
-                                    e.preventDefault()
-                                    e.stopPropagation()
-                                    setShowMetadataModal(note.id)
-                                  }}
-                                  className="info-button absolute right-2 top-2 w-10 h-10 rounded-full bg-gray-200 hover:bg-gray-300 flex items-center justify-center cursor-pointer"
-                                >
-                                  <Info className="h-5 w-5 text-gray-600" />
-                                </div>
-                              </div>
-                            ) : (
-                              <button
-                                onClick={() => handleNoteClick(note.id)}
-                                className="w-full px-4 py-1 flex items-center gap-3 text-left hover:bg-accent/50"
-                                style={{ userSelect: "none", WebkitUserSelect: "none" }}
-                              >
-                                <div className="flex items-center justify-between flex-1 min-w-0">
-                                  <div className="flex items-center gap-3 flex-1 min-w-0">
-                                    {isSelectionActive ? (
-                                      <div
-                                        className={cn(
-                                          "flex-shrink-0 w-6 h-6 rounded-full border-2 flex items-center justify-center transition-colors cursor-pointer",
-                                          selectedNotes.includes(note.id) ? "border-blue-500 bg-blue-500" : "border-gray-300",
-                                        )}
-                                        onClick={(e) => {
-                                          e.stopPropagation()
-                                          handleToggleSelection(note.id)
-                                        }}
-                                      >
-                                        {selectedNotes.includes(note.id) && <CheckCircle2 className="h-4 w-4 text-white" />}
-                                      </div>
-                                    ) : (
-                                      <div
-                                        onClick={(e) => {
-                                          e.stopPropagation()
-                                          handleToggleComplete(note.id)
-                                        }}
-                                        className="flex-shrink-0 w-6 h-6 rounded-full border-2 border-gray-300 flex items-center justify-center hover:border-blue-500 transition-colors cursor-pointer"
-                                      >
-                                        {note.metadata?.flag && <CheckCircle2 className="h-4 w-4 text-blue-500" />}
-                                      </div>
-                                    )}
-                                    <div className="min-w-0 flex-1">
-                                      <div className="font-bold text-foreground truncate line-clamp-1">
-                                        {note.text.split("\n")[0] || "Untitled"}
-                                      </div>
-                                    </div>
-                                  </div>
-                                  {note.metadata?.date && (
-                                    <div className="text-sm text-gray-500 truncate ml-2">
-                                      {note.metadata.date}
-                                    </div>
-                                  )}
-                                </div>
-                              </button>
-                            )}
-                          </div>
+                            note={note}
+                            index={index}
+                            isLast={index === currentNotes.length - 1}
+                          />
                         ))}
                         {overdueNotes.length > 0 && (
                           <>
@@ -1319,97 +1199,12 @@ export default function NotesPage() {
                               Overdue
                             </div>
                             {overdueNotes.map((note, index) => (
-                              <div
+                              <NoteItem
                                 key={note.id}
-                                data-note-id={note.id}
-                                onMouseDown={() => handleMouseDown(note.id)}
-                                onMouseUp={handleMouseUp}
-                                onTouchStart={() => handleTouchStart(note.id)}
-                                onTouchEnd={handleTouchEnd}
-                                className={cn(
-                                  "note-item overflow-hidden transition-all",
-                                  index < overdueNotes.length - 1 ? "border-b border-gray-100" : "",
-                                  selectedNotes.includes(note.id) && isSelectionActive && "bg-blue-50",
-                                )}
-                              >
-                                {editingId === note.id ? (
-                                  <div className="px-2 py-1 relative">
-                                    <Textarea
-                                      value={editingText}
-                                      onChange={(e) => setEditingText(e.target.value)}
-                                      className="w-full min-h-[80px] text-foreground bg-transparent border-none resize-none focus:ring-0 focus:outline-none focus:border-none focus:shadow-none p-0 mobile-textarea pr-12"
-                                      placeholder="Enter your note text..."
-                                      onBlur={(e) => {
-                                        if (!(e.relatedTarget as Element)?.closest(".info-button")) {
-                                          handleSaveEdit()
-                                        }
-                                      }}
-                                      autoFocus
-                                      style={{
-                                        WebkitAppearance: "none",
-                                        WebkitTapHighlightColor: "transparent",
-                                        WebkitUserModify: "read-write-plaintext-only",
-                                        boxShadow: "none",
-                                      }}
-                                    />
-                                    <div
-                                      onMouseDown={(e) => {
-                                        e.preventDefault()
-                                        e.stopPropagation()
-                                        setShowMetadataModal(note.id)
-                                      }}
-                                      className="info-button absolute right-2 top-2 w-10 h-10 rounded-full bg-gray-200 hover:bg-gray-300 flex items-center justify-center cursor-pointer"
-                                    >
-                                      <Info className="h-5 w-5 text-gray-600" />
-                                    </div>
-                                  </div>
-                                ) : (
-                                  <button
-                                    onClick={() => handleNoteClick(note.id)}
-                                    className="w-full px-4 py-1 flex items-center gap-3 text-left hover:bg-accent/50"
-                                    style={{ userSelect: "none", WebkitUserSelect: "none" }}
-                                  >
-                                    <div className="flex items-center justify-between flex-1 min-w-0">
-                                      <div className="flex items-center gap-3 flex-1 min-w-0">
-                                        {isSelectionActive ? (
-                                          <div
-                                            className={cn(
-                                              "flex-shrink-0 w-6 h-6 rounded-full border-2 flex items-center justify-center transition-colors cursor-pointer",
-                                              selectedNotes.includes(note.id) ? "border-blue-500 bg-blue-500" : "border-gray-300",
-                                            )}
-                                            onClick={(e) => {
-                                              e.stopPropagation()
-                                              handleToggleSelection(note.id)
-                                            }}
-                                          >
-                                            {selectedNotes.includes(note.id) && <CheckCircle2 className="h-4 w-4 text-white" />}
-                                          </div>
-                                        ) : (
-                                          <div
-                                            onClick={(e) => {
-                                              e.stopPropagation()
-                                              handleToggleComplete(note.id)
-                                            }}
-                                            className="flex-shrink-0 w-6 h-6 rounded-full border-2 border-gray-300 flex items-center justify-center hover:border-blue-500 transition-colors cursor-pointer"
-                                          >
-                                            {note.metadata?.flag && <CheckCircle2 className="h-4 w-4 text-blue-500" />}
-                                          </div>
-                                        )}
-                                        <div className="min-w-0 flex-1">
-                                          <div className="font-bold text-foreground truncate line-clamp-1">
-                                            {note.text.split("\n")[0] || "Untitled"}
-                                          </div>
-                                        </div>
-                                      </div>
-                                      {note.metadata?.date && (
-                                        <div className="text-sm text-red-500 truncate ml-2">
-                                          {note.metadata.date}
-                                        </div>
-                                      )}
-                                    </div>
-                                  </button>
-                                )}
-                              </div>
+                                note={note}
+                                index={index}
+                                isLast={index === overdueNotes.length - 1}
+                              />
                             ))}
                           </>
                         )}
@@ -1418,91 +1213,12 @@ export default function NotesPage() {
                   }
 
                   return listNotes.map((note, index) => (
-                    <div
+                    <NoteItem
                       key={note.id}
-                      data-note-id={note.id}
-                      onMouseDown={() => handleMouseDown(note.id)}
-                      onMouseUp={handleMouseUp}
-                      onTouchStart={() => handleTouchStart(note.id)}
-                      onTouchEnd={handleTouchEnd}
-                      className={cn(
-                        "note-item overflow-hidden transition-all",
-                        index < listNotes.length - 1 ? "border-b border-gray-100" : "",
-                        selectedNotes.includes(note.id) && isSelectionActive && "bg-blue-50",
-                      )}
-                    >
-                      {editingId === note.id ? (
-                        <div className="px-2 py-1 relative">
-                          <Textarea
-                            value={editingText}
-                            onChange={(e) => setEditingText(e.target.value)}
-                            className="w-full min-h-[80px] text-foreground bg-transparent border-none resize-none focus:ring-0 focus:outline-none focus:border-none focus:shadow-none p-0 mobile-textarea pr-12"
-                            placeholder="Enter your note text..."
-                            onBlur={(e) => {
-                              if (!(e.relatedTarget as Element)?.closest(".info-button")) {
-                                handleSaveEdit()
-                              }
-                            }}
-                            autoFocus
-                            style={{
-                              WebkitAppearance: "none",
-                              WebkitTapHighlightColor: "transparent",
-                              WebkitUserModify: "read-write-plaintext-only",
-                              boxShadow: "none",
-                            }}
-                          />
-                          <div
-                            onMouseDown={(e) => {
-                              e.preventDefault()
-                              e.stopPropagation()
-                              setShowMetadataModal(note.id)
-                            }}
-                            className="info-button absolute right-2 top-2 w-10 h-10 rounded-full bg-gray-200 hover:bg-gray-300 flex items-center justify-center cursor-pointer"
-                          >
-                            <Info className="h-5 w-5 text-gray-600" />
-                          </div>
-                        </div>
-                      ) : (
-                        <button
-                          onClick={() => handleNoteClick(note.id)}
-                          className="w-full px-4 py-1 flex items-center gap-3 text-left hover:bg-accent/50"
-                          style={{ userSelect: "none", WebkitUserSelect: "none" }}
-                        >
-                          <div className="flex items-center gap-3 flex-1 min-w-0">
-                            {isSelectionActive ? (
-                              <div
-                                className={cn(
-                                  "flex-shrink-0 w-6 h-6 rounded-full border-2 flex items-center justify-center transition-colors cursor-pointer",
-                                  selectedNotes.includes(note.id) ? "border-blue-500 bg-blue-500" : "border-gray-300",
-                                )}
-                                onClick={(e) => {
-                                  e.stopPropagation()
-                                  handleToggleSelection(note.id)
-                                }}
-                              >
-                                {selectedNotes.includes(note.id) && <CheckCircle2 className="h-4 w-4 text-white" />}
-                              </div>
-                            ) : (
-                              <div
-                                onClick={(e) => {
-                                  e.stopPropagation()
-                                  handleToggleComplete(note.id)
-                                }}
-                                className="flex-shrink-0 w-6 h-6 rounded-full border-2 border-gray-300 flex items-center justify-center hover:border-blue-500 transition-colors cursor-pointer"
-                              >
-                                {note.metadata?.flag && <CheckCircle2 className="h-4 w-4 text-blue-500" />}
-                              </div>
-                            )}
-                                  <div className="min-w-0 flex-1">
-                                    <div className="font-bold text-foreground truncate line-clamp-1">
-                                      {note.text.split("\n")[0] || "Untitled"}
-                                    </div>
-
-                                  </div>
-                          </div>
-                        </button>
-                      )}
-                    </div>
+                      note={note}
+                      index={index}
+                      isLast={index === listNotes.length - 1}
+                    />
                   ))
                 })()}
               </div>
