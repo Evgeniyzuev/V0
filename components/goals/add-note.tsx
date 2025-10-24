@@ -16,10 +16,11 @@ import {
   Search,
   CheckCircle2,
   MoreHorizontal,
-  GripVertical,
   ChevronRight,
   List,
   Trash2,
+  ChevronUp,
+  ChevronDown,
 } from "lucide-react"
 import { cn } from "@/lib/utils"
 
@@ -91,14 +92,12 @@ export default function NotesPage() {
     subitems: 0,
   })
 
-  const [draggedNoteId, setDraggedNoteId] = useState<string | null>(null)
-  const [dragOverNoteId, setDragOverNoteId] = useState<string | null>(null)
-  const [isDragActive, setIsDragActive] = useState<boolean>(false)
+  const [isSelectionActive, setIsSelectionActive] = useState<boolean>(false)
   const [selectedNotes, setSelectedNotes] = useState<string[]>([])
   const longPressTimer = useRef<NodeJS.Timeout | null>(null)
-  const touchStartY = useRef<number>(0)
-  const touchCurrentY = useRef<number>(0)
   const longPressTriggered = useRef<boolean>(false)
+
+
 
   // Computed properties for active and completed notes
   const activeNotes = useMemo(() => notes.filter((note) => note.metadata?.flag !== true), [notes])
@@ -196,20 +195,7 @@ export default function NotesPage() {
     }
   }, [showListMenu])
 
-  // Prevent scrolling when in drag mode
-  useEffect(() => {
-    if (isDragActive) {
-      document.body.style.overflow = 'hidden'
-      document.body.style.touchAction = 'none'
-    } else {
-      document.body.style.overflow = ''
-      document.body.style.touchAction = ''
-    }
-    return () => {
-      document.body.style.overflow = ''
-      document.body.style.touchAction = ''
-    }
-  }, [isDragActive])
+
 
   const handleAddNote = () => {
     const newNote: Note = {
@@ -304,6 +290,84 @@ export default function NotesPage() {
           : note,
       ),
     )
+  }
+
+  const handleToggleSelection = (noteId: string) => {
+    setSelectedNotes((prev) => {
+      if (prev.includes(noteId)) {
+        return prev.filter((id) => id !== noteId)
+      } else {
+        return [...prev, noteId]
+      }
+    })
+  }
+
+  const handleDeleteSelected = () => {
+    setNotes((prev) => prev.filter((note) => !selectedNotes.includes(note.id)))
+    setSelectedNotes([])
+    setIsSelectionActive(false)
+  }
+
+  const handleCancelSelection = () => {
+    setIsSelectionActive(false)
+    setSelectedNotes([])
+  }
+
+  const handleMoveUp = () => {
+    if (selectedNotes.length === 0) return
+    setNotes((prevNotes) => {
+      const newNotes = [...prevNotes]
+      selectedNotes.forEach((id) => {
+        const index = newNotes.findIndex(n => n.id === id)
+        if (index > 0) {
+          ;[newNotes[index], newNotes[index - 1]] = [newNotes[index - 1], newNotes[index]]
+        }
+      })
+      return newNotes
+    })
+  }
+
+  const handleMoveDown = () => {
+    if (selectedNotes.length === 0) return
+    setNotes((prevNotes) => {
+      const newNotes = [...prevNotes]
+      selectedNotes.forEach((id) => {
+        const index = newNotes.findIndex(n => n.id === id)
+        if (index < newNotes.length - 1) {
+          ;[newNotes[index], newNotes[index + 1]] = [newNotes[index + 1], newNotes[index]]
+        }
+      })
+      return newNotes
+    })
+  }
+
+  const handleMouseDown = (noteId: string) => {
+    longPressTriggered.current = false
+    longPressTimer.current = setTimeout(() => {
+      longPressTriggered.current = true
+      setIsSelectionActive(true)
+      setSelectedNotes([noteId])
+    }, 1000)
+  }
+
+  const handleMouseUp = () => {
+    if (longPressTimer.current) {
+      clearTimeout(longPressTimer.current)
+      longPressTimer.current = null
+    }
+  }
+
+  const handleNoteClick = (noteId: string) => {
+    if (isSelectionActive) {
+      if (!longPressTriggered.current) {
+        setIsSelectionActive(false)
+        setSelectedNotes([])
+      } else {
+        handleToggleSelection(noteId)
+      }
+    } else {
+      handleStartEdit(noteId)
+    }
   }
 
   const handleEditList = (listId: string) => {
@@ -456,168 +520,36 @@ export default function NotesPage() {
     }
   }
 
-  // Reorder function for drag-and-drop
-  const handleReorderNotes = (draggedId: string, targetId: string) => {
-    if (draggedId === targetId) return
 
-    const draggedIndex = notes.findIndex((n) => n.id === draggedId)
-    const targetIndex = notes.findIndex((n) => n.id === targetId)
-
-    if (draggedIndex === -1 || targetIndex === -1) return
-
-    const newNotes = [...notes]
-    const [draggedNote] = newNotes.splice(draggedIndex, 1)
-    newNotes.splice(targetIndex, 0, draggedNote)
-
-    setNotes(newNotes)
-  }
-
-  // Drag handlers
-  const handleDragStart = (e: React.DragEvent, noteId: string) => {
-    if (!isDragActive) {
-      e.preventDefault()
-      return
-    }
-    setDraggedNoteId(noteId)
-    e.dataTransfer.effectAllowed = "move"
-  }
-
-  const handleDragOver = (e: React.DragEvent, noteId: string) => {
-    e.preventDefault()
-    e.dataTransfer.dropEffect = "move"
-    setDragOverNoteId(noteId)
-  }
-
-  const handleDrop = (e: React.DragEvent, noteId: string) => {
-    e.preventDefault()
-    if (draggedNoteId) {
-      handleReorderNotes(draggedNoteId, noteId)
-    }
-    setDraggedNoteId(null)
-    setDragOverNoteId(null)
-  }
-
-  const handleDragEnd = () => {
-    setDraggedNoteId(null)
-    setDragOverNoteId(null)
-    setIsDragActive(false)
-  }
-
-  const handleTouchStart = (e: React.TouchEvent, noteId: string) => {
-    e.preventDefault() // Prevent default touch behavior
-    e.stopPropagation() // Prevent event bubbling
-    touchStartY.current = e.touches[0].clientY
-    longPressTriggered.current = false
-
-    longPressTimer.current = setTimeout(() => {
-      longPressTriggered.current = true
-      setIsDragActive(true)
-      setDraggedNoteId(noteId)
-      setSelectedNotes([noteId])
-    }, 1000) // 1 second
-  }
-
-  const handleTouchMove = (e: React.TouchEvent) => {
-    e.preventDefault() // Prevent scrolling during drag
-    e.stopPropagation() // Prevent event bubbling
-    if (longPressTimer.current && !isDragActive) {
-      clearTimeout(longPressTimer.current)
-      longPressTimer.current = null
-      return
-    }
-
-    if (!draggedNoteId || !isDragActive) return
-
-    touchCurrentY.current = e.touches[0].clientY
-    const element = document.elementFromPoint(e.touches[0].clientX, e.touches[0].clientY)
-    const noteElement = element?.closest("[data-note-id]")
-
-    if (noteElement) {
-      const noteId = noteElement.getAttribute("data-note-id")
-      if (noteId) {
-        setDragOverNoteId(noteId)
-      }
-    }
-  }
-
-  const handleTouchEnd = (e: React.TouchEvent) => {
-    e.preventDefault() // Prevent default touch behavior
-    if (longPressTimer.current) {
-      clearTimeout(longPressTimer.current)
-      longPressTimer.current = null
-    }
-
-    if (draggedNoteId && dragOverNoteId && isDragActive) {
-      handleReorderNotes(draggedNoteId, dragOverNoteId)
-    }
-    setDraggedNoteId(null)
-    setDragOverNoteId(null)
-    // Don't reset isDragActive here - keep selection mode active
-  }
-
-  const handleMouseDown = (noteId: string) => {
-    longPressTriggered.current = false
-    longPressTimer.current = setTimeout(() => {
-      longPressTriggered.current = true
-      setIsDragActive(true)
-      setSelectedNotes([noteId])
-    }, 1000)
-  }
-
-  const handleMouseUp = () => {
-    if (longPressTimer.current) {
-      clearTimeout(longPressTimer.current)
-      longPressTimer.current = null
-    }
-    // Don't reset isDragActive here - keep selection mode active
-  }
-
-  const handleNoteClick = (noteId: string) => {
-    if (isDragActive) {
-      // In selection mode, check if this was a short click
-      if (!longPressTriggered.current) {
-        // Short click - exit selection mode
-        setIsDragActive(false)
-        setSelectedNotes([])
-      } else {
-        // Long press was triggered - toggle selection
-        handleToggleSelection(noteId)
-      }
-    } else {
-      // Not in selection mode - start editing
-      handleStartEdit(noteId)
-    }
-  }
-
-  const handleToggleSelection = (noteId: string) => {
-    setSelectedNotes((prev) => {
-      if (prev.includes(noteId)) {
-        return prev.filter((id) => id !== noteId)
-      } else {
-        return [...prev, noteId]
-      }
-    })
-  }
-
-  const handleDeleteSelected = () => {
-    setNotes((prev) => prev.filter((note) => !selectedNotes.includes(note.id)))
-    setSelectedNotes([])
-    setIsDragActive(false)
-  }
-
-  const handleCancelSelection = () => {
-    setIsDragActive(false)
-    setSelectedNotes([])
-  }
 
   return (
     <div className="min-h-screen bg-gray-50 mobile-container">
-      {isDragActive && (
+      {isSelectionActive && (
         <div className="fixed top-0 left-0 right-0 bg-red-500 text-white px-4 py-3 flex items-center justify-between z-[100] shadow-lg">
           <Button variant="ghost" size="sm" onClick={handleCancelSelection} className="text-white hover:bg-red-600">
             Cancel
           </Button>
-          <span className="font-medium">{selectedNotes.length} selected</span>
+          <div className="flex items-center gap-2">
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={handleMoveUp}
+              disabled={selectedNotes.length === 0}
+              className="text-white hover:bg-red-600 disabled:opacity-50"
+            >
+              <ChevronUp className="h-5 w-5" />
+            </Button>
+            <span className="font-medium">{selectedNotes.length} selected</span>
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={handleMoveDown}
+              disabled={selectedNotes.length === 0}
+              className="text-white hover:bg-red-600 disabled:opacity-50"
+            >
+              <ChevronDown className="h-5 w-5" />
+            </Button>
+          </div>
           <Button
             variant="ghost"
             size="sm"
@@ -716,7 +648,7 @@ export default function NotesPage() {
 
         {/* My Lists */}
         <div>
-          <h2 className="text-lg font-semibold text-gray-900 mb-3">My Lists</h2>
+          {/* <h2 className="text-lg font-semibold text-gray-900 mb-3">My Lists</h2> */}
           <div className="space-y-1">
             {customLists.map((list) => (
               <div key={list.id} className="relative">
@@ -1017,23 +949,12 @@ export default function NotesPage() {
                     <div
                       key={note.id}
                       data-note-id={note.id}
-                      draggable={editingId !== note.id && isDragActive}
-                      onDragStart={(e) => handleDragStart(e, note.id)}
-                      onDragOver={(e) => handleDragOver(e, note.id)}
-                      onDrop={(e) => handleDrop(e, note.id)}
-                      onDragEnd={handleDragEnd}
-                      onTouchStart={(e) => handleTouchStart(e, note.id)}
-                      onTouchMove={handleTouchMove}
-                      onTouchEnd={handleTouchEnd}
                       onMouseDown={() => handleMouseDown(note.id)}
                       onMouseUp={handleMouseUp}
-                      style={{ touchAction: isDragActive ? 'none' : 'auto' }}
                       className={cn(
                         "note-item overflow-hidden transition-all",
                         index < sortedNotes.length - 1 ? "border-b border-gray-100" : "",
-                        draggedNoteId === note.id && "opacity-50",
-                        dragOverNoteId === note.id && draggedNoteId !== note.id && "border-t-2 border-blue-500",
-                        selectedNotes.includes(note.id) && isDragActive && "bg-blue-50",
+                        selectedNotes.includes(note.id) && isSelectionActive && "bg-blue-50",
                       )}
                     >
                       {editingId === note.id ? (
@@ -1074,20 +995,20 @@ export default function NotesPage() {
                           style={{ userSelect: "none", WebkitUserSelect: "none" }}
                         >
                           <div className="flex items-center gap-3 flex-1 min-w-0">
-                            {isDragActive && (
+                            {isSelectionActive ? (
                               <div
                                 className={cn(
-                                  "flex-shrink-0 w-6 h-6 rounded-full border-2 flex items-center justify-center transition-colors cursor-grab active:cursor-grabbing",
+                                  "flex-shrink-0 w-6 h-6 rounded-full border-2 flex items-center justify-center transition-colors cursor-pointer",
                                   selectedNotes.includes(note.id) ? "border-blue-500 bg-blue-500" : "border-gray-300",
                                 )}
+                                onClick={(e) => {
+                                  e.stopPropagation()
+                                  handleToggleSelection(note.id)
+                                }}
                               >
-                                <GripVertical className={cn(
-                                  "h-4 w-4",
-                                  selectedNotes.includes(note.id) ? "text-white" : "text-gray-400"
-                                )} />
+                                {selectedNotes.includes(note.id) && <CheckCircle2 className="h-4 w-4 text-white" />}
                               </div>
-                            )}
-                            {!isDragActive && (
+                            ) : (
                               <div
                                 onClick={(e) => {
                                   e.stopPropagation()
@@ -1228,23 +1149,12 @@ export default function NotesPage() {
                     <div
                       key={note.id}
                       data-note-id={note.id}
-                      draggable={editingId !== note.id && isDragActive}
-                      onDragStart={(e) => handleDragStart(e, note.id)}
-                      onDragOver={(e) => handleDragOver(e, note.id)}
-                      onDrop={(e) => handleDrop(e, note.id)}
-                      onDragEnd={handleDragEnd}
-                      onTouchStart={(e) => handleTouchStart(e, note.id)}
-                      onTouchMove={handleTouchMove}
-                      onTouchEnd={handleTouchEnd}
                       onMouseDown={() => handleMouseDown(note.id)}
                       onMouseUp={handleMouseUp}
-                      style={{ touchAction: isDragActive ? 'none' : 'auto' }}
                       className={cn(
                         "note-item overflow-hidden transition-all",
                         index < listNotes.length - 1 ? "border-b border-gray-100" : "",
-                        draggedNoteId === note.id && "opacity-50",
-                        dragOverNoteId === note.id && draggedNoteId !== note.id && "border-t-2 border-blue-500",
-                        selectedNotes.includes(note.id) && isDragActive && "bg-blue-50",
+                        selectedNotes.includes(note.id) && isSelectionActive && "bg-blue-50",
                       )}
                     >
                       {editingId === note.id ? (
@@ -1285,20 +1195,20 @@ export default function NotesPage() {
                           style={{ userSelect: "none", WebkitUserSelect: "none" }}
                         >
                           <div className="flex items-center gap-3 flex-1 min-w-0">
-                            {isDragActive && (
+                            {isSelectionActive ? (
                               <div
                                 className={cn(
-                                  "flex-shrink-0 w-6 h-6 rounded-full border-2 flex items-center justify-center transition-colors cursor-grab active:cursor-grabbing",
+                                  "flex-shrink-0 w-6 h-6 rounded-full border-2 flex items-center justify-center transition-colors cursor-pointer",
                                   selectedNotes.includes(note.id) ? "border-blue-500 bg-blue-500" : "border-gray-300",
                                 )}
+                                onClick={(e) => {
+                                  e.stopPropagation()
+                                  handleToggleSelection(note.id)
+                                }}
                               >
-                                <GripVertical className={cn(
-                                  "h-4 w-4",
-                                  selectedNotes.includes(note.id) ? "text-white" : "text-gray-400"
-                                )} />
+                                {selectedNotes.includes(note.id) && <CheckCircle2 className="h-4 w-4 text-white" />}
                               </div>
-                            )}
-                            {!isDragActive && (
+                            ) : (
                               <div
                                 onClick={(e) => {
                                   e.stopPropagation()
@@ -1325,50 +1235,63 @@ export default function NotesPage() {
           </div>
 
           <div className="p-4 border-t border-gray-200">
-            <Button
-              onClick={(e) => {
-                e.stopPropagation()
-                const today = new Date()
-                today.setHours(0, 0, 0, 0)
+            {editingId ? (
+              <Button
+                onClick={(e) => {
+                  e.stopPropagation()
+                  handleSaveEdit()
+                }}
+                className="w-full bg-green-500 hover:bg-green-600 text-white rounded-lg py-3 flex items-center justify-center gap-2 font-medium"
+              >
+                <CheckCircle2 className="h-5 w-5" />
+                Done
+              </Button>
+            ) : (
+              <Button
+                onClick={(e) => {
+                  e.stopPropagation()
+                  const today = new Date()
+                  today.setHours(0, 0, 0, 0)
 
-                const newNote: Note = {
-                  id: Date.now().toString(),
-                  text: "",
-                  createdAt: Date.now(),
-                  executionTime: Date.now() + 86400000,
-                  color: "#6b7280",
-                }
-
-                if (currentListType === "done") {
-                  newNote.metadata = {
-                    location: false,
-                    flag: true,
-                    priority: "None",
-                    list: false,
-                    subitems: 0,
+                  const newNote: Note = {
+                    id: Date.now().toString(),
+                    text: "",
+                    createdAt: Date.now(),
+                    executionTime: Date.now() + 86400000,
+                    color: "#6b7280",
                   }
-                } else if (currentListType === "today") {
-                  newNote.metadata = {
-                    date: today.toISOString().split("T")[0],
-                    location: false,
-                    flag: false,
-                    priority: "None",
-                    list: false,
-                    subitems: 0,
-                  }
-                } else if (currentListType.startsWith("custom-")) {
-                  newNote.listId = currentListType.replace("custom-", "")
-                }
 
-                setNotes([newNote, ...notes])
-                setEditingId(newNote.id)
-                setEditingText("")
-              }}
-              className="w-full bg-blue-500 hover:bg-blue-600 text-white rounded-lg py-3 flex items-center justify-center gap-2 font-medium"
-            >
-              <Plus className="h-5 w-5" />
-              Note
-            </Button>
+                  if (currentListType === "done") {
+                    newNote.metadata = {
+                      location: false,
+                      flag: true,
+                      priority: "None",
+                      list: false,
+                      subitems: 0,
+                    }
+                  } else if (currentListType === "today") {
+                    newNote.metadata = {
+                      date: today.toISOString().split("T")[0],
+                      location: false,
+                      flag: false,
+                      priority: "None",
+                      list: false,
+                      subitems: 0,
+                    }
+                  } else if (currentListType.startsWith("custom-")) {
+                    newNote.listId = currentListType.replace("custom-", "")
+                  }
+
+                  setNotes([newNote, ...notes])
+                  setEditingId(newNote.id)
+                  setEditingText("")
+                }}
+                className="w-full bg-blue-500 hover:bg-blue-600 text-white rounded-lg py-3 flex items-center justify-center gap-2 font-medium"
+              >
+                <Plus className="h-5 w-5" />
+                Note
+              </Button>
+            )}
           </div>
         </div>
       )}
