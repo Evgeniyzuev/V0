@@ -196,6 +196,21 @@ export default function NotesPage() {
     }
   }, [showListMenu])
 
+  // Prevent scrolling when in drag mode
+  useEffect(() => {
+    if (isDragActive) {
+      document.body.style.overflow = 'hidden'
+      document.body.style.touchAction = 'none'
+    } else {
+      document.body.style.overflow = ''
+      document.body.style.touchAction = ''
+    }
+    return () => {
+      document.body.style.overflow = ''
+      document.body.style.touchAction = ''
+    }
+  }, [isDragActive])
+
   const handleAddNote = () => {
     const newNote: Note = {
       id: Date.now().toString(),
@@ -279,7 +294,11 @@ export default function NotesPage() {
               ...note,
               metadata: {
                 ...note.metadata,
+                location: note.metadata?.location ?? false,
                 flag: !note.metadata?.flag,
+                priority: note.metadata?.priority ?? "None",
+                list: note.metadata?.list ?? false,
+                subitems: note.metadata?.subitems ?? 0,
               },
             }
           : note,
@@ -485,6 +504,7 @@ export default function NotesPage() {
   }
 
   const handleTouchStart = (e: React.TouchEvent, noteId: string) => {
+    e.preventDefault() // Prevent default touch behavior
     touchStartY.current = e.touches[0].clientY
     longPressTriggered.current = false
 
@@ -497,6 +517,7 @@ export default function NotesPage() {
   }
 
   const handleTouchMove = (e: React.TouchEvent) => {
+    e.preventDefault() // Prevent scrolling during drag
     if (longPressTimer.current && !isDragActive) {
       clearTimeout(longPressTimer.current)
       longPressTimer.current = null
@@ -842,7 +863,15 @@ export default function NotesPage() {
                           n.id === showMetadataModal
                             ? {
                                 ...n,
-                                metadata: { ...n.metadata, date: e.target.checked ? metadataForm.date : undefined },
+                                metadata: {
+                                  ...n.metadata,
+                                  date: e.target.checked ? metadataForm.date : undefined,
+                                  location: n.metadata?.location ?? false,
+                                  flag: n.metadata?.flag ?? false,
+                                  priority: n.metadata?.priority ?? "None",
+                                  list: n.metadata?.list ?? false,
+                                  subitems: n.metadata?.subitems ?? 0,
+                                },
                               }
                             : n,
                         ),
@@ -872,7 +901,15 @@ export default function NotesPage() {
                           n.id === showMetadataModal
                             ? {
                                 ...n,
-                                metadata: { ...n.metadata, time: e.target.checked ? metadataForm.time : undefined },
+                                metadata: {
+                                  ...n.metadata,
+                                  time: e.target.checked ? metadataForm.time : undefined,
+                                  location: n.metadata?.location ?? false,
+                                  flag: n.metadata?.flag ?? false,
+                                  priority: n.metadata?.priority ?? "None",
+                                  list: n.metadata?.list ?? false,
+                                  subitems: n.metadata?.subitems ?? 0,
+                                },
                               }
                             : n,
                         ),
@@ -903,7 +940,15 @@ export default function NotesPage() {
                           n.id === showMetadataModal
                             ? {
                                 ...n,
-                                metadata: { ...n.metadata, tags: e.target.checked ? metadataForm.tags : undefined },
+                                metadata: {
+                                  ...n.metadata,
+                                  tags: e.target.checked ? metadataForm.tags : undefined,
+                                  location: n.metadata?.location ?? false,
+                                  flag: n.metadata?.flag ?? false,
+                                  priority: n.metadata?.priority ?? "None",
+                                  list: n.metadata?.list ?? false,
+                                  subitems: n.metadata?.subitems ?? 0,
+                                },
                               }
                             : n,
                         ),
@@ -1022,17 +1067,17 @@ export default function NotesPage() {
                         >
                           <div className="flex items-center gap-3 flex-1 min-w-0">
                             {isDragActive && (
-                              <>
-                                <div
-                                  className={cn(
-                                    "flex-shrink-0 w-6 h-6 rounded-full border-2 flex items-center justify-center transition-colors",
-                                    selectedNotes.includes(note.id) ? "border-blue-500 bg-blue-500" : "border-gray-300",
-                                  )}
-                                >
-                                  {selectedNotes.includes(note.id) && <CheckCircle2 className="h-4 w-4 text-white" />}
-                                </div>
-                                <GripVertical className="h-4 w-4 text-gray-400 flex-shrink-0 cursor-grab active:cursor-grabbing" />
-                              </>
+                              <div
+                                className={cn(
+                                  "flex-shrink-0 w-6 h-6 rounded-full border-2 flex items-center justify-center transition-colors cursor-grab active:cursor-grabbing",
+                                  selectedNotes.includes(note.id) ? "border-blue-500 bg-blue-500" : "border-gray-300",
+                                )}
+                              >
+                                <GripVertical className={cn(
+                                  "h-4 w-4",
+                                  selectedNotes.includes(note.id) ? "text-white" : "text-gray-400"
+                                )} />
+                              </div>
                             )}
                             {!isDragActive && (
                               <div
@@ -1232,17 +1277,17 @@ export default function NotesPage() {
                         >
                           <div className="flex items-center gap-3 flex-1 min-w-0">
                             {isDragActive && (
-                              <>
-                                <div
-                                  className={cn(
-                                    "flex-shrink-0 w-6 h-6 rounded-full border-2 flex items-center justify-center transition-colors",
-                                    selectedNotes.includes(note.id) ? "border-blue-500 bg-blue-500" : "border-gray-300",
-                                  )}
-                                >
-                                  {selectedNotes.includes(note.id) && <CheckCircle2 className="h-4 w-4 text-white" />}
-                                </div>
-                                <GripVertical className="h-4 w-4 text-gray-400 flex-shrink-0 cursor-grab active:cursor-grabbing" />
-                              </>
+                              <div
+                                className={cn(
+                                  "flex-shrink-0 w-6 h-6 rounded-full border-2 flex items-center justify-center transition-colors cursor-grab active:cursor-grabbing",
+                                  selectedNotes.includes(note.id) ? "border-blue-500 bg-blue-500" : "border-gray-300",
+                                )}
+                              >
+                                <GripVertical className={cn(
+                                  "h-4 w-4",
+                                  selectedNotes.includes(note.id) ? "text-white" : "text-gray-400"
+                                )} />
+                              </div>
                             )}
                             {!isDragActive && (
                               <div
@@ -1287,13 +1332,20 @@ export default function NotesPage() {
 
                 if (currentListType === "done") {
                   newNote.metadata = {
-                    ...newNote.metadata,
+                    location: false,
                     flag: true,
+                    priority: "None",
+                    list: false,
+                    subitems: 0,
                   }
                 } else if (currentListType === "today") {
                   newNote.metadata = {
-                    ...newNote.metadata,
                     date: today.toISOString().split("T")[0],
+                    location: false,
+                    flag: false,
+                    priority: "None",
+                    list: false,
+                    subitems: 0,
                   }
                 } else if (currentListType.startsWith("custom-")) {
                   newNote.listId = currentListType.replace("custom-", "")
