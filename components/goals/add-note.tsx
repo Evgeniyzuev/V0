@@ -1072,11 +1072,11 @@ export default function NotesPage() {
                                 {note.metadata?.flag && <CheckCircle2 className="h-4 w-4 text-blue-500" />}
                               </div>
                             )}
-                            <div className="min-w-0 flex-1">
-                              <div className="font-bold text-foreground truncate line-clamp-1">
-                                {note.text.split("\n")[0] || "Untitled"}
-                              </div>
-                            </div>
+                                  <div className="min-w-0 flex-1">
+                                    <div className="font-bold text-foreground truncate line-clamp-1">
+                                      {note.text.split("\n")[0] || "Untitled"}
+                                    </div>
+                                  </div>
                           </div>
                         </button>
                       )}
@@ -1271,36 +1271,43 @@ export default function NotesPage() {
                                 className="w-full px-4 py-1 flex items-center gap-3 text-left hover:bg-accent/50"
                                 style={{ userSelect: "none", WebkitUserSelect: "none" }}
                               >
-                                <div className="flex items-center gap-3 flex-1 min-w-0">
-                                  {isSelectionActive ? (
-                                    <div
-                                      className={cn(
-                                        "flex-shrink-0 w-6 h-6 rounded-full border-2 flex items-center justify-center transition-colors cursor-pointer",
-                                        selectedNotes.includes(note.id) ? "border-blue-500 bg-blue-500" : "border-gray-300",
-                                      )}
-                                      onClick={(e) => {
-                                        e.stopPropagation()
-                                        handleToggleSelection(note.id)
-                                      }}
-                                    >
-                                      {selectedNotes.includes(note.id) && <CheckCircle2 className="h-4 w-4 text-white" />}
-                                    </div>
-                                  ) : (
-                                    <div
-                                      onClick={(e) => {
-                                        e.stopPropagation()
-                                        handleToggleComplete(note.id)
-                                      }}
-                                      className="flex-shrink-0 w-6 h-6 rounded-full border-2 border-gray-300 flex items-center justify-center hover:border-blue-500 transition-colors cursor-pointer"
-                                    >
-                                      {note.metadata?.flag && <CheckCircle2 className="h-4 w-4 text-blue-500" />}
-                                    </div>
-                                  )}
-                                  <div className="min-w-0 flex-1">
-                                    <div className="font-bold text-foreground truncate line-clamp-1">
-                                      {note.text.split("\n")[0] || "Untitled"}
+                                <div className="flex items-center justify-between flex-1 min-w-0">
+                                  <div className="flex items-center gap-3 flex-1 min-w-0">
+                                    {isSelectionActive ? (
+                                      <div
+                                        className={cn(
+                                          "flex-shrink-0 w-6 h-6 rounded-full border-2 flex items-center justify-center transition-colors cursor-pointer",
+                                          selectedNotes.includes(note.id) ? "border-blue-500 bg-blue-500" : "border-gray-300",
+                                        )}
+                                        onClick={(e) => {
+                                          e.stopPropagation()
+                                          handleToggleSelection(note.id)
+                                        }}
+                                      >
+                                        {selectedNotes.includes(note.id) && <CheckCircle2 className="h-4 w-4 text-white" />}
+                                      </div>
+                                    ) : (
+                                      <div
+                                        onClick={(e) => {
+                                          e.stopPropagation()
+                                          handleToggleComplete(note.id)
+                                        }}
+                                        className="flex-shrink-0 w-6 h-6 rounded-full border-2 border-gray-300 flex items-center justify-center hover:border-blue-500 transition-colors cursor-pointer"
+                                      >
+                                        {note.metadata?.flag && <CheckCircle2 className="h-4 w-4 text-blue-500" />}
+                                      </div>
+                                    )}
+                                    <div className="min-w-0 flex-1">
+                                      <div className="font-bold text-foreground truncate line-clamp-1">
+                                        {note.text.split("\n")[0] || "Untitled"}
+                                      </div>
                                     </div>
                                   </div>
+                                  {note.metadata?.date && (
+                                    <div className="text-sm text-gray-500 truncate ml-2">
+                                      {note.metadata.date}
+                                    </div>
+                                  )}
                                 </div>
                               </button>
                             )}
@@ -1362,36 +1369,43 @@ export default function NotesPage() {
                                     className="w-full px-4 py-1 flex items-center gap-3 text-left hover:bg-accent/50"
                                     style={{ userSelect: "none", WebkitUserSelect: "none" }}
                                   >
-                                    <div className="flex items-center gap-3 flex-1 min-w-0">
-                                      {isSelectionActive ? (
-                                        <div
-                                          className={cn(
-                                            "flex-shrink-0 w-6 h-6 rounded-full border-2 flex items-center justify-center transition-colors cursor-pointer",
-                                            selectedNotes.includes(note.id) ? "border-blue-500 bg-blue-500" : "border-gray-300",
-                                          )}
-                                          onClick={(e) => {
-                                            e.stopPropagation()
-                                            handleToggleSelection(note.id)
-                                          }}
-                                        >
-                                          {selectedNotes.includes(note.id) && <CheckCircle2 className="h-4 w-4 text-white" />}
-                                        </div>
-                                      ) : (
-                                        <div
-                                          onClick={(e) => {
-                                            e.stopPropagation()
-                                            handleToggleComplete(note.id)
-                                          }}
-                                          className="flex-shrink-0 w-6 h-6 rounded-full border-2 border-gray-300 flex items-center justify-center hover:border-blue-500 transition-colors cursor-pointer"
-                                        >
-                                          {note.metadata?.flag && <CheckCircle2 className="h-4 w-4 text-blue-500" />}
-                                        </div>
-                                      )}
-                                      <div className="min-w-0 flex-1">
-                                        <div className="font-bold text-foreground truncate line-clamp-1">
-                                          {note.text.split("\n")[0] || "Untitled"}
+                                    <div className="flex items-center justify-between flex-1 min-w-0">
+                                      <div className="flex items-center gap-3 flex-1 min-w-0">
+                                        {isSelectionActive ? (
+                                          <div
+                                            className={cn(
+                                              "flex-shrink-0 w-6 h-6 rounded-full border-2 flex items-center justify-center transition-colors cursor-pointer",
+                                              selectedNotes.includes(note.id) ? "border-blue-500 bg-blue-500" : "border-gray-300",
+                                            )}
+                                            onClick={(e) => {
+                                              e.stopPropagation()
+                                              handleToggleSelection(note.id)
+                                            }}
+                                          >
+                                            {selectedNotes.includes(note.id) && <CheckCircle2 className="h-4 w-4 text-white" />}
+                                          </div>
+                                        ) : (
+                                          <div
+                                            onClick={(e) => {
+                                              e.stopPropagation()
+                                              handleToggleComplete(note.id)
+                                            }}
+                                            className="flex-shrink-0 w-6 h-6 rounded-full border-2 border-gray-300 flex items-center justify-center hover:border-blue-500 transition-colors cursor-pointer"
+                                          >
+                                            {note.metadata?.flag && <CheckCircle2 className="h-4 w-4 text-blue-500" />}
+                                          </div>
+                                        )}
+                                        <div className="min-w-0 flex-1">
+                                          <div className="font-bold text-foreground truncate line-clamp-1">
+                                            {note.text.split("\n")[0] || "Untitled"}
+                                          </div>
                                         </div>
                                       </div>
+                                      {note.metadata?.date && (
+                                        <div className="text-sm text-red-500 truncate ml-2">
+                                          {note.metadata.date}
+                                        </div>
+                                      )}
                                     </div>
                                   </button>
                                 )}
@@ -1479,11 +1493,12 @@ export default function NotesPage() {
                                 {note.metadata?.flag && <CheckCircle2 className="h-4 w-4 text-blue-500" />}
                               </div>
                             )}
-                            <div className="min-w-0 flex-1">
-                              <div className="font-bold text-foreground truncate line-clamp-1">
-                                {note.text.split("\n")[0] || "Untitled"}
-                              </div>
-                            </div>
+                                  <div className="min-w-0 flex-1">
+                                    <div className="font-bold text-foreground truncate line-clamp-1">
+                                      {note.text.split("\n")[0] || "Untitled"}
+                                    </div>
+
+                                  </div>
                           </div>
                         </button>
                       )}
