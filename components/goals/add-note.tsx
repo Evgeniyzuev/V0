@@ -341,13 +341,29 @@ export default function NotesPage() {
     })
   }
 
+  const handleTouchStart = (noteId: string) => {
+    longPressTriggered.current = false
+    longPressTimer.current = setTimeout(() => {
+      longPressTriggered.current = true
+      setIsSelectionActive(true)
+      setSelectedNotes([noteId])
+    }, 500) // Reduced from 1000ms to 500ms for better mobile UX
+  }
+
+  const handleTouchEnd = () => {
+    if (longPressTimer.current) {
+      clearTimeout(longPressTimer.current)
+      longPressTimer.current = null
+    }
+  }
+
   const handleMouseDown = (noteId: string) => {
     longPressTriggered.current = false
     longPressTimer.current = setTimeout(() => {
       longPressTriggered.current = true
       setIsSelectionActive(true)
       setSelectedNotes([noteId])
-    }, 1000)
+    }, 500)
   }
 
   const handleMouseUp = () => {
@@ -951,6 +967,8 @@ export default function NotesPage() {
                       data-note-id={note.id}
                       onMouseDown={() => handleMouseDown(note.id)}
                       onMouseUp={handleMouseUp}
+                      onTouchStart={() => handleTouchStart(note.id)}
+                      onTouchEnd={handleTouchEnd}
                       className={cn(
                         "note-item overflow-hidden transition-all",
                         index < sortedNotes.length - 1 ? "border-b border-gray-100" : "",
@@ -1151,6 +1169,8 @@ export default function NotesPage() {
                       data-note-id={note.id}
                       onMouseDown={() => handleMouseDown(note.id)}
                       onMouseUp={handleMouseUp}
+                      onTouchStart={() => handleTouchStart(note.id)}
+                      onTouchEnd={handleTouchEnd}
                       className={cn(
                         "note-item overflow-hidden transition-all",
                         index < listNotes.length - 1 ? "border-b border-gray-100" : "",
@@ -1235,63 +1255,50 @@ export default function NotesPage() {
           </div>
 
           <div className="p-4 border-t border-gray-200">
-            {editingId ? (
-              <Button
-                onClick={(e) => {
-                  e.stopPropagation()
-                  handleSaveEdit()
-                }}
-                className="w-full bg-green-500 hover:bg-green-600 text-white rounded-lg py-3 flex items-center justify-center gap-2 font-medium"
-              >
-                <CheckCircle2 className="h-5 w-5" />
-                Done
-              </Button>
-            ) : (
-              <Button
-                onClick={(e) => {
-                  e.stopPropagation()
-                  const today = new Date()
-                  today.setHours(0, 0, 0, 0)
+            <Button
+              onClick={(e) => {
+                e.stopPropagation()
+                const today = new Date()
+                today.setHours(0, 0, 0, 0)
 
-                  const newNote: Note = {
-                    id: Date.now().toString(),
-                    text: "",
-                    createdAt: Date.now(),
-                    executionTime: Date.now() + 86400000,
-                    color: "#6b7280",
+                const newNote: Note = {
+                  id: Date.now().toString(),
+                  text: "",
+                  createdAt: Date.now(),
+                  executionTime: Date.now() + 86400000,
+                  color: "#6b7280",
+                }
+
+                if (currentListType === "done") {
+                  newNote.metadata = {
+                    location: false,
+                    flag: true,
+                    priority: "None",
+                    list: false,
+                    subitems: 0,
                   }
-
-                  if (currentListType === "done") {
-                    newNote.metadata = {
-                      location: false,
-                      flag: true,
-                      priority: "None",
-                      list: false,
-                      subitems: 0,
-                    }
-                  } else if (currentListType === "today") {
-                    newNote.metadata = {
-                      date: today.toISOString().split("T")[0],
-                      location: false,
-                      flag: false,
-                      priority: "None",
-                      list: false,
-                      subitems: 0,
-                    }
-                  } else if (currentListType.startsWith("custom-")) {
-                    newNote.listId = currentListType.replace("custom-", "")
+                } else if (currentListType === "today") {
+                  newNote.metadata = {
+                    date: today.toISOString().split("T")[0],
+                    location: false,
+                    flag: false,
+                    priority: "None",
+                    list: false,
+                    subitems: 0,
                   }
+                } else if (currentListType.startsWith("custom-")) {
+                  newNote.listId = currentListType.replace("custom-", "")
+                }
 
-                  setNotes([newNote, ...notes])
-                  setEditingId(newNote.id)
-                  setEditingText("")
-                }}
-                className="w-full bg-blue-500 hover:bg-blue-600 text-white rounded-lg py-3 flex items-center justify-center gap-2 font-medium"
-              >
-                <Plus className="h-5 w-5" />
-                Note
-              </Button>
-            )}
+                setNotes([newNote, ...notes])
+                setEditingId(newNote.id)
+                setEditingText("")
+              }}
+              className="w-full bg-blue-500 hover:bg-blue-600 text-white rounded-lg py-3 flex items-center justify-center gap-2 font-medium"
+            >
+              <Plus className="h-5 w-5" />
+              Note
+            </Button>
           </div>
         </div>
       )}
