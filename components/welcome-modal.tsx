@@ -4,7 +4,7 @@ import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog"
 import { Button } from "@/components/ui/button"
 import { Carousel, CarouselContent, CarouselItem, CarouselNext, CarouselPrevious } from "@/components/ui/carousel"
 import { Sparkles, X } from "lucide-react"
-import { useState } from "react"
+import { useState, useEffect } from "react"
 
 interface WelcomeModalProps {
   isOpen: boolean
@@ -15,7 +15,7 @@ interface Slide {
   id: number
   image?: string | null
   video?: string | null
-  title: string
+  title?: string | null
   subtitle?: string | null
   buttonText: string | null
   buttonColor: string
@@ -47,12 +47,33 @@ export default function WelcomeModal({ isOpen, onClose }: WelcomeModalProps) {
       video: "https://blush-keen-constrictor-906.mypinata.cloud/ipfs/bafybeifjxnntvcvxuodk3xeyp24vdijjwcnsgsu2entr5hha65msxa2e7m",
       title: "No results?\nThink you're lost.",
       subtitle: null,
+      buttonText: null,
+      buttonColor: "bg-white text-purple-600 hover:bg-gray-200"
+    },
+    {
+      id: 4,
+      image: "https://blush-keen-constrictor-906.mypinata.cloud/ipfs/bafkreiac2krsja4uemchzugqz6xmryznccxcmi7q5jgbz5gv3ju5gznl7y",
+      title: "The navigator is in your hands.\nBuild the right route to your desires.",
+      subtitle: null,
       buttonText: "Let's Get Started!",
       buttonColor: "bg-white text-purple-600 hover:bg-gray-200"
     }
   ]
 
-  return (
+  // Auto-advance slides every 4 seconds, but stop at the last slide
+  useEffect(() => {
+    if (!api || !isOpen || currentSlide >= slides.length - 1) return
+
+    const interval = setInterval(() => {
+      if (currentSlide < slides.length - 1) {
+        api.scrollNext()
+      }
+    }, 4000)
+
+    return () => clearInterval(interval)
+  }, [api, isOpen, currentSlide, slides.length])
+
+ return (
     <Dialog open={isOpen} onOpenChange={onClose}>
       <DialogTitle className="sr-only">Welcome Modal</DialogTitle>
       <DialogContent className="max-w-full h-full w-full p-0 border-0 bg-black overflow-hidden">
