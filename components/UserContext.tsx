@@ -115,7 +115,7 @@ export const UserProvider = ({ children }: { children: ReactNode }) => {
   const [session, setSession] = useState<Session | null>(null);
   const [tasks, setTasks] = useState<UserTask[] | null>(null);
   const [goals, setGoals] = useState<UserGoal[] | null>(null);
-  const [showWelcomeModal, setShowWelcomeModal] = useState(false);
+  const [showWelcomeModal, setShowWelcomeModal] = useState(true);
   
   // Флаги для предотвращения повторных запросов
   const apiCalledRef = useRef(false);
@@ -569,4 +569,4 @@ export const useUser = () => {
 
 const createSupabaseClient = () => {
   return createClientSupabaseClient();
-} 
+}
