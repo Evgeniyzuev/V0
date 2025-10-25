@@ -94,18 +94,18 @@ export default function WelcomeModal({ isOpen, onClose }: WelcomeModalProps) {
               <CarouselItem key={slide.id} className="relative w-full h-screen">
                 <div className="relative w-full h-screen">
                   {slide.video ? (
-                    <div className="w-full h-screen bg-white/50 sm:bg-black">
+                    <div className="w-full h-screen bg-black sm:bg-white/50">
                       <video
                         src={slide.video}
                         autoPlay
                         muted
                         loop
-                        className="w-full h-screen object-contain"
+                        className="w-full h-screen object-cover sm:w-full sm:h-screen sm:object-contain"
                       />
                     </div>
                   ) : slide.image ? (
                     <div
-                      className="w-full h-screen bg-white/50"
+                      className="w-full h-screen bg-black sm:bg-white/50"
                       style={{
                         backgroundImage: `url(${slide.image})`,
                         backgroundSize: 'contain',
