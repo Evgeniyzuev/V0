@@ -13,7 +13,8 @@ interface WelcomeModalProps {
 
 interface Slide {
   id: number
-  image: string | null
+  image?: string | null
+  video?: string | null
   title: string
   subtitle?: string | null
   buttonText: string | null
@@ -37,6 +38,14 @@ export default function WelcomeModal({ isOpen, onClose }: WelcomeModalProps) {
       id: 2,
       image: "https://blush-keen-constrictor-906.mypinata.cloud/ipfs/bafkreibbnjxrj2wywupy2s2afwlwqwp6w3qslie5zgnjdo3oqpbfkgomsm",
       title: "When will you live your dream life?\nWhen can you be your true self?",
+      subtitle: null,
+      buttonText: null,
+      buttonColor: "bg-white text-purple-600 hover:bg-gray-200"
+    },
+    {
+      id: 3,
+      video: "https://blush-keen-constrictor-906.mypinata.cloud/ipfs/bafybeifjxnntvcvxuodk3xeyp24vdijjwcnsgsu2entr5hha65msxa2e7m",
+      title: "No results?\nThink you're lost.",
       subtitle: null,
       buttonText: "Let's Get Started!",
       buttonColor: "bg-white text-purple-600 hover:bg-gray-200"
@@ -63,7 +72,17 @@ export default function WelcomeModal({ isOpen, onClose }: WelcomeModalProps) {
             {slides.map((slide) => (
               <CarouselItem key={slide.id} className="relative w-full h-full">
                 <div className="relative w-full h-full">
-                  {slide.image ? (
+                  {slide.video ? (
+                    <div className="w-full h-full flex items-center justify-center px-4 lg:px-16">
+                      <video
+                        src={slide.video}
+                        autoPlay
+                        muted
+                        loop
+                        className="max-w-full max-h-full object-contain lg:object-cover rounded-lg"
+                      />
+                    </div>
+                  ) : slide.image ? (
                     <div className="w-full h-full flex items-center justify-center px-4 lg:px-16">
                       <img
                         src={slide.image}
