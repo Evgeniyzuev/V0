@@ -3,7 +3,7 @@
 import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog"
 import { Button } from "@/components/ui/button"
 import { Carousel, CarouselContent, CarouselItem, CarouselNext, CarouselPrevious } from "@/components/ui/carousel"
-import { Sparkles, X } from "lucide-react"
+import { Sparkles } from "lucide-react"
 import { useState, useEffect } from "react"
 
 interface WelcomeModalProps {
@@ -52,7 +52,7 @@ export default function WelcomeModal({ isOpen, onClose }: WelcomeModalProps) {
     },
     {
       id: 4,
-      image: "https://blush-keen-constrictor-906.mypinata.cloud/ipfs/bafkreiac2krsja4uemchzugqz6xmryznccxcmi7q5jgbz5gv3ju5gznl7y",
+      video: "https://blush-keen-constrictor-906.mypinata.cloud/ipfs/bafybeifpoesowv7nqchaopcbbx2is5ddst7v2v2jkn4ajxxlog4uvpkzqa",
       title: "The navigator is in your hands.\nBuild the right route to your desires.",
       subtitle: null,
       buttonText: "Let's Get Started!",
@@ -76,9 +76,9 @@ export default function WelcomeModal({ isOpen, onClose }: WelcomeModalProps) {
  return (
     <Dialog open={isOpen} onOpenChange={onClose}>
       <DialogTitle className="sr-only">Welcome Modal</DialogTitle>
-      <DialogContent className="max-w-full h-full w-full p-0 border-0 bg-black overflow-hidden">
+      <DialogContent className="max-w-full h-screen w-full p-0 border-0 bg-black overflow-hidden">
         <Carousel
-          className="w-full h-full relative"
+          className="w-full h-screen relative"
           opts={{
             loop: true,
           }}
@@ -89,40 +89,33 @@ export default function WelcomeModal({ isOpen, onClose }: WelcomeModalProps) {
             })
           }}
         >
-          <CarouselContent className="h-full">
+          <CarouselContent className="h-screen">
             {slides.map((slide) => (
-              <CarouselItem key={slide.id} className="relative w-full h-full">
-                <div className="relative w-full h-full">
+              <CarouselItem key={slide.id} className="relative w-full h-screen">
+                <div className="relative w-full h-screen">
                   {slide.video ? (
-                    <div className="w-full h-full flex items-center justify-center px-4 lg:px-16">
+                    <div className="w-full h-screen flex items-center justify-center sm:flex sm:items-center sm:justify-center">
                       <video
                         src={slide.video}
                         autoPlay
                         muted
                         loop
-                        className="max-w-full max-h-full object-contain lg:object-cover rounded-lg"
+                        className="w-full h-full object-cover"
                       />
                     </div>
                   ) : slide.image ? (
-                    <div className="w-full h-full flex items-center justify-center px-4 lg:px-16">
+                    <div className="w-full h-screen flex items-center justify-center sm:flex sm:items-center sm:justify-center">
                       <img
                         src={slide.image}
                         alt={`Slide ${slide.id}`}
-                        className="max-w-full max-h-full object-contain lg:object-cover rounded-lg"
+                        className="w-full h-full object-cover"
                       />
                     </div>
                   ) : (
-                    <div className={`w-full h-full flex items-center justify-center ${slide.bgGradient}`} />
+                    <div className={`w-full h-screen flex items-center justify-center sm:flex sm:items-center sm:justify-center ${slide.bgGradient}`} />
                   )}
 
-                  {/* Close Button */}
-                  <button
-                    onClick={onClose}
-                    className="absolute top-4 right-4 z-50 p-2 bg-black/50 rounded-full text-white hover:bg-black/70 transition-colors"
-                    aria-label="Close modal"
-                  >
-                    <X className="h-5 w-5" />
-                  </button>
+
 
                   <div className="absolute inset-0 bg-gradient-to-t from-black/50 to-transparent flex items-end">
                     <div className="p-4 sm:p-6 lg:px-12 text-white w-full">
