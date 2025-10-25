@@ -104,15 +104,13 @@ export default function WelcomeModal({ isOpen, onClose }: WelcomeModalProps) {
                       />
                     </div>
                   ) : slide.image ? (
-                    <div
-                      className="w-full h-screen bg-black sm:bg-white/50"
-                      style={{
-                        backgroundImage: `url(${slide.image})`,
-                        backgroundSize: 'contain',
-                        backgroundRepeat: 'no-repeat',
-                        backgroundPosition: 'center'
-                      }}
-                    />
+                    <div className="w-full h-screen bg-white/50 sm:bg-white/50">
+                      <img
+                        src={slide.image}
+                        alt={`Slide ${slide.id}`}
+                        className="w-full h-screen object-cover sm:w-full sm:h-screen sm:object-contain"
+                      />
+                    </div>
                   ) : (
                     <div className={`w-full h-screen ${slide.bgGradient}`} />
                   )}
