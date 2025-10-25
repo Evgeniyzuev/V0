@@ -11,11 +11,21 @@ interface WelcomeModalProps {
   onClose: () => void
 }
 
+interface Slide {
+  id: number
+  image: string | null
+  title: string
+  subtitle?: string | null
+  buttonText: string | null
+  buttonColor: string
+  bgGradient?: string
+}
+
 export default function WelcomeModal({ isOpen, onClose }: WelcomeModalProps) {
   const [currentSlide, setCurrentSlide] = useState(0)
   const [api, setApi] = useState<any>(null)
 
-  const slides = [
+  const slides: Slide[] = [
     {
       id: 1,
       image: "https://blush-keen-constrictor-906.mypinata.cloud/ipfs/bafkreihwdcmrkfyusknxdmxtozwgjcqj3x53sroua5rhqrdjbjrj2gf7b4",
@@ -25,12 +35,11 @@ export default function WelcomeModal({ isOpen, onClose }: WelcomeModalProps) {
     },
     {
       id: 2,
-      image: null,
-      title: "Welcome to Your Journey!",
-      subtitle: "Discover amazing opportunities and achieve your goals.",
+      image: "https://blush-keen-constrictor-906.mypinata.cloud/ipfs/bafkreibbnjxrj2wywupy2s2afwlwqwp6w3qslie5zgnjdo3oqpbfkgomsm",
+      title: "When will you live your dream life?\nWhen can you be your true self?",
+      subtitle: null,
       buttonText: "Let's Get Started!",
-      buttonColor: "bg-white text-purple-600 hover:bg-gray-200",
-      bgGradient: "bg-gradient-to-br from-purple-600 to-blue-600"
+      buttonColor: "bg-white text-purple-600 hover:bg-gray-200"
     }
   ]
 
