@@ -94,25 +94,27 @@ export default function WelcomeModal({ isOpen, onClose }: WelcomeModalProps) {
               <CarouselItem key={slide.id} className="relative w-full h-screen">
                 <div className="relative w-full h-screen">
                   {slide.video ? (
-                    <div className="w-full h-screen flex items-center justify-center sm:flex sm:items-center sm:justify-center">
+                    <div className="w-full h-screen bg-white/50 sm:bg-black">
                       <video
                         src={slide.video}
                         autoPlay
                         muted
                         loop
-                        className="w-full h-full object-cover"
+                        className="w-full h-screen object-contain"
                       />
                     </div>
                   ) : slide.image ? (
-                    <div className="w-full h-screen flex items-center justify-center sm:flex sm:items-center sm:justify-center">
-                      <img
-                        src={slide.image}
-                        alt={`Slide ${slide.id}`}
-                        className="w-full h-full object-cover"
-                      />
-                    </div>
+                    <div
+                      className="w-full h-screen bg-white/50"
+                      style={{
+                        backgroundImage: `url(${slide.image})`,
+                        backgroundSize: 'contain',
+                        backgroundRepeat: 'no-repeat',
+                        backgroundPosition: 'center'
+                      }}
+                    />
                   ) : (
-                    <div className={`w-full h-screen flex items-center justify-center sm:flex sm:items-center sm:justify-center ${slide.bgGradient}`} />
+                    <div className={`w-full h-screen ${slide.bgGradient}`} />
                   )}
 
 
