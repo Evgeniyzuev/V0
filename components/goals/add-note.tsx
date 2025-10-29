@@ -98,7 +98,6 @@ export default function NotesPage() {
   const longPressTimer = useRef<NodeJS.Timeout | null>(null)
   const longPressTriggered = useRef<boolean>(false)
   const textareaRef = useRef<HTMLTextAreaElement | null>(null)
-  const cursorPosition = useRef<{ start: number; end: number }>({ start: 0, end: 0 })
 
 
 
@@ -146,28 +145,24 @@ export default function NotesPage() {
     }
   }, [customLists])
 
-  useEffect(() => {
-    if (textareaRef.current && editingId) {
-      textareaRef.current.focus()
-      textareaRef.current.setSelectionRange(cursorPosition.current.start, cursorPosition.current.end)
-    }
-  }, [editingText, editingId])
+
 
   const handleStartEdit = (noteId: string) => {
     const note = notes.find((n) => n.id === noteId)
     if (note) {
       setEditingId(noteId)
       setEditingText(note.text)
-      cursorPosition.current = { start: note.text.length, end: note.text.length }
     }
   }
 
   const handleSaveEdit = () => {
-    if (editingId && editingText.trim()) {
-      setNotes(notes.map((note) => (note.id === editingId ? { ...note, text: editingText.trim() } : note)))
-    } else if (editingId && !editingText.trim()) {
-      // Delete empty note
-      setNotes(notes.filter((n) => n.id !== editingId))
+    if (editingId) {
+      const currentText = textareaRef.current?.value || ''
+      if (currentText.trim()) {
+        setNotes(notes.map((note) => (note.id === editingId ? { ...note, text: currentText.trim() } : note)))
+      } else {
+        setNotes(notes.filter((n) => n.id !== editingId))
+      }
     }
     setEditingId(null)
     setEditingText("")
@@ -565,11 +560,7 @@ export default function NotesPage() {
         <div className="px-2 py-1 relative">
             <Textarea
               ref={textareaRef}
-              value={editingText}
-              onChange={(e) => {
-                cursorPosition.current = { start: e.target.selectionStart, end: e.target.selectionEnd }
-                setEditingText(e.target.value)
-              }}
+              defaultValue={editingText}
               className="w-full min-h-[80px] text-foreground bg-transparent border-none resize-none focus:ring-0 focus:outline-none focus:border-none p-0 pr-12"
               placeholder="Enter your note text..."
               onBlur={(e) => {
