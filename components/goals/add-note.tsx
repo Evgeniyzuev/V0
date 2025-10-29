@@ -97,6 +97,7 @@ export default function NotesPage() {
   const [selectedNotes, setSelectedNotes] = useState<string[]>([])
   const longPressTimer = useRef<NodeJS.Timeout | null>(null)
   const longPressTriggered = useRef<boolean>(false)
+  const textareaRef = useRef<HTMLTextAreaElement | null>(null)
 
 
 
@@ -553,24 +554,31 @@ export default function NotesPage() {
     >
       {editingId === note.id ? (
         <div className="px-2 py-1 relative">
-          <Textarea
-            value={editingText}
-            onChange={(e) => setEditingText(e.target.value)}
-            className="w-full min-h-[80px] text-foreground bg-transparent border-none resize-none focus:ring-0 focus:outline-none focus:border-none focus:shadow-none p-0 mobile-textarea pr-12"
-            placeholder="Enter your note text..."
-            onBlur={(e) => {
-              if (!(e.relatedTarget as Element)?.closest(".info-button")) {
-                handleSaveEdit()
-              }
-            }}
-            autoFocus
-            style={{
-              WebkitAppearance: "none",
-              WebkitTapHighlightColor: "transparent",
-              WebkitUserModify: "read-write-plaintext-only",
-              boxShadow: "none",
-            }}
-          />
+            <Textarea
+              ref={textareaRef}
+              value={editingText}
+              onChange={(e) => {
+                const target = e.target as HTMLTextAreaElement
+                const selectionStart = target.selectionStart
+                const selectionEnd = target.selectionEnd
+                setEditingText(e.target.value)
+                // Preserve cursor position after state update
+                setTimeout(() => {
+                  if (textareaRef.current) {
+                    textareaRef.current.setSelectionRange(selectionStart, selectionEnd)
+                  }
+                }, 0)
+              }}
+              className="w-full min-h-[80px] text-foreground bg-transparent border-none resize-none focus:ring-0 focus:outline-none focus:border-none p-0 pr-12"
+              placeholder="Enter your note text..."
+              onBlur={(e) => {
+                if (!(e.relatedTarget as Element)?.closest(".info-button")) {
+                  handleSaveEdit()
+                }
+              }}
+              autoFocus
+              dir="ltr"
+            />
           <div
             onMouseDown={(e) => {
               e.preventDefault()
