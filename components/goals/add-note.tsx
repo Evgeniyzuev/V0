@@ -542,10 +542,10 @@ export default function NotesPage() {
     <div
       key={note.id}
       data-note-id={note.id}
-      onMouseDown={() => handleMouseDown(note.id)}
-      onMouseUp={handleMouseUp}
-      onTouchStart={() => handleTouchStart(note.id)}
-      onTouchEnd={handleTouchEnd}
+      onMouseDown={editingId !== note.id ? () => handleMouseDown(note.id) : undefined}
+      onMouseUp={editingId !== note.id ? handleMouseUp : undefined}
+      onTouchStart={editingId !== note.id ? () => handleTouchStart(note.id) : undefined}
+      onTouchEnd={editingId !== note.id ? handleTouchEnd : undefined}
       className={cn(
         "note-item overflow-hidden transition-all",
         !isLast ? "border-b border-gray-100" : "",
