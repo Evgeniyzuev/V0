@@ -45,7 +45,7 @@ export default function WelcomeModal({ isOpen, onClose }: WelcomeModalProps) {
     {
       id: 3,
       video: "https://blush-keen-constrictor-906.mypinata.cloud/ipfs/bafybeifjxnntvcvxuodk3xeyp24vdijjwcnsgsu2entr5hha65msxa2e7m",
-      title: "No results?\nThink you're lost.",
+      title: "The Abundance Effect - a navigator to your desires",
       subtitle: null,
       buttonText: null,
       buttonColor: "bg-white text-purple-600 hover:bg-gray-200"
@@ -53,9 +53,9 @@ export default function WelcomeModal({ isOpen, onClose }: WelcomeModalProps) {
     {
       id: 4,
       video: "https://blush-keen-constrictor-906.mypinata.cloud/ipfs/bafybeietlm5q7kaj6cqo5vaw3fya2m56uy3zokmsbi3xnfmaatcorx4fl4",
-      title: "The navigator is in your hands.\nBuild the route to your desires.",
+      title: "Build your route\nTake the first step now",
       subtitle: null,
-      buttonText: "Let's Get Started!",
+      buttonText: "First step",
       buttonColor: "bg-white text-purple-600 hover:bg-gray-200"
     }
   ]
