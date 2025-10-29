@@ -52,8 +52,8 @@ export default function WelcomeModal({ isOpen, onClose }: WelcomeModalProps) {
     },
     {
       id: 4,
-      video: "https://blush-keen-constrictor-906.mypinata.cloud/ipfs/bafybeifpoesowv7nqchaopcbbx2is5ddst7v2v2jkn4ajxxlog4uvpkzqa",
-      title: "The navigator is in your hands.\nBuild the right route to your desires.",
+      video: "https://blush-keen-constrictor-906.mypinata.cloud/ipfs/bafybeietlm5q7kaj6cqo5vaw3fya2m56uy3zokmsbi3xnfmaatcorx4fl4",
+      title: "The navigator is in your hands.\nBuild the route to your desires.",
       subtitle: null,
       buttonText: "Let's Get Started!",
       buttonColor: "bg-white text-purple-600 hover:bg-gray-200"
