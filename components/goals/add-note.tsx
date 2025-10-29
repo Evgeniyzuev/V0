@@ -98,6 +98,7 @@ export default function NotesPage() {
   const longPressTimer = useRef<NodeJS.Timeout | null>(null)
   const longPressTriggered = useRef<boolean>(false)
   const textareaRef = useRef<HTMLTextAreaElement | null>(null)
+  const cursorPosition = useRef<{ start: number; end: number }>({ start: 0, end: 0 })
 
 
 
@@ -145,11 +146,19 @@ export default function NotesPage() {
     }
   }, [customLists])
 
+  useEffect(() => {
+    if (textareaRef.current && editingId) {
+      textareaRef.current.focus()
+      textareaRef.current.setSelectionRange(cursorPosition.current.start, cursorPosition.current.end)
+    }
+  }, [editingText, editingId])
+
   const handleStartEdit = (noteId: string) => {
     const note = notes.find((n) => n.id === noteId)
     if (note) {
       setEditingId(noteId)
       setEditingText(note.text)
+      cursorPosition.current = { start: note.text.length, end: note.text.length }
     }
   }
 
@@ -558,16 +567,8 @@ export default function NotesPage() {
               ref={textareaRef}
               value={editingText}
               onChange={(e) => {
-                const target = e.target as HTMLTextAreaElement
-                const selectionStart = target.selectionStart
-                const selectionEnd = target.selectionEnd
+                cursorPosition.current = { start: e.target.selectionStart, end: e.target.selectionEnd }
                 setEditingText(e.target.value)
-                // Preserve cursor position after state update
-                setTimeout(() => {
-                  if (textareaRef.current) {
-                    textareaRef.current.setSelectionRange(selectionStart, selectionEnd)
-                  }
-                }, 0)
               }}
               className="w-full min-h-[80px] text-foreground bg-transparent border-none resize-none focus:ring-0 focus:outline-none focus:border-none p-0 pr-12"
               placeholder="Enter your note text..."
