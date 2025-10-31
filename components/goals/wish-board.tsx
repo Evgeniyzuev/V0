@@ -337,7 +337,7 @@ const WishBoard: React.FC<WishBoardProps> = ({ showOnlyRecommendations }) => {
             <div>
               {/* <h3 className="text-lg font-semibold mb-2 px-4">Recommended Goals</h3> */}
               <div className="grid grid-cols-3 gap-1">
-                {goals.map((goal) => (
+                {[...goals].sort((a, b) => b.id - a.id).map((goal) => (
                   <div
                     key={goal.id}
                     className="image-item animate-fade-in rounded overflow-hidden shadow-md aspect-square cursor-pointer"
@@ -394,11 +394,12 @@ const WishBoard: React.FC<WishBoardProps> = ({ showOnlyRecommendations }) => {
 
               {/* Add New Wish Card */}
               <div
-                className="image-item animate-fade-in rounded overflow-hidden shadow-md aspect-square cursor-pointer bg-white hover:bg-gray-50 transition-colors duration-300 flex items-center justify-center border-2 border-gray-200"
+                className="image-item animate-fade-in rounded overflow-hidden shadow-md aspect-square cursor-pointer bg-gradient-to-br from-green-50 to-green-100 hover:from-green-100 hover:to-green-200 transition-all duration-300 flex flex-col items-center justify-center border-2 border-green-200 hover:border-green-300 hover:shadow-lg transform hover:scale-105"
                 onClick={() => setIsAddWishModalOpen(true)}
               >
-                <div className="flex flex-col items-center justify-center">
-                  <Plus className="h-20 w-20 text-green-500" />
+                <div className="flex flex-col items-center justify-center space-y-2">
+                  <Plus className="h-16 w-16 text-green-600" />
+                  <span className="text-sm font-medium text-green-700">Add Wish</span>
                 </div>
               </div>
             </div>
@@ -408,7 +409,7 @@ const WishBoard: React.FC<WishBoardProps> = ({ showOnlyRecommendations }) => {
           <div>
             {/* <h3 className="text-lg font-semibold mb-2 px-4">Available Goals</h3> */}
             <div className="grid grid-cols-3 gap-1">
-              {goals.map((goal) => (
+              {[...goals].sort((a, b) => b.id - a.id).map((goal) => (
                 <div
                   key={goal.id}
                   className="image-item animate-fade-in rounded overflow-hidden shadow-md aspect-square cursor-pointer"
