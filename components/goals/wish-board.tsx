@@ -335,7 +335,7 @@ const WishBoard: React.FC<WishBoardProps> = ({ showOnlyRecommendations }) => {
           {/* Show recommendations for unauthorized users */}
           {showOnlyRecommendations && !isLoadingGoals && (
             <div>
-              <h3 className="text-lg font-semibold mb-2 px-4">Recommended Goals</h3>
+              {/* <h3 className="text-lg font-semibold mb-2 px-4">Recommended Goals</h3> */}
               <div className="grid grid-cols-3 gap-1">
                 {goals.map((goal) => (
                   <div
@@ -366,9 +366,9 @@ const WishBoard: React.FC<WishBoardProps> = ({ showOnlyRecommendations }) => {
         <>
           {/* Personal Goals Section for authenticated users */}
           <div className="mb-4">
-            <div className="flex items-center justify-between px-4">
+            {/* <div className="flex items-center justify-between px-4">
               <h2 className="text-xl font-semibold">Your Personal Goals: {userGoals?.length || 0}</h2>
-            </div>
+            </div> */}
             <div className="grid grid-cols-3 gap-1">
               {(userGoals || []).filter(Boolean).map((goal) => (
                 <div
@@ -406,7 +406,7 @@ const WishBoard: React.FC<WishBoardProps> = ({ showOnlyRecommendations }) => {
 
           {/* Available Goals section for authenticated users */}
           <div>
-            <h3 className="text-lg font-semibold mb-2 px-4">Available Goals</h3>
+            {/* <h3 className="text-lg font-semibold mb-2 px-4">Available Goals</h3> */}
             <div className="grid grid-cols-3 gap-1">
               {goals.map((goal) => (
                 <div
