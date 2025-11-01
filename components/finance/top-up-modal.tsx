@@ -77,7 +77,7 @@ export default function TopUpModal({ isOpen, onClose, onSuccess, userId }: TopUp
           {
             address: process.env.NEXT_PUBLIC_DESTINATION_ADDRESS,
             amount: amountInNanotons,
-            payload: '', // Add empty payload
+            // No payload needed for simple transfers
           },
         ],
       }
@@ -227,4 +227,3 @@ export default function TopUpModal({ isOpen, onClose, onSuccess, userId }: TopUp
     </Dialog>
   )
 }
-
