@@ -40,6 +40,7 @@ export default function FinanceTab() {
   const [isTransferModalOpen, setIsTransferModalOpen] = useState(false)
   const [isSendModalOpen, setIsSendModalOpen] = useState(false)
   const [reinvestPercentage, setReinvestPercentage] = useState(100)
+  const [reinvestInputValue, setReinvestInputValue] = useState('100')
   const [isReinvestChanged, setIsReinvestChanged] = useState(false)
   const { toast } = useToast()
   const [startCore, setStartCore] = useState<string>('0')
@@ -86,7 +87,9 @@ export default function FinanceTab() {
       })
       setWalletBalance(dbUser.wallet_balance || 0)
       setCoreBalance(dbUser.aicore_balance || 0)
-      setReinvestPercentage(dbUser.reinvest || 100)
+      const reinvestValue = dbUser.reinvest || 100
+      setReinvestPercentage(reinvestValue)
+      setReinvestInputValue(reinvestValue.toString())
       setUserId(dbUser.id)
     }
   }, [dbUser])
@@ -106,11 +109,15 @@ export default function FinanceTab() {
 
   // Handle reinvest percentage change
   const handleReinvestChange = (value: string) => {
+    // Allow empty string for better UX when typing
+    if (value === '') {
+      setReinvestPercentage(0)
+      setIsReinvestChanged(true)
+      return
+    }
+
     const num = Number(value)
-    if (!isNaN(num)) {
-      // const minReinvest = calculateMinReinvest(coreBalance);
-      // Allow any number during typing, but clamp between minReinvest-100
-      // const clampedNum = Math.max(minReinvest, Math.min(100, num))
+    if (!isNaN(num) && num >= 0 && num <= 100) {
       setReinvestPercentage(num)
       setIsReinvestChanged(true)
     }
@@ -469,12 +476,14 @@ export default function FinanceTab() {
                   <span className="text-sm font-medium text-gray-700">Reinvest %</span>
                   <div className="flex items-center space-x-2">
                     <Input
-                      type="number"
-                      value={reinvestPercentage}
-                      onChange={(e) => handleReinvestChange(e.target.value)}
+                      type="text"
+                      value={reinvestInputValue}
+                      onChange={(e) => {
+                        const value = e.target.value
+                        setReinvestInputValue(value)
+                        handleReinvestChange(value)
+                      }}
                       className="h-8 text-sm w-16 text-center font-medium"
-                      min={0}
-                      max={100}
                     />
                     <span className="text-xs text-gray-500">%</span>
                     {isReinvestChanged && (

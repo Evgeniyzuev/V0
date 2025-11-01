@@ -159,8 +159,8 @@ export async function transferToCore(amount: number, userId: string) {
 }
 
 export async function updateUserReinvest(userId: string, reinvestPercentage: number) {
-  if (reinvestPercentage < 50 || reinvestPercentage > 100) {
-    throw new Error('Reinvest percentage must be between 50 and 100')
+  if (reinvestPercentage < 0 || reinvestPercentage > 100) {
+    throw new Error('Reinvest percentage must be between 0 and 100')
   }
 
   const supabase = createServerSupabaseClient()
