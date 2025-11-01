@@ -181,7 +181,7 @@ export default function TasksTab() {
   }
 
   return (
-    <div className="flex flex-col h-full bg-gray-50">
+    <div className="min-h-screen bg-gray-50 mobile-container">
       {/* Status Message */}
       {statusMessage && (
         <div className={`p-3 text-sm ${
@@ -190,7 +190,7 @@ export default function TasksTab() {
           {statusMessage.text}
         </div>
       )}
-      
+
       {/* Completion Modal */}
       <Dialog open={completionModal?.isOpen} onOpenChange={(open) => {
         if (!open) {
@@ -228,7 +228,7 @@ export default function TasksTab() {
             </div>
           </div>
           <DialogFooter>
-            <Button 
+            <Button
               className="w-full"
               onClick={() => {
                 setCompletionModal(null);
@@ -281,132 +281,183 @@ export default function TasksTab() {
         </DialogContent>
       </Dialog>
 
-      {/* Tabs and TaskUpdater */}
-      <div className="flex items-center justify-between p-2 bg-white border-b">
-        <div className="flex space-x-2">
-          <button
-            className={`px-4 py-2 rounded-full text-sm font-medium ${
-              activeTab === "new" ? "bg-purple-500 text-white" : "bg-white text-gray-700"
-            }`}
-            onClick={() => setActiveTab("new")}
-          >
-            New {activeTab === "new" && `(${filteredTasks().length})`}
-          </button>
-          <button
-            className={`px-4 py-2 rounded-full text-sm font-medium ${
-              activeTab === "completed" ? "bg-purple-500 text-white" : "bg-white text-gray-700"
-            }`}
-            onClick={() => setActiveTab("completed")}
-          >
-            Completed {activeTab === "completed" && `(${filteredTasks().length})`}
-          </button>
+      {/* Search Bar */}
+      <div className="bg-white border-b border-gray-200 px-4 py-3">
+        <div className="relative">
+          <input
+            type="text"
+            placeholder="Search tasks..."
+            className="w-full pl-10 pr-4 py-2 bg-gray-100 border-none rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:outline-none"
+          />
+          <div className="absolute left-3 top-1/2 transform -translate-y-1/2">
+            <svg className="h-5 w-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+            </svg>
+          </div>
         </div>
-        <TaskUpdater onUpdate={fetchTasks} />
       </div>
 
-      {/* Task list */}
-      <div className="flex-1 overflow-y-auto">
-        {filteredTasks().map((task) => (
-          <div key={task.number} className="border-b">
-            {/* Task header - Modified to include button */}
-            <div className="flex items-center p-4">
-              {/* Icon */}
-              <img
-                src={task.icon_url || "/placeholder.svg"}
-                alt={task.title}
-                className="flex-shrink-0 w-8 h-8 rounded-full object-cover mr-3"
-              />
+      <div className="max-w-4xl mx-auto p-4 space-y-6 pb-20">
+        {/* Task Categories Grid */}
+        <div className="grid grid-cols-2 gap-3">
+          {/* New Tasks */}
+          <button
+            onClick={() => setActiveTab("new")}
+            className={`bg-white rounded-xl p-4 text-left border border-gray-200 hover:bg-gray-50 transition-all ${
+              activeTab === "new" ? "ring-2 ring-blue-500" : ""
+            }`}
+          >
+            <div className="flex items-center justify-between mb-2">
+              <div className="w-8 h-8 bg-blue-500 rounded-lg flex items-center justify-center">
+                <span className="text-white text-sm font-bold">📋</span>
+              </div>
+              <span className="text-2xl font-bold text-gray-900">
+                {tasks.filter((task) => task.status === 'assigned' || task.status === 'in_progress').length}
+              </span>
+            </div>
+            <div className="text-sm text-gray-600 font-medium">New Tasks</div>
+          </button>
 
-              {/* Title and Meta (Takes remaining space) */}
-              <div className="flex-1 min-w-0 mr-4" onClick={() => toggleTaskExpansion(task.number)} style={{ cursor: 'pointer' }}>
-                <h3 className="text-base text-gray-800 truncate">
-                  {task.title}
-                </h3>
-                <div className="flex flex-wrap items-center mt-1 text-xs text-gray-500">
-                  <div className="flex items-center mr-3">
-                    <Calendar className="h-3 w-3 mr-1" />
-                    {task.assigned_at ? new Date(task.assigned_at).toLocaleDateString() : "Not started"}
-                  </div>
-                  <div className="flex items-center mr-3">
-                    <Tag className="h-3 w-3 mr-1" />
-                    {task.reward}$
-                  </div>
-                  <div className={`flex items-center ${
-                    task.status === 'completed' ? 'text-green-500' :
-                    task.status === 'in_progress' ? 'text-blue-500' :
-                    'text-gray-500'
-                  }`}>
-                    {task.status}
-                  </div>
+          {/* Completed Tasks */}
+          <button
+            onClick={() => setActiveTab("completed")}
+            className={`bg-white rounded-xl p-4 text-left border border-gray-200 hover:bg-gray-50 transition-all ${
+              activeTab === "completed" ? "ring-2 ring-blue-500" : ""
+            }`}
+          >
+            <div className="flex items-center justify-between mb-2">
+              <div className="w-8 h-8 bg-green-500 rounded-lg flex items-center justify-center">
+                <Check className="h-4 w-4 text-white" />
+              </div>
+              <span className="text-2xl font-bold text-gray-900">
+                {tasks.filter((task) => task.status === 'completed').length}
+              </span>
+            </div>
+            <div className="text-sm text-gray-600 font-medium">Completed</div>
+          </button>
+        </div>
+
+        {/* TaskUpdater */}
+        <div className="flex justify-center">
+          <TaskUpdater onUpdate={fetchTasks} />
+        </div>
+
+        {/* Task List */}
+        <div className="space-y-4">
+          {filteredTasks().map((task) => (
+            <div key={task.number} className="bg-white rounded-xl border border-gray-200 overflow-hidden">
+              {/* Full-width circular image */}
+              <div className="relative w-full h-48 bg-gradient-to-br from-blue-100 to-purple-100 flex items-center justify-center">
+                <div className="w-32 h-32 rounded-full overflow-hidden border-4 border-white shadow-lg">
+                  <img
+                    src={task.icon_url || "/placeholder.svg"}
+                    alt={task.title}
+                    className="w-full h-full object-cover"
+                  />
                 </div>
               </div>
 
-              {/* Actions (Button and Chevron) */}
-              <div className="flex items-center space-x-2">
-                {task.status !== 'completed' && (
-                  <Button 
-                    size="sm" 
-                    variant="outline"
-                    onClick={(e) => { 
-                      e.stopPropagation();
-                      handleTaskVerification(task.number, goals);
-                    }}
-                    disabled={verifying}
-                  >
-                    {verifying ? (
-                      <span className="animate-spin rounded-full h-4 w-4 border-b-2 border-gray-800 mr-2"></span>
-                    ) : (
-                      <>
-                        <Check className="h-4 w-4 mr-2" />
-                        Check
-                      </>
+              {/* Task content */}
+              <div className="p-4">
+                <div className="flex items-start justify-between mb-3">
+                  <div className="flex-1 min-w-0">
+                    <h3 className="text-lg font-semibold text-gray-900 mb-1">
+                      {task.title}
+                    </h3>
+                    <div className="flex flex-wrap items-center gap-3 text-sm text-gray-500">
+                      <div className="flex items-center gap-1">
+                        <Calendar className="h-4 w-4" />
+                        {task.assigned_at ? new Date(task.assigned_at).toLocaleDateString() : "Not started"}
+                      </div>
+                      <div className="flex items-center gap-1">
+                        <Tag className="h-4 w-4" />
+                        ${task.reward}
+                      </div>
+                      <div className={`px-2 py-1 rounded-full text-xs font-medium ${
+                        task.status === 'completed' ? 'bg-green-100 text-green-700' :
+                        task.status === 'in_progress' ? 'bg-blue-100 text-blue-700' :
+                        'bg-gray-100 text-gray-700'
+                      }`}>
+                        {task.status.replace('_', ' ')}
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="flex items-center gap-2 ml-4">
+                    {task.status !== 'completed' && (
+                      <Button
+                        size="sm"
+                        className="bg-blue-500 hover:bg-blue-600 text-white"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleTaskVerification(task.number, goals);
+                        }}
+                        disabled={verifying}
+                      >
+                        {verifying ? (
+                          <span className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></span>
+                        ) : (
+                          <>
+                            <Check className="h-4 w-4 mr-2" />
+                            Check
+                          </>
+                        )}
+                      </Button>
                     )}
-                  </Button>
-                )}
-                <div onClick={() => toggleTaskExpansion(task.number)} style={{ cursor: 'pointer' }}>
-                  {expandedTaskId === task.number ? (
-                    <ChevronUp className="h-5 w-5 text-gray-400" />
-                  ) : (
-                    <ChevronDown className="h-5 w-5 text-gray-400" />
-                  )}
+                    <button
+                      onClick={() => toggleTaskExpansion(task.number)}
+                      className="p-2 hover:bg-gray-100 rounded-full transition-colors"
+                    >
+                      {expandedTaskId === task.number ? (
+                        <ChevronUp className="h-5 w-5 text-gray-400" />
+                      ) : (
+                        <ChevronDown className="h-5 w-5 text-gray-400" />
+                      )}
+                    </button>
+                  </div>
                 </div>
+
+                {/* Description */}
+                <p className="text-gray-600 text-sm mb-3 line-clamp-2">
+                  {task.description}
+                </p>
+
+                {/* Progress bar */}
+                {task.current_step_index !== null && (
+                  <div className="mb-3">
+                    <div className="flex justify-between items-center mb-2">
+                      <span className="text-sm font-medium text-gray-700">Progress</span>
+                      <span className="text-sm text-gray-500">
+                        {task.current_step_index + 1} of {task.steps_total || '?'}
+                      </span>
+                    </div>
+                    <div className="w-full bg-gray-200 rounded-full h-2">
+                      <div
+                        className="bg-blue-500 h-2 rounded-full transition-all duration-300"
+                        style={{ width: `${(task.current_step_index / (task.steps_total || 1)) * 100}%` }}
+                      ></div>
+                    </div>
+                  </div>
+                )}
+
+                {/* Expanded details */}
+                {expandedTaskId === task.number && (
+                  <div className="border-t border-gray-100 pt-4 mt-4 space-y-3">
+                    {task.notes && (
+                      <div>
+                        <h4 className="text-sm font-medium text-gray-700 mb-2">Notes</h4>
+                        <p className="text-sm text-gray-600 bg-gray-50 p-3 rounded-lg">
+                          {task.notes}
+                        </p>
+                      </div>
+                    )}
+                  </div>
+                )}
               </div>
             </div>
-
-            {/* Expanded task details */}
-            {expandedTaskId === task.number && (
-              <div className="px-4 pb-4 pt-0">
-                <div className="ml-11">
-                  <div className="mb-3">
-                    <p className="text-sm text-gray-700">{task.description}</p>
-                  </div>
-
-                  {task.current_step_index !== null && (
-                    <div className="bg-gray-50 p-3 rounded-lg mb-3">
-                      <h4 className="text-xs font-medium text-gray-700 mb-2">Progress:</h4>
-                      <div className="w-full bg-gray-200 rounded-full h-2 mb-2">
-                        <div
-                          className="bg-purple-600 h-2 rounded-full"
-                          style={{ width: `${(task.current_step_index / (task.steps_total || 1)) * 100}%` }}
-                        ></div>
-                      </div>
-                      <p className="text-xs text-gray-600">Step {task.current_step_index + 1} of {task.steps_total || '?'}</p>
-                    </div>
-                  )}
-
-                  {task.notes && (
-                    <div className="bg-gray-50 p-3 rounded-lg">
-                      <h4 className="text-xs font-medium text-gray-700 mb-1">Notes:</h4>
-                      <p className="text-xs text-gray-600">{task.notes}</p>
-                    </div>
-                  )}
-                </div>
-              </div>
-            )}
-          </div>
-        ))}
+          ))}
+        </div>
       </div>
     </div>
   )
 }
-
