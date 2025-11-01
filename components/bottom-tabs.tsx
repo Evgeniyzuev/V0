@@ -10,7 +10,7 @@ interface BottomTabsProps {
 export default function BottomTabs({ activeTab, setActiveTab }: BottomTabsProps) {
   const tabs = [
     { id: "goals", label: "Goals", icon: Target },
-    { id: "tasks", label: "Tasks", icon: CheckCircle },
+    { id: "tasks", label: "Challenges", icon: CheckCircle },
     { id: "ai", label: "Assistant", icon: Sparkles },
     { id: "finance", label: "Finance", icon: Wallet },
     { id: "community", label: "Social", icon: Users },

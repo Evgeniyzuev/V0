@@ -3,7 +3,7 @@
 import { useState } from "react"
 import BottomTabs from "@/components/bottom-tabs"
 import GoalsTab from "@/components/goals-tab"
-import TasksTab from "@/components/tasks-tab"
+import ChallengesTab from "@/components/challenges-tab"
 import AIAssistantTab from "@/components/ai-assistant-tab"
 import FinanceTab from "@/components/finance/finance-tab"
 import CommunityTab from "@/components/community-tab"
@@ -16,7 +16,7 @@ export default function Home() {
       case "goals":
         return <GoalsTab />
       case "tasks":
-        return <TasksTab />
+        return <ChallengesTab />
       case "ai":
         return <AIAssistantTab />
       case "finance":
@@ -35,4 +35,3 @@ export default function Home() {
     </main>
   )
 }
-

@@ -16,7 +16,7 @@ import { useLevelCheck } from '@/hooks/useLevelCheck'
 // Initialize Supabase client
 const supabase = createClientSupabaseClient();
 
-type Task = {
+type Challenge = {
   number: number
   title: string
   reward: number
@@ -32,13 +32,13 @@ type Task = {
   steps_total?: number
 }
 
-export default function TasksTab() {
+export default function ChallengesTab() {
   const { dbUser, isLoading: isUserLoading, refreshUserData, goals } = useUser()
   const { levelUpModal, handleLevelUpModalClose, levelThresholds } = useLevelCheck()
 
   const [activeTab, setActiveTab] = useState("new")
   const [expandedTaskId, setExpandedTaskId] = useState<number | null>(null)
-  const [tasks, setTasks] = useState<Task[]>([])
+  const [tasks, setTasks] = useState<Challenge[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [statusMessage, setStatusMessage] = useState<{ type: 'success' | 'error', text: string } | null>(null)
@@ -49,7 +49,7 @@ export default function TasksTab() {
     oldCore?: number;
     newCore?: number;
   } | null>(null)
-  const [selectedTask, setSelectedTask] = useState<Task | null>(null)
+  const [selectedTask, setSelectedTask] = useState<Challenge | null>(null)
 
   const { verifying, handleTaskVerification, verifyTask }: { verifying: boolean; handleTaskVerification: (taskNumber: number, currentGoals: any[] | null) => Promise<void>; verifyTask: (taskNumber: number) => void } = useTaskVerification({
     dbUser,
@@ -92,7 +92,7 @@ export default function TasksTab() {
 
       if (error) {
         console.error("Error fetching tasks:", error)
-        setError("Failed to fetch tasks. Please try again later.")
+        setError("Failed to fetch challenges. Please try again later.")
       } else {
         // Transform the data to match the Task interface
         const transformedTasks = data.map(userTask => ({
@@ -142,8 +142,8 @@ export default function TasksTab() {
         <Card>
           <CardContent className="pt-6">
             <div className="text-center flex flex-col items-center gap-4">
-              <h3 className="text-lg font-medium">Access to Tasks</h3>
-              <p className="text-gray-500 mb-4">To access your tasks, please log in to the system</p>
+              <h3 className="text-lg font-medium">Access to Challenges</h3>
+              <p className="text-gray-500 mb-4">To access your challenges, please log in to the system</p>
               <Avatar className="h-20 w-20 mx-auto mb-2">
                 <AvatarFallback>
                   <User className="h-10 w-10 text-gray-400" />
@@ -174,7 +174,7 @@ export default function TasksTab() {
   }
 
   if (loading) {
-    return <div className="flex items-center justify-center h-full">Loading tasks...</div>
+    return <div className="flex items-center justify-center h-full">Loading challenges...</div>
   }
 
   if (error) {
@@ -203,14 +203,14 @@ export default function TasksTab() {
           <DialogHeader>
             <DialogTitle className="text-center flex items-center justify-center gap-2">
               <Trophy className="h-6 w-6 text-yellow-500" />
-              Task Completed!
+              Challenge Completed!
             </DialogTitle>
           </DialogHeader>
           <div className="py-6">
             <div className="text-center space-y-4">
               <p className="text-lg font-medium">Congratulations!</p>
               <p className="text-gray-600">
-                You've successfully completed Task {completionModal?.taskNumber}
+                You've successfully completed Challenge {completionModal?.taskNumber}
               </p>
               <div className="bg-purple-50 p-4 rounded-lg">
                 <p className="text-sm text-purple-700 mb-2">Rewards:</p>
@@ -289,7 +289,7 @@ export default function TasksTab() {
           <div className="relative flex-1">
             <input
               type="text"
-              placeholder="Search tasks..."
+              placeholder="Search challenges..."
               className="w-full pl-10 pr-4 py-2 bg-gray-100 border-none rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:outline-none"
             />
             <div className="absolute left-3 top-1/2 transform -translate-y-1/2">
@@ -392,7 +392,7 @@ export default function TasksTab() {
                         ) : (
                           <>
                             <Check className="h-4 w-4 mr-2" />
-                            Check Task
+                            Check Challenge
                           </>
                         )}
                       </Button>
