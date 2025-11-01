@@ -108,10 +108,10 @@ export default function FinanceTab() {
   const handleReinvestChange = (value: string) => {
     const num = Number(value)
     if (!isNaN(num)) {
-      const minReinvest = calculateMinReinvest(coreBalance);
+      // const minReinvest = calculateMinReinvest(coreBalance);
       // Allow any number during typing, but clamp between minReinvest-100
-      const clampedNum = Math.max(minReinvest, Math.min(100, num))
-      setReinvestPercentage(clampedNum)
+      // const clampedNum = Math.max(minReinvest, Math.min(100, num))
+      setReinvestPercentage(num)
       setIsReinvestChanged(true)
     }
   }
@@ -252,11 +252,11 @@ export default function FinanceTab() {
     };
   };
 
-  // Calculate minimum reinvest percentage based on level
-  const calculateMinReinvest = (balance: number) => {
-    const { currentLevel } = calculateLevelProgress(balance);
-    return Math.max(0, 100 - (5 * currentLevel));
-  };
+  // // Calculate minimum reinvest percentage based on level
+  // const calculateMinReinvest = (balance: number) => {
+  //   const { currentLevel } = calculateLevelProgress(balance);
+  //   return Math.max(0, 100 - (5 * currentLevel));
+  // };
 
   // Check for unviewed interest
   useEffect(() => {
@@ -409,38 +409,38 @@ export default function FinanceTab() {
       </div>
 
       {/* Balance card */}
-      <div className="p-6">
-        <div className="bg-gradient-to-r from-purple-500 to-blue-500 rounded-2xl p-6 text-white shadow-lg">
-          <div className="flex justify-between items-start mb-4">
+      <div className="p-2">
+        <div className="bg-gradient-to-r from-purple-500 to-blue-500 rounded-xl p-4 text-white shadow-lg">
+          <div className="flex justify-between items-start mb-2">
             <div>
-              <p className="text-sm opacity-90 font-medium">{activeTab === "wallet" ? "Wallet Balance" : "Core Balance"}</p>
-              <h1 className="text-3xl font-bold mt-1">
+              <p className="text-xs opacity-90 font-medium">{activeTab === "wallet" ? "Wallet Balance" : "Core Balance"}</p>
+              <h1 className="text-2xl font-bold mt-1">
                 ${activeTab === "wallet" ? walletBalance.toFixed(2) : coreBalance.toFixed(2)}
               </h1>
             </div>
             <Button
               variant="outline"
               size="sm"
-              className="bg-white/20 text-white border-white/40 hover:bg-white/30"
+              className="bg-white/20 text-white border-white/40 hover:bg-white/30 h-7"
               onClick={refreshUserData}
             >
-              <RefreshCw className="h-4 w-4 mr-2" />
+              <RefreshCw className="h-3.5 w-3.5 mr-1" />
               Refresh
             </Button>
           </div>
 
           {/* Level Progress - Only show in Core tab */}
           {activeTab === "core" && (
-            <div className="space-y-3">
+            <div className="space-y-2">
               {(() => {
                 const { currentLevel, nextLevelThreshold, progressPercentage } = calculateLevelProgress(coreBalance);
                 return (
                   <>
-                    <div className="flex justify-between text-sm">
+                    <div className="flex justify-between text-xs">
                       <span className="font-medium">Level {currentLevel}</span>
                       <span className="opacity-90">${coreBalance.toFixed(2)} / ${nextLevelThreshold}</span>
                     </div>
-                    <Progress value={progressPercentage} className="h-2 bg-white/20 rounded-full" />
+                    <Progress value={progressPercentage} className="h-1.5 bg-white/20 rounded-full" />
                   </>
                 );
               })()}
@@ -450,58 +450,58 @@ export default function FinanceTab() {
       </div>
 
       {/* Daily Income Card */}
-      <div className="px-6 pb-6">
+      <div className="px-2 pb-2">
         <Card className="w-full bg-white border border-gray-100 shadow-sm">
-          <CardContent className="p-6">
-            <div className="space-y-6">
+          <CardContent className="p-4">
+            <div className="space-y-4">
               <div className="flex items-center justify-between">
-                <div className="flex items-center space-x-3">
+                <div className="flex items-center space-x-2">
                   <div className="w-2 h-2 bg-green-400 rounded-full"></div>
-                  <span className="text-lg font-semibold text-gray-900">Daily Income</span>
+                  <span className="text-base font-semibold text-gray-900">Daily Income</span>
                 </div>
-                <span className="text-lg font-bold text-green-600">
+                <span className="text-base font-bold text-green-600">
                   ${calculateDailyIncome(coreBalance).total.toFixed(8)}
                 </span>
               </div>
 
-              <div className="space-y-4">
+              <div className="space-y-3">
                 <div className="flex items-center justify-between">
-                  <span className="text-sm font-medium text-gray-700">Reinvest Percentage</span>
-                  <div className="flex items-center space-x-3">
+                  <span className="text-sm font-medium text-gray-700">Reinvest %</span>
+                  <div className="flex items-center space-x-2">
                     <Input
                       type="number"
                       value={reinvestPercentage}
                       onChange={(e) => handleReinvestChange(e.target.value)}
-                      className="h-10 text-sm w-20 text-center font-medium"
-                      min={calculateMinReinvest(coreBalance)}
+                      className="h-8 text-sm w-16 text-center font-medium"
+                      min={0}
                       max={100}
                     />
-                    <span className="text-sm text-gray-500">%</span>
+                    <span className="text-xs text-gray-500">%</span>
                     {isReinvestChanged && (
                       <Button
                         size="sm"
                         variant="outline"
-                        className="h-8 px-3"
+                        className="h-6 px-2"
                         onClick={handleSaveReinvest}
                       >
-                        <Check className="h-4 w-4 text-green-500" />
+                        <Check className="h-3 w-3 text-green-500" />
                       </Button>
                     )}
                   </div>
                 </div>
-                <Progress value={reinvestPercentage} className="h-2 bg-gray-100" />
+                <Progress value={reinvestPercentage} className="h-1.5 bg-gray-100" />
               </div>
 
-              <div className="grid grid-cols-2 gap-6">
-                <div className="text-center p-4 bg-green-50 rounded-xl">
-                  <span className="text-sm text-gray-600 block mb-1">To Core</span>
-                  <span className="text-base font-bold text-green-700">
+              <div className="grid grid-cols-2 gap-3">
+                <div className="text-center p-3 bg-green-50 rounded-lg">
+                  <span className="text-xs text-gray-600 block mb-1">To Core</span>
+                  <span className="text-sm font-bold text-green-700">
                     ${calculateDailyIncome(coreBalance).toCore.toFixed(8)}
                   </span>
                 </div>
-                <div className="text-center p-4 bg-blue-50 rounded-xl">
-                  <span className="text-sm text-gray-600 block mb-1">To Wallet</span>
-                  <span className="text-base font-bold text-blue-700">
+                <div className="text-center p-3 bg-blue-50 rounded-lg">
+                  <span className="text-xs text-gray-600 block mb-1">To Wallet</span>
+                  <span className="text-sm font-bold text-blue-700">
                     ${calculateDailyIncome(coreBalance).toWallet.toFixed(8)}
                   </span>
                 </div>
@@ -514,63 +514,61 @@ export default function FinanceTab() {
       {/* Core Growth Calculator Card */}
       {activeTab === "core" && (
         <>
-          <div className="px-6 pb-6">
+          <div className="px-2 pb-2">
             <Card className="w-full bg-white border border-gray-100 shadow-sm">
-              <CardContent className="p-6">
-                <div className="space-y-6">
-                  <div className="flex items-center space-x-3">
+              <CardContent className="p-4">
+                <div className="space-y-4">
+                  <div className="flex items-center space-x-2">
                     <div className="w-2 h-2 bg-blue-400 rounded-full"></div>
-                    <span className="text-lg font-semibold text-gray-900">Core Growth Calculator</span>
+                    <span className="text-base font-semibold text-gray-900">Core Growth Calculator</span>
                   </div>
 
-                  <div className="grid grid-cols-1 gap-4">
-                    <div className="grid grid-cols-3 gap-4">
-                      <div className="space-y-2">
-                        <label className="text-sm font-medium text-gray-700">Start Core</label>
-                        <Input
-                          type="number"
-                          value={startCore}
-                          onChange={(e) => setStartCore(e.target.value)}
-                          className="h-10 text-sm"
-                          placeholder="0"
-                        />
-                      </div>
-                      <div className="space-y-2">
-                        <label className="text-sm font-medium text-gray-700">Daily Rewards</label>
-                        <Input
-                          type="number"
-                          value={dailyRewards}
-                          onChange={(e) => setDailyRewards(Number(e.target.value))}
-                          className="h-10 text-sm"
-                          min={0}
-                          placeholder="10"
-                        />
-                      </div>
-                      <div className="space-y-2">
-                        <label className="text-sm font-medium text-gray-700">Years</label>
-                        <Input
-                          type="number"
-                          value={yearsToCalculate}
-                          onChange={(e) => setYearsToCalculate(Number(e.target.value))}
-                          className="h-10 text-sm"
-                          min={1}
-                          max={100}
-                          placeholder="30"
-                        />
-                      </div>
+                  <div className="grid grid-cols-3 gap-2">
+                    <div className="space-y-1">
+                      <label className="text-xs font-medium text-gray-700">Start Core</label>
+                      <Input
+                        type="number"
+                        value={startCore}
+                        onChange={(e) => setStartCore(e.target.value)}
+                        className="h-8 text-xs"
+                        placeholder="0"
+                      />
+                    </div>
+                    <div className="space-y-1">
+                      <label className="text-xs font-medium text-gray-700">Daily Rewards</label>
+                      <Input
+                        type="number"
+                        value={dailyRewards}
+                        onChange={(e) => setDailyRewards(Number(e.target.value))}
+                        className="h-8 text-xs"
+                        min={0}
+                        placeholder="10"
+                      />
+                    </div>
+                    <div className="space-y-1">
+                      <label className="text-xs font-medium text-gray-700">Years</label>
+                      <Input
+                        type="number"
+                        value={yearsToCalculate}
+                        onChange={(e) => setYearsToCalculate(Number(e.target.value))}
+                        className="h-8 text-xs"
+                        min={1}
+                        max={100}
+                        placeholder="30"
+                      />
                     </div>
                   </div>
 
-                  <div className="grid grid-cols-2 gap-6">
-                    <div className="text-center p-4 bg-blue-50 rounded-xl">
-                      <span className="text-sm text-gray-600 block mb-1">Future Core Balance</span>
-                      <span className="text-lg font-bold text-blue-700">
+                  <div className="grid grid-cols-2 gap-3">
+                    <div className="text-center p-3 bg-blue-50 rounded-lg">
+                      <span className="text-xs text-gray-600 block mb-1">Future Core Balance</span>
+                      <span className="text-sm font-bold text-blue-700">
                         ${formatWithSpaces(calculateFutureCore())}
                       </span>
                     </div>
-                    <div className="text-center p-4 bg-green-50 rounded-xl">
-                      <span className="text-sm text-gray-600 block mb-1">Daily Income</span>
-                      <span className="text-lg font-bold text-green-700">
+                    <div className="text-center p-3 bg-green-50 rounded-lg">
+                      <span className="text-xs text-gray-600 block mb-1">Daily Income</span>
+                      <span className="text-sm font-bold text-green-700">
                         ${formatWithSpaces(calculateFutureCore() * DAILY_RATE)}
                       </span>
                     </div>
@@ -581,28 +579,28 @@ export default function FinanceTab() {
           </div>
 
           {/* Time to Target Calculator Card */}
-          <div className="px-6 pb-6">
+          <div className="px-2 pb-2">
             <Card className="w-full bg-white border border-gray-100 shadow-sm">
-              <CardContent className="p-6">
-                <div className="space-y-6">
-                  <div className="flex items-center space-x-3">
+              <CardContent className="p-4">
+                <div className="space-y-4">
+                  <div className="flex items-center space-x-2">
                     <div className="w-2 h-2 bg-purple-400 rounded-full"></div>
-                    <span className="text-lg font-semibold text-gray-900">Time to Target</span>
+                    <span className="text-base font-semibold text-gray-900">Time to Target</span>
                   </div>
 
-                  <div className="space-y-4">
-                    <div className="space-y-2">
-                      <label className="text-sm font-medium text-gray-700">Target Core Amount</label>
-                      <div className="flex gap-3">
+                  <div className="space-y-3">
+                    <div className="space-y-1">
+                      <label className="text-xs font-medium text-gray-700">Target Core Amount</label>
+                      <div className="flex gap-2">
                         <Input
                           type="number"
                           value={targetCoreAmount}
                           onChange={(e) => setTargetCoreAmount(e.target.value)}
-                          className="h-10 text-sm flex-1"
+                          className="h-8 text-xs flex-1"
                           placeholder="Enter target amount"
                         />
                         <Button
-                          className="h-10 px-6"
+                          className="h-8 px-4 text-xs"
                           onClick={calculateTimeToTarget}
                           disabled={!targetCoreAmount || Number(targetCoreAmount) <= coreBalance}
                         >
@@ -612,10 +610,10 @@ export default function FinanceTab() {
                     </div>
 
                     {timeToTarget !== null && (
-                      <div className="p-4 bg-purple-50 rounded-xl">
+                      <div className="p-3 bg-purple-50 rounded-lg">
                         <div className="text-center">
-                          <span className="text-sm text-gray-600 block mb-1">Estimated time to reach target</span>
-                          <span className="text-xl font-bold text-purple-700 mb-2 block">
+                          <span className="text-xs text-gray-600 block mb-1">Estimated time to reach target</span>
+                          <span className="text-lg font-bold text-purple-700 mb-1 block">
                             {formatTimeToTarget(timeToTarget)}
                           </span>
                           <span className="text-xs text-gray-500">
@@ -634,45 +632,45 @@ export default function FinanceTab() {
 
       {/* Action buttons - Wallet Tab */}
       {activeTab === "wallet" && (
-        <div className="px-6 pb-6">
-          <div className="grid grid-cols-2 gap-4">
+        <div className="px-2 pb-2">
+          <div className="grid grid-cols-2 gap-3">
             <Button
-              className="h-16 bg-white border-2 border-blue-100 hover:border-blue-200 hover:bg-blue-50 text-blue-700 font-semibold flex flex-col items-center justify-center space-y-2"
+              className="h-14 bg-white border-2 border-blue-100 hover:border-blue-200 hover:bg-blue-50 text-blue-700 font-semibold flex flex-col items-center justify-center space-y-1"
               onClick={() => setIsTopUpModalOpen(true)}
               disabled={!userId}
             >
-              <Plus className="h-6 w-6" />
-              <span className="text-sm">Top Up</span>
+              <Plus className="h-5 w-5" />
+              <span className="text-xs">Top Up</span>
             </Button>
 
             <Button
-              className="h-16 bg-white border-2 border-green-100 hover:border-green-200 hover:bg-green-50 text-green-700 font-semibold flex flex-col items-center justify-center space-y-2"
+              className="h-14 bg-white border-2 border-green-100 hover:border-green-200 hover:bg-green-50 text-green-700 font-semibold flex flex-col items-center justify-center space-y-1"
               onClick={() => setIsTransferModalOpen(true)}
               disabled={!userId}
             >
-              <ArrowRight className="h-6 w-6" />
-              <span className="text-sm">Transfer to Core</span>
+              <ArrowRight className="h-5 w-5" />
+              <span className="text-xs">Transfer to Core</span>
             </Button>
 
             <Button
-              className="h-16 bg-white border-2 border-purple-100 hover:border-purple-200 hover:bg-purple-50 text-purple-700 font-semibold flex flex-col items-center justify-center space-y-2"
+              className="h-14 bg-white border-2 border-purple-100 hover:border-purple-200 hover:bg-purple-50 text-purple-700 font-semibold flex flex-col items-center justify-center space-y-1"
               onClick={() => setIsSendModalOpen(true)}
             >
-              <Send className="h-6 w-6" />
-              <span className="text-sm">Send</span>
+              <Send className="h-5 w-5" />
+              <span className="text-xs">Send</span>
             </Button>
 
             <Button
-              className="h-16 bg-white border-2 border-orange-100 hover:border-orange-200 hover:bg-orange-50 text-orange-700 font-semibold flex flex-col items-center justify-center space-y-2"
+              className="h-14 bg-white border-2 border-orange-100 hover:border-orange-200 hover:bg-orange-50 text-orange-700 font-semibold flex flex-col items-center justify-center space-y-1"
               disabled
             >
-              <ArrowDown className="h-6 w-6" />
-              <span className="text-sm">Receive</span>
+              <ArrowDown className="h-5 w-5" />
+              <span className="text-xs">Receive</span>
             </Button>
           </div>
 
           {/* TON Connect Button */}
-          <div className="mt-6 p-4 bg-gray-50 rounded-xl border border-gray-100">
+          <div className="mt-4 p-3 bg-gray-50 rounded-lg border border-gray-100">
             <div className="flex justify-center">
               <TonConnectButton />
             </div>
@@ -682,14 +680,14 @@ export default function FinanceTab() {
 
       {/* Core Tab Content */}
       {activeTab === "core" && (
-        <div className="px-6 pb-6 space-y-6">
+        <div className="px-2 pb-2 space-y-4">
           <Button
-            className="w-full h-16 bg-white border-2 border-green-100 hover:border-green-200 hover:bg-green-50 text-green-700 font-semibold flex items-center justify-center space-x-3"
+            className="w-full h-14 bg-white border-2 border-green-100 hover:border-green-200 hover:bg-green-50 text-green-700 font-semibold flex items-center justify-center space-x-2"
             onClick={() => setIsTransferModalOpen(true)}
             disabled={!userId}
           >
-            <ArrowRight className="h-6 w-6" />
-            <span className="text-base">Transfer from Wallet</span>
+            <ArrowRight className="h-5 w-5" />
+            <span className="text-sm">Transfer from Wallet</span>
           </Button>
 
           {/* Core History */}
