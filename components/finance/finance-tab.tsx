@@ -385,62 +385,62 @@ export default function FinanceTab() {
   }
 
   return (
-    <div className="flex flex-col h-full bg-gray-50 pb-20">
+    <div className="flex flex-col h-full bg-white">
       {/* Tabs */}
-      <div className="flex bg-white border-b">
+      <div className="flex bg-white border-b border-gray-100">
         <button
-          className={`flex-1 py-1.5 text-center font-medium text-sm relative ${
+          className={`flex-1 py-3 text-center font-semibold text-base relative ${
             activeTab === "wallet" ? "text-purple-600 border-b-2 border-purple-600" : "text-gray-500"
           }`}
           onClick={() => setActiveTab("wallet")}
         >
-          Wallet👛
+          Wallet
           {hasUnviewedInterest && <NotificationDot />}
         </button>
         <button
-          className={`flex-1 py-1.5 text-center font-medium text-sm relative ${
+          className={`flex-1 py-3 text-center font-semibold text-base relative ${
             activeTab === "core" ? "text-purple-600 border-b-2 border-purple-600" : "text-gray-500"
           }`}
           onClick={() => setActiveTab("core")}
         >
-          Core⚛️
+          Core
           {hasUnviewedInterest && <NotificationDot />}
         </button>
       </div>
 
       {/* Balance card */}
-      <div className="p-2">
-        <div className="bg-gradient-to-r from-purple-500 to-blue-500 rounded-xl p-2 text-white">
-          <div className="flex justify-between items-start">
+      <div className="p-6">
+        <div className="bg-gradient-to-r from-purple-500 to-blue-500 rounded-2xl p-6 text-white shadow-lg">
+          <div className="flex justify-between items-start mb-4">
             <div>
-              <p className="text-xs opacity-90">{activeTab === "wallet" ? "Wallet Balance" : "Core Balance"}</p>
-              <h1 className="text-2xl font-bold mt-0.5">
+              <p className="text-sm opacity-90 font-medium">{activeTab === "wallet" ? "Wallet Balance" : "Core Balance"}</p>
+              <h1 className="text-3xl font-bold mt-1">
                 ${activeTab === "wallet" ? walletBalance.toFixed(2) : coreBalance.toFixed(2)}
               </h1>
             </div>
             <Button
               variant="outline"
               size="sm"
-              className="bg-white/20 text-white border-white/40 hover:bg-white/30 h-7"
+              className="bg-white/20 text-white border-white/40 hover:bg-white/30"
               onClick={refreshUserData}
             >
-              <RefreshCw className="h-3.5 w-3.5 mr-1" />
+              <RefreshCw className="h-4 w-4 mr-2" />
               Refresh
             </Button>
           </div>
 
           {/* Level Progress - Only show in Core tab */}
           {activeTab === "core" && (
-            <div className="mt-2 space-y-1.5">
+            <div className="space-y-3">
               {(() => {
                 const { currentLevel, nextLevelThreshold, progressPercentage } = calculateLevelProgress(coreBalance);
                 return (
                   <>
-                    <div className="flex justify-between text-xs">
+                    <div className="flex justify-between text-sm">
                       <span className="font-medium">Level {currentLevel}</span>
-                      <span>${coreBalance.toFixed(2)} / ${nextLevelThreshold}</span>
+                      <span className="opacity-90">${coreBalance.toFixed(2)} / ${nextLevelThreshold}</span>
                     </div>
-                    <Progress value={progressPercentage} className="h-1.5 bg-white/20" />
+                    <Progress value={progressPercentage} className="h-2 bg-white/20 rounded-full" />
                   </>
                 );
               })()}
@@ -450,59 +450,58 @@ export default function FinanceTab() {
       </div>
 
       {/* Daily Income Card */}
-      <div className="px-2">
-        <Card className="w-full bg-gradient-to-r from-purple-500/10 to-blue-500/10">
-          <CardContent className="p-2">
-            <div className="flex flex-col space-y-2">
+      <div className="px-6 pb-6">
+        <Card className="w-full bg-white border border-gray-100 shadow-sm">
+          <CardContent className="p-6">
+            <div className="space-y-6">
               <div className="flex items-center justify-between">
-                <div className="flex items-center space-x-2">
-                  <div className="w-1.5 h-1.5 bg-green-400 rounded-full"></div>
-                  <span className="text-sm font-medium">Daily Income</span>
+                <div className="flex items-center space-x-3">
+                  <div className="w-2 h-2 bg-green-400 rounded-full"></div>
+                  <span className="text-lg font-semibold text-gray-900">Daily Income</span>
                 </div>
-                <span className="text-sm font-medium text-green-600">
+                <span className="text-lg font-bold text-green-600">
                   ${calculateDailyIncome(coreBalance).total.toFixed(8)}
                 </span>
               </div>
 
-              <div className="space-y-1">
+              <div className="space-y-4">
                 <div className="flex items-center justify-between">
-                  <span className="text-xs text-gray-500 w-16">Reinvest %</span>
-                  <div className="flex items-center">
+                  <span className="text-sm font-medium text-gray-700">Reinvest Percentage</span>
+                  <div className="flex items-center space-x-3">
                     <Input
                       type="number"
                       value={reinvestPercentage}
                       onChange={(e) => handleReinvestChange(e.target.value)}
-                      className="h-6 text-sm w-20"
+                      className="h-10 text-sm w-20 text-center font-medium"
                       min={calculateMinReinvest(coreBalance)}
                       max={100}
                     />
-                    <div className="w-8 flex justify-center">
-                      {isReinvestChanged && (
-                        <Button
-                          size="sm"
-                          variant="ghost"
-                          className="h-6 w-6 p-0"
-                          onClick={handleSaveReinvest}
-                        >
-                          <Check className="h-3.5 w-3.5 text-green-500" />
-                        </Button>
-                      )}
-                    </div>
+                    <span className="text-sm text-gray-500">%</span>
+                    {isReinvestChanged && (
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        className="h-8 px-3"
+                        onClick={handleSaveReinvest}
+                      >
+                        <Check className="h-4 w-4 text-green-500" />
+                      </Button>
+                    )}
                   </div>
                 </div>
-                <Progress value={reinvestPercentage} className="h-1.5" />
+                <Progress value={reinvestPercentage} className="h-2 bg-gray-100" />
               </div>
 
-              <div className="grid grid-cols-2 gap-4 pt-1">
-                <div className="flex flex-col">
-                  <span className="text-xs text-gray-500">To Core</span>
-                  <span className="text-sm font-medium text-green-600">
+              <div className="grid grid-cols-2 gap-6">
+                <div className="text-center p-4 bg-green-50 rounded-xl">
+                  <span className="text-sm text-gray-600 block mb-1">To Core</span>
+                  <span className="text-base font-bold text-green-700">
                     ${calculateDailyIncome(coreBalance).toCore.toFixed(8)}
                   </span>
                 </div>
-                <div className="flex flex-col">
-                  <span className="text-xs text-gray-500">To Wallet</span>
-                  <span className="text-sm font-medium text-green-600">
+                <div className="text-center p-4 bg-blue-50 rounded-xl">
+                  <span className="text-sm text-gray-600 block mb-1">To Wallet</span>
+                  <span className="text-base font-bold text-blue-700">
                     ${calculateDailyIncome(coreBalance).toWallet.toFixed(8)}
                   </span>
                 </div>
@@ -515,60 +514,63 @@ export default function FinanceTab() {
       {/* Core Growth Calculator Card */}
       {activeTab === "core" && (
         <>
-          <div className="px-2">
-            <Card className="w-full bg-gradient-to-r from-purple-500/10 to-blue-500/10">
-              <CardContent className="p-2">
-                <div className="flex flex-col space-y-2">
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center space-x-2">
-                      <div className="w-1.5 h-1.5 bg-blue-400 rounded-full"></div>
-                      <span className="text-sm font-medium">Core Growth Calculator</span>
+          <div className="px-6 pb-6">
+            <Card className="w-full bg-white border border-gray-100 shadow-sm">
+              <CardContent className="p-6">
+                <div className="space-y-6">
+                  <div className="flex items-center space-x-3">
+                    <div className="w-2 h-2 bg-blue-400 rounded-full"></div>
+                    <span className="text-lg font-semibold text-gray-900">Core Growth Calculator</span>
+                  </div>
+
+                  <div className="grid grid-cols-1 gap-4">
+                    <div className="grid grid-cols-3 gap-4">
+                      <div className="space-y-2">
+                        <label className="text-sm font-medium text-gray-700">Start Core</label>
+                        <Input
+                          type="number"
+                          value={startCore}
+                          onChange={(e) => setStartCore(e.target.value)}
+                          className="h-10 text-sm"
+                          placeholder="0"
+                        />
+                      </div>
+                      <div className="space-y-2">
+                        <label className="text-sm font-medium text-gray-700">Daily Rewards</label>
+                        <Input
+                          type="number"
+                          value={dailyRewards}
+                          onChange={(e) => setDailyRewards(Number(e.target.value))}
+                          className="h-10 text-sm"
+                          min={0}
+                          placeholder="10"
+                        />
+                      </div>
+                      <div className="space-y-2">
+                        <label className="text-sm font-medium text-gray-700">Years</label>
+                        <Input
+                          type="number"
+                          value={yearsToCalculate}
+                          onChange={(e) => setYearsToCalculate(Number(e.target.value))}
+                          className="h-10 text-sm"
+                          min={1}
+                          max={100}
+                          placeholder="30"
+                        />
+                      </div>
                     </div>
                   </div>
 
-                  <div className="grid grid-cols-3 gap-1">
-                    <div>
-                      <label className="text-xs text-gray-500">Start Core $</label>
-                      <Input
-                        type="number"
-                        value={startCore}
-                        onChange={(e) => setStartCore(e.target.value)}
-                        className="h-6 text-sm mt-1"
-                      />
-                    </div>
-                    <div>
-                      <label className="text-xs text-gray-500">Daily Rewards $/d</label>
-                      <Input
-                        type="number"
-                        value={dailyRewards}
-                        onChange={(e) => setDailyRewards(Number(e.target.value))}
-                        className="h-6 text-sm mt-1"
-                        min={0}
-                      />
-                    </div>
-                    <div>
-                      <label className="text-xs text-gray-500">Years</label>
-                      <Input
-                        type="number"
-                        value={yearsToCalculate}
-                        onChange={(e) => setYearsToCalculate(Number(e.target.value))}
-                        className="h-6 text-sm mt-1"
-                        min={1}
-                        max={100}
-                      />
-                    </div>
-                  </div>
-
-                  <div className="flex items-center justify-between">
-                    <div className="flex flex-col">
-                      <span className="text-xs text-gray-500">Future Core Balance</span>
-                      <span className="text-sm font-medium text-blue-600">
+                  <div className="grid grid-cols-2 gap-6">
+                    <div className="text-center p-4 bg-blue-50 rounded-xl">
+                      <span className="text-sm text-gray-600 block mb-1">Future Core Balance</span>
+                      <span className="text-lg font-bold text-blue-700">
                         ${formatWithSpaces(calculateFutureCore())}
                       </span>
                     </div>
-                    <div className="flex flex-col">
-                      <span className="text-xs text-gray-500">Daily Income</span>
-                      <span className="text-sm font-medium text-green-600">
+                    <div className="text-center p-4 bg-green-50 rounded-xl">
+                      <span className="text-sm text-gray-600 block mb-1">Daily Income</span>
+                      <span className="text-lg font-bold text-green-700">
                         ${formatWithSpaces(calculateFutureCore() * DAILY_RATE)}
                       </span>
                     </div>
@@ -579,49 +581,50 @@ export default function FinanceTab() {
           </div>
 
           {/* Time to Target Calculator Card */}
-          <div className="px-2">
-            <Card className="w-full bg-gradient-to-r from-purple-500/10 to-blue-500/10">
-              <CardContent className="p-2">
-                <div className="flex flex-col space-y-2">
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center space-x-2">
-                      <div className="w-1.5 h-1.5 bg-purple-400 rounded-full"></div>
-                      <span className="text-sm font-medium">Time to Target</span>
-                    </div>
+          <div className="px-6 pb-6">
+            <Card className="w-full bg-white border border-gray-100 shadow-sm">
+              <CardContent className="p-6">
+                <div className="space-y-6">
+                  <div className="flex items-center space-x-3">
+                    <div className="w-2 h-2 bg-purple-400 rounded-full"></div>
+                    <span className="text-lg font-semibold text-gray-900">Time to Target</span>
                   </div>
 
-                  <div className="flex gap-2 items-end">
-                    <div className="flex-1">
-                      <label className="text-xs text-gray-500">Target Core Amount $</label>
-                      <Input
-                        type="number"
-                        value={targetCoreAmount}
-                        onChange={(e) => setTargetCoreAmount(e.target.value)}
-                        className="h-6 text-sm mt-1"
-                      />
-                    </div>
-                    <Button
-                      className="h-6 text-xs"
-                      onClick={calculateTimeToTarget}
-                      disabled={!targetCoreAmount || Number(targetCoreAmount) <= coreBalance}
-                    >
-                      Calculate
-                    </Button>
-                  </div>
-
-                  {timeToTarget !== null && (
-                    <div className="flex items-center justify-between text-sm">
-                      <div className="flex items-center space-x-1">
-                        <span className="text-gray-500">Estimated time:</span>
-                        <span className="font-medium">
-                          {formatTimeToTarget(timeToTarget)}
-                        </span>
+                  <div className="space-y-4">
+                    <div className="space-y-2">
+                      <label className="text-sm font-medium text-gray-700">Target Core Amount</label>
+                      <div className="flex gap-3">
+                        <Input
+                          type="number"
+                          value={targetCoreAmount}
+                          onChange={(e) => setTargetCoreAmount(e.target.value)}
+                          className="h-10 text-sm flex-1"
+                          placeholder="Enter target amount"
+                        />
+                        <Button
+                          className="h-10 px-6"
+                          onClick={calculateTimeToTarget}
+                          disabled={!targetCoreAmount || Number(targetCoreAmount) <= coreBalance}
+                        >
+                          Calculate
+                        </Button>
                       </div>
-                      <span className="text-xs text-gray-500">
-                        {new Date(Date.now() + timeToTarget * 24 * 60 * 60 * 1000).toLocaleDateString()}
-                      </span>
                     </div>
-                  )}
+
+                    {timeToTarget !== null && (
+                      <div className="p-4 bg-purple-50 rounded-xl">
+                        <div className="text-center">
+                          <span className="text-sm text-gray-600 block mb-1">Estimated time to reach target</span>
+                          <span className="text-xl font-bold text-purple-700 mb-2 block">
+                            {formatTimeToTarget(timeToTarget)}
+                          </span>
+                          <span className="text-xs text-gray-500">
+                            Target date: {new Date(Date.now() + timeToTarget * 24 * 60 * 60 * 1000).toLocaleDateString()}
+                          </span>
+                        </div>
+                      </div>
+                    )}
+                  </div>
                 </div>
               </CardContent>
             </Card>
@@ -631,85 +634,63 @@ export default function FinanceTab() {
 
       {/* Action buttons - Wallet Tab */}
       {activeTab === "wallet" && (
-        <div className="px-2 grid grid-cols-2 gap-1">
-          <Card className="bg-gradient-to-r from-purple-500/10 to-blue-500/10">
-            <CardContent className="p-2 flex flex-col items-center justify-center">
-              <button
-                className="w-full h-full flex flex-col items-center py-1.5"
-                onClick={() => setIsTopUpModalOpen(true)}
-                disabled={!userId}
-              >
-                <div className="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center mb-1.5">
-                  <Plus className="h-4 w-4 text-blue-500" />
-                </div>
-                <p className="text-sm font-medium">Top Up</p>
-              </button>
-            </CardContent>
-          </Card>
+        <div className="px-6 pb-6">
+          <div className="grid grid-cols-2 gap-4">
+            <Button
+              className="h-16 bg-white border-2 border-blue-100 hover:border-blue-200 hover:bg-blue-50 text-blue-700 font-semibold flex flex-col items-center justify-center space-y-2"
+              onClick={() => setIsTopUpModalOpen(true)}
+              disabled={!userId}
+            >
+              <Plus className="h-6 w-6" />
+              <span className="text-sm">Top Up</span>
+            </Button>
 
-          <Card className="bg-gradient-to-r from-purple-500/10 to-blue-500/10">
-            <CardContent className="p-2 flex flex-col items-center justify-center">
-              <button
-                className="w-full h-full flex flex-col items-center py-1.5"
-                onClick={() => setIsTransferModalOpen(true)}
-                disabled={!userId}
-              >
-                <div className="w-8 h-8 bg-green-100 rounded-full flex items-center justify-center mb-1.5">
-                  <ArrowRight className="h-4 w-4 text-green-500" />
-                </div>
-                <p className="text-sm font-medium">Transfer to Core</p>
-              </button>
-            </CardContent>
-          </Card>
+            <Button
+              className="h-16 bg-white border-2 border-green-100 hover:border-green-200 hover:bg-green-50 text-green-700 font-semibold flex flex-col items-center justify-center space-y-2"
+              onClick={() => setIsTransferModalOpen(true)}
+              disabled={!userId}
+            >
+              <ArrowRight className="h-6 w-6" />
+              <span className="text-sm">Transfer to Core</span>
+            </Button>
 
-          <Card className="bg-gradient-to-r from-purple-500/10 to-blue-500/10">
-            <CardContent className="p-2 flex flex-col items-center justify-center">
-              <button
-                className="w-full h-full flex flex-col items-center py-1.5"
-                onClick={() => setIsSendModalOpen(true)}
-              >
-                <div className="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center mb-1.5">
-                  <Send className="h-4 w-4 text-blue-500" />
-                </div>
-                <p className="text-sm font-medium">Send</p>
-              </button>
-            </CardContent>
-          </Card>
+            <Button
+              className="h-16 bg-white border-2 border-purple-100 hover:border-purple-200 hover:bg-purple-50 text-purple-700 font-semibold flex flex-col items-center justify-center space-y-2"
+              onClick={() => setIsSendModalOpen(true)}
+            >
+              <Send className="h-6 w-6" />
+              <span className="text-sm">Send</span>
+            </Button>
 
-          <Card className="bg-gradient-to-r from-purple-500/10 to-blue-500/10">
-            <CardContent className="p-2 flex flex-col items-center justify-center">
-              <div className="w-8 h-8 bg-green-100 rounded-full flex items-center justify-center mb-1.5">
-                <ArrowDown className="h-4 w-4 text-green-500" />
-              </div>
-              <p className="text-sm font-medium">Receive</p>
-            </CardContent>
-          </Card>
+            <Button
+              className="h-16 bg-white border-2 border-orange-100 hover:border-orange-200 hover:bg-orange-50 text-orange-700 font-semibold flex flex-col items-center justify-center space-y-2"
+              disabled
+            >
+              <ArrowDown className="h-6 w-6" />
+              <span className="text-sm">Receive</span>
+            </Button>
+          </div>
 
-          <Card className="bg-gradient-to-r from-purple-500/10 to-blue-500/10 col-span-2">
-            <CardContent className="p-2 flex flex-col items-center justify-center">
+          {/* TON Connect Button */}
+          <div className="mt-6 p-4 bg-gray-50 rounded-xl border border-gray-100">
+            <div className="flex justify-center">
               <TonConnectButton />
-            </CardContent>
-          </Card>
+            </div>
+          </div>
         </div>
       )}
 
       {/* Core Tab Content */}
       {activeTab === "core" && (
-        <div className="px-2 space-y-4 pb-20">
-          <Card className="bg-gradient-to-r from-purple-500/10 to-blue-500/10">
-            <CardContent className="p-2 flex flex-col items-center justify-center">
-              <button
-                className="w-full h-full flex flex-col items-center py-1.5"
-                onClick={() => setIsTransferModalOpen(true)}
-                disabled={!userId}
-              >
-                <div className="w-8 h-8 bg-green-100 rounded-full flex items-center justify-center mb-1.5">
-                  <ArrowRight className="h-4 w-4 text-green-500" />
-                </div>
-                <p className="text-sm font-medium">Transfer from Wallet</p>
-              </button>
-            </CardContent>
-          </Card>
+        <div className="px-6 pb-6 space-y-6">
+          <Button
+            className="w-full h-16 bg-white border-2 border-green-100 hover:border-green-200 hover:bg-green-50 text-green-700 font-semibold flex items-center justify-center space-x-3"
+            onClick={() => setIsTransferModalOpen(true)}
+            disabled={!userId}
+          >
+            <ArrowRight className="h-6 w-6" />
+            <span className="text-base">Transfer from Wallet</span>
+          </Button>
 
           {/* Core History */}
           {userId && <CoreHistory userId={userId} />}
