@@ -689,7 +689,7 @@ export default function FinanceTab() {
 
       {/* Core Tab Content */}
       {activeTab === "core" && (
-        <div className="px-2 pb-2 space-y-4">
+        <div className="px-2 pb-20 space-y-4">
           <Button
             className="w-full h-14 bg-white border-2 border-green-100 hover:border-green-200 hover:bg-green-50 text-green-700 font-semibold flex items-center justify-center space-x-2"
             onClick={() => setIsTransferModalOpen(true)}
@@ -784,6 +784,7 @@ export default function FinanceTab() {
           interestAmount={unviewedInterestAmount}
         />
       )}
+      
     </div>
   )
 }
