@@ -69,6 +69,19 @@ export default function FinanceTab() {
   // Daily APY rate (0.0633% per day = 26% APY)
   const DAILY_RATE = 0.000633
 
+  // Calculate APY based on reinvest percentage
+  const calculateAPY = (reinvestPercent: number) => {
+    // Base annual rate from daily income
+    const baseAnnualRate = DAILY_RATE * 365.25
+
+    // Effective growth rate considering compounding
+    const effectiveDailyRate = DAILY_RATE * (reinvestPercent / 100)
+    const growthAPY = Math.pow(1 + effectiveDailyRate, 365) - 1
+
+    // Show growth APY for compounding effect, but minimum is base annual rate
+    return Math.max(baseAnnualRate, growthAPY) * 100
+  }
+
   // Format number with spaces for thousands
   const formatWithSpaces = (num: number) => {
     const [int, dec] = num.toFixed(2).split('.');
@@ -464,7 +477,10 @@ export default function FinanceTab() {
               <div className="flex items-center justify-between">
                 <div className="flex items-center space-x-2">
                   <div className="w-2 h-2 bg-green-400 rounded-full"></div>
-                  <span className="text-base font-semibold text-gray-900">Daily Income</span>
+                  <div className="flex flex-col">
+                    <span className="text-base font-semibold text-gray-900">Daily Income</span>
+                    <span className="text-xs text-gray-500">APY: {calculateAPY(reinvestPercentage).toFixed(2)}%</span>
+                  </div>
                 </div>
                 <span className="text-base font-bold text-green-600">
                   ${calculateDailyIncome(coreBalance).total.toFixed(8)}
