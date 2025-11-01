@@ -42,10 +42,10 @@ export default function FinanceTab() {
   const [reinvestPercentage, setReinvestPercentage] = useState(100)
   const [isReinvestChanged, setIsReinvestChanged] = useState(false)
   const { toast } = useToast()
-  const [startCore, setStartCore] = useState(0)
+  const [startCore, setStartCore] = useState<string>('0')
   const [dailyRewards, setDailyRewards] = useState(10)
   const [yearsToCalculate, setYearsToCalculate] = useState(30)
-  const [targetCoreAmount, setTargetCoreAmount] = useState<number>(0)
+  const [targetCoreAmount, setTargetCoreAmount] = useState<string>('0')
   const [timeToTarget, setTimeToTarget] = useState<number | null>(null)
   const [hasCalculated, setHasCalculated] = useState(false)
   const [statusMessage, setStatusMessage] = useState<{ type: 'success' | 'error', text: string } | null>(null)
@@ -68,6 +68,13 @@ export default function FinanceTab() {
   // Daily APY rate (0.0633% per day = 26% APY)
   const DAILY_RATE = 0.000633
 
+  // Format number with spaces for thousands
+  const formatWithSpaces = (num: number) => {
+    const [int, dec] = num.toFixed(2).split('.');
+    const formattedInt = int.replace(/\B(?=(\d{3})+(?!\d))/g, ' ');
+    return `${formattedInt}.${dec}`;
+  }
+
   // Update local state when dbUser changes
   useEffect(() => {
     if (dbUser) {
@@ -86,7 +93,7 @@ export default function FinanceTab() {
 
   // Update startCore when coreBalance changes
   useEffect(() => {
-    setStartCore(coreBalance)
+    setStartCore(coreBalance.toString())
   }, [coreBalance])
 
   // Calculate daily income
@@ -133,12 +140,13 @@ export default function FinanceTab() {
   // Calculate core value at specific day
   const calculateCoreAtDay = (days: number) => {
     const reinvestRate = DAILY_RATE * (reinvestPercentage / 100);
+    const startCoreNum = parseFloat(startCore) || 0;
     // Initial core with compound interest
-    const futureInitialCore = startCore * Math.pow(1 + reinvestRate, days)
-    
+    const futureInitialCore = startCoreNum * Math.pow(1 + reinvestRate, days)
+
     // Daily rewards with compound interest
     const futureDailyRewards = dailyRewards * ((Math.pow(1 + reinvestRate, days) - 1) / reinvestRate)
-    
+
     return futureInitialCore + futureDailyRewards
   }
 
@@ -146,14 +154,15 @@ export default function FinanceTab() {
   const calculateFutureCore = () => {
     const daysToCalculate = yearsToCalculate * 365.25
     const reinvestRate = DAILY_RATE * (reinvestPercentage / 100);
-    
+    const startCoreNum = parseFloat(startCore) || 0;
+
     // Calculate future value of initial core with compound interest
-    const futureInitialCore = startCore * Math.pow(1 + reinvestRate, daysToCalculate)
-    
+    const futureInitialCore = startCoreNum * Math.pow(1 + reinvestRate, daysToCalculate)
+
     // Calculate future value of daily rewards with compound interest
     // Using the formula for sum of geometric sequence with daily compounding
     const futureDailyRewards = dailyRewards * ((Math.pow(1 + reinvestRate, daysToCalculate) - 1) / reinvestRate)
-    
+
     return futureInitialCore + futureDailyRewards
   }
 
@@ -196,9 +205,9 @@ export default function FinanceTab() {
 
   // Calculate time to target
   const calculateTimeToTarget = () => {
-    if (!targetCoreAmount || targetCoreAmount <= coreBalance) return;
-    
-    const days = findDaysToTarget(targetCoreAmount);
+    if (!targetCoreAmount || Number(targetCoreAmount) <= coreBalance) return;
+
+    const days = findDaysToTarget(Number(targetCoreAmount));
     setTimeToTarget(days);
     setHasCalculated(true);
     // Store state in localStorage for task verification
@@ -523,9 +532,8 @@ export default function FinanceTab() {
                       <Input
                         type="number"
                         value={startCore}
-                        onChange={(e) => setStartCore(Number(e.target.value))}
+                        onChange={(e) => setStartCore(e.target.value)}
                         className="h-6 text-sm mt-1"
-                        min={0}
                       />
                     </div>
                     <div>
@@ -555,13 +563,13 @@ export default function FinanceTab() {
                     <div className="flex flex-col">
                       <span className="text-xs text-gray-500">Future Core Balance</span>
                       <span className="text-sm font-medium text-blue-600">
-                        ${calculateFutureCore().toFixed(2)}
+                        ${formatWithSpaces(calculateFutureCore())}
                       </span>
                     </div>
                     <div className="flex flex-col">
                       <span className="text-xs text-gray-500">Daily Income</span>
                       <span className="text-sm font-medium text-green-600">
-                        ${(calculateFutureCore() * DAILY_RATE).toFixed(2)}
+                        ${formatWithSpaces(calculateFutureCore() * DAILY_RATE)}
                       </span>
                     </div>
                   </div>
@@ -588,15 +596,14 @@ export default function FinanceTab() {
                       <Input
                         type="number"
                         value={targetCoreAmount}
-                        onChange={(e) => setTargetCoreAmount(Number(e.target.value))}
+                        onChange={(e) => setTargetCoreAmount(e.target.value)}
                         className="h-6 text-sm mt-1"
-                        min={0}
                       />
                     </div>
-                    <Button 
+                    <Button
                       className="h-6 text-xs"
                       onClick={calculateTimeToTarget}
-                      disabled={!targetCoreAmount || targetCoreAmount <= coreBalance}
+                      disabled={!targetCoreAmount || Number(targetCoreAmount) <= coreBalance}
                     >
                       Calculate
                     </Button>
@@ -791,4 +798,4 @@ export default function FinanceTab() {
       )}
     </div>
   )
-} 
+}

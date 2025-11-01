@@ -289,7 +289,7 @@ export default function ChallengesTab() {
           <div className="relative flex-1">
             <input
               type="text"
-              placeholder="Search challenges..."
+              placeholder="Search"
               className="w-full pl-10 pr-4 py-2 bg-gray-100 border-none rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:outline-none"
             />
             <div className="absolute left-3 top-1/2 transform -translate-y-1/2">
