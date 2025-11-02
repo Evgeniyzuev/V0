@@ -72,7 +72,7 @@ export default function Roadmap() {
       {/* Контейнер маршрута */}
       <div className="relative z-10 flex flex-col items-center py-8">
         {/* Вертикальная линия маршрута */}
-        <div className="absolute left-1/2 transform -translate-x-1/2 top-0 bottom-0 w-1 bg-gradient-to-b from-purple-400 via-purple-300 to-purple-200 opacity-70" />
+        <div className="absolute left-1/2 transform -translate-x-1/2 top-0 bottom-0 w-2 bg-yellow-400 opacity-50" />
 
         {roadmapPoints.map((point, index) => (
           <React.Fragment key={point.id}>
@@ -92,7 +92,7 @@ export default function Roadmap() {
                   </>
                 )}
               </div>
-              <div className={`mt-3 text-center px-4 ${point.current ? 'text-white' : 'text-gray-800'}`}>
+              <div className={`mt-3 text-center px-4 ${point.current || point.id === 'next-level' ? 'text-white' : 'text-gray-800'}`}>
                 <h3 className="font-semibold text-lg">{point.title}</h3>
                 <p className="text-sm text-gray-200">{point.description}</p>
               </div>
@@ -105,29 +105,8 @@ export default function Roadmap() {
           </React.Fragment>
         ))}
 
-        {/* Указатель местоположения внизу */}
-        <div className="flex flex-col items-center mt-8 relative z-20">
-          {/* Тень указателя */}
-          <div className="absolute inset-0 bg-purple-400 rounded-full blur-xl opacity-30 scale-150" />
-
-          {/* Основной указатель */}
-          <div className="relative w-20 h-20 bg-gradient-to-b from-purple-600 to-purple-700 rounded-full flex items-center justify-center shadow-2xl">
-            <span className="text-4xl text-white animate-bounce">⬆️</span>
-          </div>
-          
-          {/* Внутренний круг для эффекта */}
-          <div className="absolute inset-2 bg-white rounded-full opacity-20" />
-
-          <div className="mt-4 text-center text-white">
-            <p className="text-sm font-semibold">Ваше местоположение</p>
-            <p className="text-xs text-gray-200 mt-1">Двигайтесь вверх к цели</p>
-          </div>
-
-          {/* Индикатор прогресса */}
-          <div className="mt-4 w-32 h-2 bg-gray-200 rounded-full overflow-hidden">
-            <div className="h-full w-3/4 bg-gradient-to-r from-purple-500 to-purple-600 rounded-full" />
-          </div>
-          <p className="text-xs text-gray-200 mt-1">75% завершено</p>
+        <div className="absolute bottom-4 left-1/2 transform -translate-x-1/2 z-20">
+          <img src="https://blush-keen-constrictor-906.mypinata.cloud/ipfs/bafkreiatl6gzgkkyl5ov2cqipgmigqzp4np3b53dx4ic3e77krt7p5iedi" className="w-20 h-20" />
         </div>
       </div>
 {/* // Добавим ключевые кадры для анимации фона через глобальные стили или styled-components */}
