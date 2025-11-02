@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState, useEffect, useCallback } from "react"
 import { Calendar, Tag, ChevronDown, ChevronUp, Check, User, Trophy, X } from "lucide-react"
 import { createClientSupabaseClient } from "@/lib/supabase"
 import { useUser } from "@/components/UserContext"
@@ -51,32 +51,26 @@ export default function ChallengesTab() {
   } | null>(null)
   const [selectedTask, setSelectedTask] = useState<Challenge | null>(null)
 
+  const onTaskComplete = useCallback((taskNumber: number, reward: number, oldCore: number, newCore: number) => {
+    setCompletionModal({
+      isOpen: true,
+      taskNumber,
+      reward,
+      oldCore,
+      newCore
+    });
+  }, [])
+
   const { verifying, handleTaskVerification, verifyTask }: { verifying: boolean; handleTaskVerification: (taskNumber: number, currentGoals: any[] | null) => Promise<void>; verifyTask: (taskNumber: number) => void } = useTaskVerification({
     dbUser,
     refreshUserData,
     setStatusMessage,
-    onTaskComplete: (taskNumber: number, reward: number, oldCore: number, newCore: number) => {
-      setCompletionModal({
-        isOpen: true,
-        taskNumber,
-        reward,
-        oldCore,
-        newCore
-      });
-    }
+    onTaskComplete
   })
 
-  useEffect(() => {
-    if (dbUser?.id) {
-      fetchTasks()
-    } else if (!isUserLoading) {
-      setLoading(false)
-    }
-  }, [dbUser?.id, isUserLoading])
-
-  const fetchTasks = async () => {
+  const fetchTasks = useCallback(async () => {
     if (!dbUser?.id) return;
-    
+
     try {
       setLoading(true)
       setError(null)
@@ -113,7 +107,15 @@ export default function ChallengesTab() {
     } finally {
       setLoading(false)
     }
-  }
+  }, [dbUser?.id])
+
+  useEffect(() => {
+    if (dbUser?.id) {
+      fetchTasks()
+    } else if (!isUserLoading) {
+      setLoading(false)
+    }
+  }, [dbUser?.id, isUserLoading, fetchTasks])
 
   const toggleTaskExpansion = (taskNumber: number) => {
     if (expandedTaskId === taskNumber) {
