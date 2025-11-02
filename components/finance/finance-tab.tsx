@@ -44,8 +44,8 @@ export default function FinanceTab() {
   const [isReinvestChanged, setIsReinvestChanged] = useState(false)
   const { toast } = useToast()
   const [startCore, setStartCore] = useState<string>('0')
-  const [dailyRewards, setDailyRewards] = useState(10)
-  const [yearsToCalculate, setYearsToCalculate] = useState(30)
+  const [dailyRewards, setDailyRewards] = useState<string>('10')
+  const [yearsToCalculate, setYearsToCalculate] = useState<string>('30')
   const [targetCoreAmount, setTargetCoreAmount] = useState<string>('0')
   const [timeToTarget, setTimeToTarget] = useState<number | null>(null)
   const [hasCalculated, setHasCalculated] = useState(false)
@@ -148,27 +148,30 @@ export default function FinanceTab() {
   const calculateCoreAtDay = (days: number) => {
     const reinvestRate = DAILY_RATE * (reinvestPercentage / 100);
     const startCoreNum = parseFloat(startCore) || 0;
+    const dailyRewardsNum = parseFloat(dailyRewards) || 0;
     // Initial core with compound interest
     const futureInitialCore = startCoreNum * Math.pow(1 + reinvestRate, days)
 
     // Daily rewards with compound interest
-    const futureDailyRewards = dailyRewards * ((Math.pow(1 + reinvestRate, days) - 1) / reinvestRate)
+    const futureDailyRewards = dailyRewardsNum * ((Math.pow(1 + reinvestRate, days) - 1) / reinvestRate)
 
     return futureInitialCore + futureDailyRewards
   }
 
   // Calculate future core value using compound interest with daily rewards
   const calculateFutureCore = () => {
-    const daysToCalculate = yearsToCalculate * 365.25
+    const yearsNum = parseFloat(yearsToCalculate) || 0;
+    const daysToCalculate = yearsNum * 365.25
     const reinvestRate = DAILY_RATE * (reinvestPercentage / 100);
     const startCoreNum = parseFloat(startCore) || 0;
+    const dailyRewardsNum = parseFloat(dailyRewards) || 0;
 
     // Calculate future value of initial core with compound interest
     const futureInitialCore = startCoreNum * Math.pow(1 + reinvestRate, daysToCalculate)
 
     // Calculate future value of daily rewards with compound interest
     // Using the formula for sum of geometric sequence with daily compounding
-    const futureDailyRewards = dailyRewards * ((Math.pow(1 + reinvestRate, daysToCalculate) - 1) / reinvestRate)
+    const futureDailyRewards = dailyRewardsNum * ((Math.pow(1 + reinvestRate, daysToCalculate) - 1) / reinvestRate)
 
     return futureInitialCore + futureDailyRewards
   }
@@ -548,7 +551,7 @@ export default function FinanceTab() {
                       <Input
                         type="number"
                         value={dailyRewards}
-                        onChange={(e) => setDailyRewards(Number(e.target.value))}
+                        onChange={(e) => setDailyRewards(e.target.value)}
                         className="h-8 text-xs"
                         min={0}
                         placeholder="10"
@@ -559,7 +562,7 @@ export default function FinanceTab() {
                       <Input
                         type="number"
                         value={yearsToCalculate}
-                        onChange={(e) => setYearsToCalculate(Number(e.target.value))}
+                        onChange={(e) => setYearsToCalculate(e.target.value)}
                         className="h-8 text-xs"
                         min={1}
                         max={100}
