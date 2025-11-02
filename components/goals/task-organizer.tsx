@@ -49,15 +49,20 @@ export default function TaskOrganizer() {
   const [newTaskTitle, setNewTaskTitle] = useState("")
 
   // Tabata timer states
-  const [workDuration, setWorkDuration] = useState(20)
-  const [restDuration, setRestDuration] = useState(10)
+  const [workDurationInput, setWorkDurationInput] = useState("")
+  const [restDurationInput, setRestDurationInput] = useState("")
+  const [roundsInput, setRoundsInput] = useState("")
+  const [workDurationMinutes, setWorkDurationMinutes] = useState(0.33) // 20 seconds in minutes
+  const [restDurationMinutes, setRestDurationMinutes] = useState(0.17) // 10 seconds in minutes
   const [rounds, setRounds] = useState(8)
   const [isRunning, setIsRunning] = useState(false)
+  const [hasStarted, setHasStarted] = useState(false)
   const [currentRound, setCurrentRound] = useState(0)
   const [isWorkPhase, setIsWorkPhase] = useState(true)
-  const [timeLeft, setTimeLeft] = useState(workDuration)
+  const [timeLeft, setTimeLeft] = useState(20) // in seconds
   const [totalWorkTime, setTotalWorkTime] = useState(0)
   const [history, setHistory] = useState<HistoryEntry[]>([])
+  const [isBlinking, setIsBlinking] = useState(false)
 
   // Load history from localStorage on mount
   useEffect(() => {
@@ -71,6 +76,10 @@ export default function TaskOrganizer() {
     }
   }, [])
 
+  // Convert minutes to seconds
+  const workDuration = Math.round(workDurationMinutes * 60)
+  const restDuration = Math.round(restDurationMinutes * 60)
+
   // Timer logic
   useEffect(() => {
     let interval: NodeJS.Timeout | null = null
@@ -82,6 +91,8 @@ export default function TaskOrganizer() {
               setTotalWorkTime((prevTotal) => prevTotal + workDuration)
               console.log('Work phase ended')
               playBeep()
+              setIsBlinking(true)
+              setTimeout(() => setIsBlinking(false), 5000)
               if (currentRound < rounds - 1) {
                 setIsWorkPhase(false)
                 return restDuration
@@ -102,6 +113,8 @@ export default function TaskOrganizer() {
             } else {
               console.log('Rest phase ended')
               playBeep()
+              setIsBlinking(true)
+              setTimeout(() => setIsBlinking(false), 5000)
               setCurrentRound((prevRound) => prevRound + 1)
               setIsWorkPhase(true)
               return workDuration
@@ -164,12 +177,34 @@ export default function TaskOrganizer() {
     if (isRunning) {
       setIsRunning(false)
     } else {
-      setCurrentRound(0)
-      setIsWorkPhase(true)
-      setTimeLeft(workDuration)
+      if (!hasStarted) {
+        setHasStarted(true)
+        setCurrentRound(0)
+        setIsWorkPhase(true)
+        setTimeLeft(workDuration)
+      }
       setIsRunning(true)
     }
   }
+
+  const reset = () => {
+    setIsRunning(false)
+    setHasStarted(false)
+    setCurrentRound(0)
+    setIsWorkPhase(true)
+    setTimeLeft(workDuration)
+    setIsBlinking(false)
+  }
+
+  // Update numeric values from inputs
+  useEffect(() => {
+    const work = workDurationInput ? parseFloat(workDurationInput) : 0.33
+    const rest = restDurationInput ? parseFloat(restDurationInput) : 0.17
+    const r = roundsInput ? parseInt(roundsInput) : 8
+    setWorkDurationMinutes(work)
+    setRestDurationMinutes(rest)
+    setRounds(r)
+  }, [workDurationInput, restDurationInput, roundsInput])
 
   return (
     <div className="p-4 bg-white">
@@ -233,36 +268,36 @@ export default function TaskOrganizer() {
         {/* Configuration */}
         <div className="grid grid-cols-3 gap-4 mb-6">
           <div>
-            <label className="block text-sm font-medium mb-1">Work (sec)</label>
+            <label className="block text-sm font-medium mb-1">Work (min)</label>
             <Input
-              type="number"
-              value={workDuration}
-              onChange={(e) => setWorkDuration(Number(e.target.value))}
-              min="1"
+              type="text"
+              value={workDurationInput}
+              onChange={(e) => setWorkDurationInput(e.target.value)}
+              placeholder="0.33"
             />
           </div>
           <div>
-            <label className="block text-sm font-medium mb-1">Rest (sec)</label>
+            <label className="block text-sm font-medium mb-1">Rest (min)</label>
             <Input
-              type="number"
-              value={restDuration}
-              onChange={(e) => setRestDuration(Number(e.target.value))}
-              min="1"
+              type="text"
+              value={restDurationInput}
+              onChange={(e) => setRestDurationInput(e.target.value)}
+              placeholder="0.17"
             />
           </div>
           <div>
             <label className="block text-sm font-medium mb-1">Rounds</label>
             <Input
-              type="number"
-              value={rounds}
-              onChange={(e) => setRounds(Number(e.target.value))}
-              min="1"
+              type="text"
+              value={roundsInput}
+              onChange={(e) => setRoundsInput(e.target.value)}
+              placeholder="8"
             />
           </div>
         </div>
 
         {/* Timer Display */}
-        <div className="text-center mb-6">
+        <div className={`text-center mb-6 p-4 rounded-lg transition-colors duration-200 ${isBlinking ? 'bg-red-100 animate-pulse' : 'bg-transparent'}`}>
           <div className="text-6xl font-bold mb-2">
             {Math.floor(timeLeft / 60)}:{(timeLeft % 60).toString().padStart(2, '0')}
           </div>
@@ -271,9 +306,12 @@ export default function TaskOrganizer() {
         </div>
 
         {/* Controls */}
-        <div className="text-center mb-6">
+        <div className="text-center mb-6 space-x-4">
           <Button onClick={startStop} size="lg" className="px-8">
-            {isRunning ? 'Stop' : 'Start'}
+            {isRunning ? 'Stop' : (hasStarted ? 'Continue' : 'Start')}
+          </Button>
+          <Button onClick={reset} variant="outline" size="lg" className="px-8">
+            Reset
           </Button>
         </div>
 
