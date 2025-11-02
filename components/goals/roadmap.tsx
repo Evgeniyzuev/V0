@@ -58,7 +58,7 @@ export default function Roadmap() {
   return (
     <div
       ref={roadmapRef}
-      className="relative h-full w-full overflow-y-auto"
+      className="relative h-screen w-full overflow-y-auto"
       style={{
         backgroundImage: 'url("https://blush-keen-constrictor-906.mypinata.cloud/ipfs/bafkreihtrypmauxia4hxdmnyxtlyesfdzmiaoyp26frppiq26t3yj2upyy")',
         backgroundSize: 'cover',
@@ -105,8 +105,8 @@ export default function Roadmap() {
           </React.Fragment>
         ))}
 
-        <div className="absolute bottom-4 left-1/2 transform -translate-x-1/2 z-20">
-          <img src="https://blush-keen-constrictor-906.mypinata.cloud/ipfs/bafkreiatl6gzgkkyl5ov2cqipgmigqzp4np3b53dx4ic3e77krt7p5iedi" className="w-20 h-20" />
+        <div className="fixed bottom-4 left-1/2 transform -translate-x-1/2 z-20">
+          <img src="https://blush-keen-constrictor-906.mypinata.cloud/ipfs/bafkreigpvh2ob5eonznyxrfwqyktvphzygnv23r4m5y4uacxacw5otndaq" className="w-20 h-20" />
         </div>
       </div>
 {/* // Добавим ключевые кадры для анимации фона через глобальные стили или styled-components */}
