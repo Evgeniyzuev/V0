@@ -327,31 +327,26 @@ export default function TaskOrganizer() {
 
       {/* Tabata Timer */}
       <div className="mt-4 mx-0 bg-white rounded-3xl shadow-lg overflow-hidden">
-        <div className="bg-gradient-to-br from-blue-500 to-purple-600 p-4 text-white min-h-[300px]">
-          <div className="grid grid-cols-3 gap-4 h-full">
+        <div className="bg-gradient-to-br from-blue-500 to-purple-600 p-3 text-white min-h-[240px] relative">
+          <div className="grid grid-cols-3 gap-3 h-full">
             {/* Left Container */}
-            <div className="flex flex-col justify-center space-y-3">
-              <div className="text-sm opacity-90">Round {currentRound + 1} of {rounds}</div>
-              <div className="text-lg font-medium">{isWorkPhase ? 'Work' : 'Rest'}</div>
-              <div className="text-xs opacity-80">
-                Today: {Math.floor(totalWorkTime / 60)}:{(totalWorkTime % 60).toString().padStart(2, '0')} worked
+            <div className="flex flex-col justify-between">
+              <div className="space-y-1">
+                <div className="text-sm opacity-90">Round {currentRound + 1} of {rounds}</div>
+                <div className="text-lg font-medium">{isWorkPhase ? 'Work' : 'Rest'}</div>
+                <div className="text-xs opacity-80">
+                  Today: {Math.floor(totalWorkTime / 60)}:{(totalWorkTime % 60).toString().padStart(2, '0')} worked
+                </div>
               </div>
-              <Button
-                onClick={startStop}
-                size="sm"
-                className="bg-white text-blue-600 hover:bg-gray-100 rounded-full px-6 py-2 text-sm font-semibold self-start"
-              >
-                {isRunning ? 'Stop' : (hasStarted ? 'Continue' : 'Start')}
-              </Button>
             </div>
 
             {/* Center Container */}
             <div className="flex flex-col items-center justify-center">
-              <h2 className="text-lg font-semibold mb-4">Tabata Timer</h2>
+              <h2 className="text-base font-semibold mb-2">Tabata Timer</h2>
 
-              {/* Timer with Circular Progress - Full height */}
-              <div className="relative flex-1 flex items-center">
-                <svg className="w-40 h-40 transform -rotate-90" viewBox="0 0 120 120">
+              {/* Timer with Circular Progress */}
+              <div className="relative">
+                <svg className="w-32 h-32 transform -rotate-90" viewBox="0 0 120 120">
                   <circle
                     cx="60"
                     cy="60"
@@ -385,7 +380,7 @@ export default function TaskOrganizer() {
                     isBlinking ? 'text-red-300 animate-pulse' :
                     'text-white'
                   }`}>
-                    <div className="text-4xl font-bold">
+                    <div className="text-3xl font-bold">
                       {Math.floor(timeLeft / 60)}:{(timeLeft % 60).toString().padStart(2, '0')}
                     </div>
                   </div>
@@ -394,7 +389,7 @@ export default function TaskOrganizer() {
             </div>
 
             {/* Right Container */}
-            <div className="flex flex-col items-end justify-center space-y-3">
+            <div className="flex flex-col items-end justify-between">
               <Button
                 onClick={() => setIsMuted(!isMuted)}
                 size="sm"
@@ -404,7 +399,7 @@ export default function TaskOrganizer() {
                 {isMuted ? '🔇' : '🔊'}
               </Button>
 
-              <div className="space-y-2">
+              <div className="space-y-1">
                 <div className="flex items-center justify-end space-x-2">
                   <label className="text-xs opacity-80 text-white">Work</label>
                   <Input
@@ -412,7 +407,7 @@ export default function TaskOrganizer() {
                     value={workDurationInput}
                     onChange={(e) => setWorkDurationInput(e.target.value)}
                     placeholder={formatTime(workDurationMinutes)}
-                    className="w-16 h-7 text-xs bg-white/20 border-white/30 text-white placeholder-white/70 rounded"
+                    className="w-14 h-6 text-xs bg-white/20 border-white/30 text-white placeholder-white/70 rounded"
                     style={{ color: 'white' }}
                   />
                 </div>
@@ -423,7 +418,7 @@ export default function TaskOrganizer() {
                     value={restDurationInput}
                     onChange={(e) => setRestDurationInput(e.target.value)}
                     placeholder={formatTime(restDurationMinutes)}
-                    className="w-16 h-7 text-xs bg-white/20 border-white/30 text-white placeholder-white/70 rounded"
+                    className="w-14 h-6 text-xs bg-white/20 border-white/30 text-white placeholder-white/70 rounded"
                     style={{ color: 'white' }}
                   />
                 </div>
@@ -434,7 +429,7 @@ export default function TaskOrganizer() {
                     value={roundsInput}
                     onChange={(e) => setRoundsInput(e.target.value)}
                     placeholder={rounds.toString()}
-                    className="w-16 h-7 text-xs bg-white/20 border-white/30 text-white placeholder-white/70 rounded"
+                    className="w-14 h-6 text-xs bg-white/20 border-white/30 text-white placeholder-white/70 rounded"
                     style={{ color: 'white' }}
                   />
                 </div>
@@ -443,11 +438,22 @@ export default function TaskOrganizer() {
               <Button
                 onClick={reset}
                 size="sm"
-                className="bg-gray-600 text-white hover:bg-gray-700 rounded-full px-6 py-2 text-sm font-semibold"
+                className="bg-gray-600 text-white hover:bg-gray-700 rounded-full px-5 py-2 text-sm font-semibold"
               >
                 Reset
               </Button>
             </div>
+          </div>
+
+          {/* Start/Stop Button at Bottom */}
+          <div className="absolute bottom-3 left-1/2 transform -translate-x-1/2">
+            <Button
+              onClick={startStop}
+              size="sm"
+              className="bg-white text-blue-600 hover:bg-gray-100 rounded-full px-6 py-2 text-sm font-semibold shadow-lg"
+            >
+              {isRunning ? 'Stop' : (hasStarted ? 'Continue' : 'Start')}
+            </Button>
           </div>
         </div>
       </div>
