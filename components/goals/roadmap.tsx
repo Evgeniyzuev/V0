@@ -1,4 +1,4 @@
-import { MapPin, Target, Trophy, Star, ChevronUp, Check } from "lucide-react"
+import { MapPin, Target, Trophy, Star, Check } from "lucide-react"
 import { useUser } from "@/components/UserContext"
 import React, { useRef, useEffect, useState } from 'react';
 
@@ -40,11 +40,11 @@ export default function Roadmap() {
 
   const roadmapPoints: RoadmapPoint[] = [
     {
-      id: "start",
-      title: "Начало пути",
-      description: "Определите свои первые цели",
-      icon: <MapPin className="w-5 h-5" />,
-      completed: true
+      id: "next-level",
+      title: `Следующий уровень: ${dbUser && dbUser.level !== undefined ? dbUser.level + 1 : '?'}`,
+      description: "Продолжайте свой путь к прогрессу",
+      icon: <Trophy className="w-5 h-5" />,
+      completed: false
     },
     ...completedGoals.map((goal, index) => ({
       id: `goal-${goal.id}`,
@@ -52,22 +52,7 @@ export default function Roadmap() {
       description: `Завершено: ${new Date(goal.updated_at || goal.created_at || '').toLocaleDateString()}`,
       icon: <Check className="w-5 h-5" />, // Используем иконку Check для завершенных целей
       completed: true,
-    })),
-    {
-      id: "current-level",
-      title: `Текущий уровень: ${dbUser?.level || 0}`,
-      description: "Ваш текущий прогресс",
-      icon: <Target className="w-5 h-5" />,
-      completed: true,
-      current: true
-    },
-    {
-      id: "next-level",
-      title: `Следующий уровень: ${dbUser && dbUser.level !== undefined ? dbUser.level + 1 : '?'}`,
-      description: "Продолжайте свой путь к прогрессу",
-      icon: <Trophy className="w-5 h-5" />,
-      completed: false
-    }
+    }))
   ];
 
   return (
@@ -75,7 +60,7 @@ export default function Roadmap() {
       ref={roadmapRef}
       className="relative h-full w-full overflow-y-auto"
       style={{
-        backgroundImage: 'url("https://blush-keen-constrictor-906.mypinata.cloud/ipfs/bafkreieyx5fpjifkodtnpvg56hkc335derfxljfyolhg5pkbjcuisxcxle")',
+        backgroundImage: 'url("https://blush-keen-constrictor-906.mypinata.cloud/ipfs/bafkreihtrypmauxia4hxdmnyxtlyesfdzmiaoyp26frppiq26t3yj2upyy")',
         backgroundSize: 'cover',
         backgroundPosition: 'center',
         animation: 'scrollBackground 60s linear infinite', // Добавим анимацию
@@ -127,7 +112,7 @@ export default function Roadmap() {
 
           {/* Основной указатель */}
           <div className="relative w-20 h-20 bg-gradient-to-b from-purple-600 to-purple-700 rounded-full flex items-center justify-center shadow-2xl">
-            <ChevronUp className="w-10 h-10 text-white animate-bounce" />
+            <span className="text-4xl text-white animate-bounce">⬆️</span>
           </div>
           
           {/* Внутренний круг для эффекта */}
