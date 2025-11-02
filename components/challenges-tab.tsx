@@ -103,6 +103,8 @@ export default function ChallengesTab() {
           progress_details: userTask.progress_details,
           steps_total: userTask.task.steps_total
         }))
+        // Sort tasks by number (id) in ascending order
+        transformedTasks.sort((a, b) => a.number - b.number)
         setTasks(transformedTasks)
       }
     } catch (err) {

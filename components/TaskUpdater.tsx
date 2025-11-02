@@ -32,8 +32,8 @@ export default function TaskUpdater({ onUpdate }: { onUpdate?: () => void }) {
       // 1. Get all available tasks
       const { data: allTasks, error: tasksError } = await supabase
         .from("tasks")
-        .select("number")
-        .order("number")
+        .select("id")
+        .order("id")
       
       if (tasksError) throw tasksError
       
@@ -48,8 +48,8 @@ export default function TaskUpdater({ onUpdate }: { onUpdate?: () => void }) {
       // 3. Find tasks that user doesn't have
       const userTaskIds = userTasks?.map(task => task.task_id) || []
       const missingTasks = allTasks
-        ?.filter(task => !userTaskIds.includes(task.number))
-        ?.map(task => task.number) || []
+        ?.filter(task => !userTaskIds.includes(task.id))
+        ?.map(task => task.id) || []
       
       // 4. If there are missing tasks, add them to user_tasks
       if (missingTasks.length > 0) {
