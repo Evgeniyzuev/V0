@@ -69,10 +69,11 @@ export default function Roadmap() {
       {/* Затемненный оверлей для лучшей читаемости текста */}
       <div className="absolute inset-0 bg-black opacity-30"></div>
 
+      {/* Вертикальная линия маршрута на всю высоту экрана */}
+      <div className="absolute left-1/2 transform -translate-x-1/2 top-0 bottom-0 w-2 bg-yellow-400 opacity-50 z-5" />
+
       {/* Контейнер маршрута */}
       <div className="relative z-10 flex flex-col items-center py-8">
-        {/* Вертикальная линия маршрута */}
-        <div className="absolute left-1/2 transform -translate-x-1/2 top-0 bottom-0 w-2 bg-yellow-400 opacity-50" />
 
         {roadmapPoints.map((point, index) => (
           <React.Fragment key={point.id}>
