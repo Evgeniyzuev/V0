@@ -52,9 +52,9 @@ export default function TaskOrganizer() {
   const [workDurationInput, setWorkDurationInput] = useState("")
   const [restDurationInput, setRestDurationInput] = useState("")
   const [roundsInput, setRoundsInput] = useState("")
-  const [workDurationMinutes, setWorkDurationMinutes] = useState(0.33) // 20 seconds in minutes
-  const [restDurationMinutes, setRestDurationMinutes] = useState(0.17) // 10 seconds in minutes
-  const [rounds, setRounds] = useState(8)
+  const [workDurationMinutes, setWorkDurationMinutes] = useState(25) // Default 25 minutes
+  const [restDurationMinutes, setRestDurationMinutes] = useState(5) // Default 5 minutes
+  const [rounds, setRounds] = useState(4) // Default 4 rounds
   const [isRunning, setIsRunning] = useState(false)
   const [hasStarted, setHasStarted] = useState(false)
   const [currentRound, setCurrentRound] = useState(0)
@@ -65,17 +65,35 @@ export default function TaskOrganizer() {
   const [isBlinking, setIsBlinking] = useState(false)
   const [isCompleted, setIsCompleted] = useState(false)
 
-  // Load history from localStorage on mount
+  // Load settings and history from localStorage on mount
   useEffect(() => {
-    const saved = localStorage.getItem('tabataHistory')
-    if (saved) {
-      const hist: HistoryEntry[] = JSON.parse(saved)
+    const savedSettings = localStorage.getItem('tabataSettings')
+    if (savedSettings) {
+      const settings = JSON.parse(savedSettings)
+      setWorkDurationMinutes(settings.work || 25)
+      setRestDurationMinutes(settings.rest || 5)
+      setRounds(settings.rounds || 4)
+    }
+
+    const savedHistory = localStorage.getItem('tabataHistory')
+    if (savedHistory) {
+      const hist: HistoryEntry[] = JSON.parse(savedHistory)
       setHistory(hist)
       const today = new Date().toDateString()
       const todayEntry = hist.find((h) => h.date === today)
       if (todayEntry) setTotalWorkTime(todayEntry.time)
     }
   }, [])
+
+  // Save settings when they change
+  useEffect(() => {
+    const settings = {
+      work: workDurationMinutes,
+      rest: restDurationMinutes,
+      rounds: rounds
+    }
+    localStorage.setItem('tabataSettings', JSON.stringify(settings))
+  }, [workDurationMinutes, restDurationMinutes, rounds])
 
   // Convert minutes to seconds
   const workDuration = Math.round(workDurationMinutes * 60)
@@ -288,80 +306,109 @@ export default function TaskOrganizer() {
       </div>
 
       {/* Tabata Timer */}
-      <div className="mt-8 p-4 bg-gray-50 rounded-lg">
-        <h2 className="text-2xl font-bold mb-4">Tabata Timer</h2>
+      <div className="mt-6 mx-0 bg-white rounded-3xl shadow-lg overflow-hidden">
+        <div className="bg-gradient-to-br from-blue-500 to-purple-600 p-6 text-white">
+          <h2 className="text-xl font-semibold text-center mb-4">Tabata Timer</h2>
+
+          {/* Timer Display */}
+          <div className="relative text-center p-6 rounded-2xl overflow-hidden">
+            {/* Animated Background */}
+            <div className={`absolute inset-0 transition-all duration-300 ${
+              isCompleted ? 'bg-green-400' :
+              isBlinking ? 'bg-red-400 animate-pulse' :
+              'bg-white/20 backdrop-blur-sm'
+            }`} />
+
+            {/* Content */}
+            <div className="relative z-10">
+              <div className="text-5xl font-bold mb-2 text-white">
+                {Math.floor(timeLeft / 60)}:{(timeLeft % 60).toString().padStart(2, '0')}
+              </div>
+              <div className="text-sm opacity-90">Round {currentRound + 1} of {rounds}</div>
+              <div className="text-lg font-medium mt-1">{isWorkPhase ? 'Work' : 'Rest'}</div>
+            </div>
+          </div>
+
+          {/* Controls */}
+          <div className="flex justify-center space-x-3 mt-6">
+            <Button
+              onClick={startStop}
+              size="lg"
+              className="bg-white text-blue-600 hover:bg-gray-100 rounded-full px-8 py-3 font-semibold"
+            >
+              {isRunning ? 'Stop' : (hasStarted ? 'Continue' : 'Start')}
+            </Button>
+            <Button
+              onClick={reset}
+              variant="outline"
+              size="lg"
+              className="border-white text-white hover:bg-white/20 rounded-full px-6 py-3"
+            >
+              Reset
+            </Button>
+          </div>
+        </div>
 
         {/* Configuration */}
-        <div className="grid grid-cols-3 gap-4 mb-6">
-          <div>
-            <label className="block text-sm font-medium mb-1">Work (min)</label>
-            <Input
-              type="text"
-              value={workDurationInput}
-              onChange={(e) => setWorkDurationInput(e.target.value)}
-              placeholder="0.33"
-            />
+        <div className="p-4 bg-gray-50">
+          <div className="grid grid-cols-3 gap-3 mb-4">
+            <div className="text-center">
+              <label className="block text-xs font-medium text-gray-600 mb-1">Work</label>
+              <Input
+                type="text"
+                value={workDurationInput}
+                onChange={(e) => setWorkDurationInput(e.target.value)}
+                placeholder={workDurationMinutes.toString()}
+                className="text-center h-10 rounded-lg"
+              />
+              <div className="text-xs text-gray-500 mt-1">min</div>
+            </div>
+            <div className="text-center">
+              <label className="block text-xs font-medium text-gray-600 mb-1">Rest</label>
+              <Input
+                type="text"
+                value={restDurationInput}
+                onChange={(e) => setRestDurationInput(e.target.value)}
+                placeholder={restDurationMinutes.toString()}
+                className="text-center h-10 rounded-lg"
+              />
+              <div className="text-xs text-gray-500 mt-1">min</div>
+            </div>
+            <div className="text-center">
+              <label className="block text-xs font-medium text-gray-600 mb-1">Rounds</label>
+              <Input
+                type="text"
+                value={roundsInput}
+                onChange={(e) => setRoundsInput(e.target.value)}
+                placeholder={rounds.toString()}
+                className="text-center h-10 rounded-lg"
+              />
+            </div>
           </div>
-          <div>
-            <label className="block text-sm font-medium mb-1">Rest (min)</label>
-            <Input
-              type="text"
-              value={restDurationInput}
-              onChange={(e) => setRestDurationInput(e.target.value)}
-              placeholder="0.17"
-            />
-          </div>
-          <div>
-            <label className="block text-sm font-medium mb-1">Rounds</label>
-            <Input
-              type="text"
-              value={roundsInput}
-              onChange={(e) => setRoundsInput(e.target.value)}
-              placeholder="8"
-            />
+
+          {/* Stats */}
+          <div className="text-center text-sm text-gray-600">
+            Today: {Math.floor(totalWorkTime / 60)}:{(totalWorkTime % 60).toString().padStart(2, '0')} worked
           </div>
         </div>
+      </div>
 
-        {/* Timer Display */}
-        <div className={`text-center mb-6 p-4 rounded-lg transition-colors duration-200 ${
-          isCompleted ? 'bg-green-100' :
-          isBlinking ? 'bg-red-100 animate-pulse' :
-          'bg-transparent'
-        }`}>
-          <div className="text-6xl font-bold mb-2">
-            {Math.floor(timeLeft / 60)}:{(timeLeft % 60).toString().padStart(2, '0')}
-          </div>
-          <div className="text-lg mb-1">Round {currentRound + 1} / {rounds}</div>
-          <div className="text-lg font-semibold">{isWorkPhase ? 'Work' : 'Rest'}</div>
-        </div>
-
-        {/* Controls */}
-        <div className="text-center mb-6 space-x-4">
-          <Button onClick={startStop} size="lg" className="px-8">
-            {isRunning ? 'Stop' : (hasStarted ? 'Continue' : 'Start')}
-          </Button>
-          <Button onClick={reset} variant="outline" size="lg" className="px-8">
-            Reset
-          </Button>
-        </div>
-
-        {/* Stats */}
-        <div className="mb-4">
-          <p className="text-sm text-gray-600">
-            Total work time today: {Math.floor(totalWorkTime / 60)}:{(totalWorkTime % 60).toString().padStart(2, '0')}
-          </p>
-        </div>
-
-        {/* History */}
-        <div>
-          <h3 className="text-lg font-semibold mb-2">History</h3>
-          <div className="space-y-1">
-            {history.map((entry) => (
-              <div key={entry.date} className="text-sm text-gray-600">
-                {entry.date}: {Math.floor(entry.time / 60)}:{(entry.time % 60).toString().padStart(2, '0')}
+      {/* History Container */}
+      <div className="mt-6 mx-0 bg-white rounded-3xl shadow-lg p-4">
+        <h3 className="text-lg font-semibold mb-3 text-center">Workout History</h3>
+        <div className="space-y-2 max-h-40 overflow-y-auto">
+          {history.length === 0 ? (
+            <div className="text-center text-gray-500 py-4">No workouts yet</div>
+          ) : (
+            history.map((entry) => (
+              <div key={entry.date} className="flex justify-between items-center p-3 bg-gray-50 rounded-lg">
+                <span className="text-sm font-medium">{entry.date}</span>
+                <span className="text-sm text-gray-600">
+                  {Math.floor(entry.time / 60)}:{(entry.time % 60).toString().padStart(2, '0')}
+                </span>
               </div>
-            ))}
-          </div>
+            ))
+          )}
         </div>
       </div>
     </div>
