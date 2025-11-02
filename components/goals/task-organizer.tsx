@@ -341,21 +341,32 @@ export default function TaskOrganizer() {
           </div>
 
           {/* Main Content */}
-          <div className="flex items-center justify-between">
-            {/* Left Side - Round Info */}
-            <div className="flex-1">
-              <div className="text-sm opacity-90">Round {currentRound + 1} of {rounds}</div>
-              <div className="text-lg font-medium">{isWorkPhase ? 'Work' : 'Rest'}</div>
-              <div className="text-xs opacity-80 mt-1">
-                Today: {Math.floor(totalWorkTime / 60)}:{(totalWorkTime % 60).toString().padStart(2, '0')} worked
-              </div>
+          <div className="flex items-center">
+            {/* Left Side - Continue Button */}
+            <div className="pr-4">
+              <Button
+                onClick={startStop}
+                size="sm"
+                className="bg-white text-blue-600 hover:bg-gray-100 rounded-full px-6 py-2 text-sm font-semibold min-w-[80px]"
+              >
+                {isRunning ? 'Stop' : (hasStarted ? 'Continue' : 'Start')}
+              </Button>
             </div>
 
-            {/* Center - Timer with Circular Progress */}
-            <div className="flex-1 flex justify-center">
+            {/* Center - Round Info + Timer */}
+            <div className="flex-1 flex flex-col items-center">
+              <div className="text-center mb-2">
+                <div className="text-sm opacity-90">Round {currentRound + 1} of {rounds}</div>
+                <div className="text-lg font-medium">{isWorkPhase ? 'Work' : 'Rest'}</div>
+                <div className="text-xs opacity-80">
+                  Today: {Math.floor(totalWorkTime / 60)}:{(totalWorkTime % 60).toString().padStart(2, '0')} worked
+                </div>
+              </div>
+
+              {/* Timer with Circular Progress */}
               <div className="relative">
                 {/* Circular Progress Background */}
-                <svg className="w-28 h-28 transform -rotate-90" viewBox="0 0 120 120">
+                <svg className="w-32 h-32 transform -rotate-90" viewBox="0 0 120 120">
                   <circle
                     cx="60"
                     cy="60"
@@ -389,7 +400,7 @@ export default function TaskOrganizer() {
                     isBlinking ? 'text-red-300 animate-pulse' :
                     'text-white'
                   }`}>
-                    <div className="text-2xl font-bold">
+                    <div className="text-3xl font-bold">
                       {Math.floor(timeLeft / 60)}:{(timeLeft % 60).toString().padStart(2, '0')}
                     </div>
                   </div>
@@ -397,11 +408,11 @@ export default function TaskOrganizer() {
               </div>
             </div>
 
-            {/* Right Side - Controls and Settings */}
-            <div className="flex-1 flex flex-col items-end space-y-2">
+            {/* Right Side - Settings and Reset */}
+            <div className="pl-4 flex flex-col items-end space-y-2">
               {/* Settings */}
-              <div className="space-y-1">
-                <div className="flex items-center space-x-2">
+              <div className="space-y-1 w-24">
+                <div className="flex items-center justify-between">
                   <label className="text-xs opacity-80">Work</label>
                   <Input
                     type="text"
@@ -411,7 +422,7 @@ export default function TaskOrganizer() {
                     className="w-16 h-7 text-xs bg-white/20 border-white/30 text-white placeholder-white/70 rounded"
                   />
                 </div>
-                <div className="flex items-center space-x-2">
+                <div className="flex items-center justify-between">
                   <label className="text-xs opacity-80">Rest</label>
                   <Input
                     type="text"
@@ -421,7 +432,7 @@ export default function TaskOrganizer() {
                     className="w-16 h-7 text-xs bg-white/20 border-white/30 text-white placeholder-white/70 rounded"
                   />
                 </div>
-                <div className="flex items-center space-x-2">
+                <div className="flex items-center justify-between">
                   <label className="text-xs opacity-80">Rounds</label>
                   <Input
                     type="text"
@@ -433,23 +444,14 @@ export default function TaskOrganizer() {
                 </div>
               </div>
 
-              {/* Controls */}
-              <div className="flex space-x-2">
-                <Button
-                  onClick={startStop}
-                  size="sm"
-                  className="bg-white text-blue-600 hover:bg-gray-100 rounded-full px-6 py-2 text-sm font-semibold min-w-[80px]"
-                >
-                  {isRunning ? 'Stop' : (hasStarted ? 'Continue' : 'Start')}
-                </Button>
-                <Button
-                  onClick={reset}
-                  size="sm"
-                  className="bg-gray-600 text-white hover:bg-gray-700 rounded-full px-6 py-2 text-sm font-semibold min-w-[80px]"
-                >
-                  Reset
-                </Button>
-              </div>
+              {/* Reset Button */}
+              <Button
+                onClick={reset}
+                size="sm"
+                className="bg-gray-600 text-white hover:bg-gray-700 rounded-full px-6 py-2 text-sm font-semibold min-w-[80px]"
+              >
+                Reset
+              </Button>
             </div>
           </div>
         </div>
