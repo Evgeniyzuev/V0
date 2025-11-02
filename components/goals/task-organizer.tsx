@@ -55,6 +55,23 @@ export default function TaskOrganizer() {
   const [workDurationMinutes, setWorkDurationMinutes] = useState(25) // Default 25 minutes
   const [restDurationMinutes, setRestDurationMinutes] = useState(5) // Default 5 minutes
   const [rounds, setRounds] = useState(4) // Default 4 rounds
+
+  // Helper functions for min:sec format
+  const formatTime = (minutes: number) => {
+    const mins = Math.floor(minutes)
+    const secs = Math.round((minutes - mins) * 60)
+    return `${mins}:${secs.toString().padStart(2, '0')}`
+  }
+
+  const parseTimeInput = (input: string) => {
+    const parts = input.split(':')
+    if (parts.length === 2) {
+      const mins = parseInt(parts[0]) || 0
+      const secs = parseInt(parts[1]) || 0
+      return mins + secs / 60
+    }
+    return parseFloat(input) || 0
+  }
   const [isRunning, setIsRunning] = useState(false)
   const [hasStarted, setHasStarted] = useState(false)
   const [currentRound, setCurrentRound] = useState(0)
@@ -242,9 +259,9 @@ export default function TaskOrganizer() {
 
   // Update numeric values from inputs
   useEffect(() => {
-    const work = workDurationInput ? parseFloat(workDurationInput) : 0.33
-    const rest = restDurationInput ? parseFloat(restDurationInput) : 0.17
-    const r = roundsInput ? parseInt(roundsInput) : 8
+    const work = workDurationInput ? parseTimeInput(workDurationInput) : 25
+    const rest = restDurationInput ? parseTimeInput(restDurationInput) : 5
+    const r = roundsInput ? parseInt(roundsInput) : 4
     setWorkDurationMinutes(work)
     setRestDurationMinutes(rest)
     setRounds(r)
@@ -340,9 +357,8 @@ export default function TaskOrganizer() {
             </Button>
             <Button
               onClick={reset}
-              variant="outline"
               size="lg"
-              className="border-white text-white hover:bg-white/20 rounded-full px-6 py-3"
+              className="bg-gray-600 text-white hover:bg-gray-700 rounded-full px-6 py-3 font-semibold"
             >
               Reset
             </Button>
@@ -358,10 +374,10 @@ export default function TaskOrganizer() {
                 type="text"
                 value={workDurationInput}
                 onChange={(e) => setWorkDurationInput(e.target.value)}
-                placeholder={workDurationMinutes.toString()}
+                placeholder={formatTime(workDurationMinutes)}
                 className="text-center h-10 rounded-lg"
               />
-              <div className="text-xs text-gray-500 mt-1">min</div>
+              <div className="text-xs text-gray-500 mt-1">min:sec</div>
             </div>
             <div className="text-center">
               <label className="block text-xs font-medium text-gray-600 mb-1">Rest</label>
@@ -369,10 +385,10 @@ export default function TaskOrganizer() {
                 type="text"
                 value={restDurationInput}
                 onChange={(e) => setRestDurationInput(e.target.value)}
-                placeholder={restDurationMinutes.toString()}
+                placeholder={formatTime(restDurationMinutes)}
                 className="text-center h-10 rounded-lg"
               />
-              <div className="text-xs text-gray-500 mt-1">min</div>
+              <div className="text-xs text-gray-500 mt-1">min:sec</div>
             </div>
             <div className="text-center">
               <label className="block text-xs font-medium text-gray-600 mb-1">Rounds</label>
