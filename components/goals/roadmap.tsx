@@ -105,7 +105,7 @@ export default function Roadmap() {
           </React.Fragment>
         ))}
 
-        <div className="fixed bottom-4 left-1/2 transform -translate-x-1/2 z-20">
+        <div className="fixed bottom-20 left-1/2 transform -translate-x-1/2 z-20">
           <img src="https://blush-keen-constrictor-906.mypinata.cloud/ipfs/bafkreigpvh2ob5eonznyxrfwqyktvphzygnv23r4m5y4uacxacw5otndaq" className="w-20 h-20" />
         </div>
       </div>
