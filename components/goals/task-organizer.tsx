@@ -91,6 +91,10 @@ export default function TaskOrganizer() {
       setWorkDurationMinutes(settings.work || 25)
       setRestDurationMinutes(settings.rest || 5)
       setRounds(settings.rounds || 4)
+      // Set input values if they exist in settings
+      if (settings.workInput) setWorkDurationInput(settings.workInput)
+      if (settings.restInput) setRestDurationInput(settings.restInput)
+      if (settings.roundsInput) setRoundsInput(settings.roundsInput)
     }
 
     const savedHistory = localStorage.getItem('tabataHistory')
@@ -108,10 +112,13 @@ export default function TaskOrganizer() {
     const settings = {
       work: workDurationMinutes,
       rest: restDurationMinutes,
-      rounds: rounds
+      rounds: rounds,
+      workInput: workDurationInput,
+      restInput: restDurationInput,
+      roundsInput: roundsInput
     }
     localStorage.setItem('tabataSettings', JSON.stringify(settings))
-  }, [workDurationMinutes, restDurationMinutes, rounds])
+  }, [workDurationMinutes, restDurationMinutes, rounds, workDurationInput, restDurationInput, roundsInput])
 
   // Convert minutes to seconds
   const workDuration = Math.round(workDurationMinutes * 60)
