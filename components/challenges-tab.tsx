@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect, useCallback } from "react"
+import { useState, useEffect, useCallback, useRef } from "react"
 import { Calendar, Tag, ChevronDown, ChevronUp, Check, User, Trophy, X } from "lucide-react"
 import { createClientSupabaseClient } from "@/lib/supabase"
 import { useUser } from "@/components/UserContext"
@@ -50,6 +50,7 @@ export default function ChallengesTab() {
     newCore?: number;
   } | null>(null)
   const [selectedTask, setSelectedTask] = useState<Challenge | null>(null)
+  const tasksLoadedRef = useRef<string | null>(null)
 
   const onTaskComplete = useCallback((taskNumber: number, reward: number, oldCore: number, newCore: number) => {
     setCompletionModal({
@@ -68,8 +69,13 @@ export default function ChallengesTab() {
     onTaskComplete
   })
 
-  const fetchTasks = useCallback(async () => {
+  const fetchTasks = useCallback(async (force = false) => {
     if (!dbUser?.id) return;
+
+    // Prevent multiple calls for the same user
+    if (!force && tasksLoadedRef.current === dbUser.id) {
+      return;
+    }
 
     try {
       setLoading(true)
@@ -100,6 +106,7 @@ export default function ChallengesTab() {
         // Sort tasks by number (id) in ascending order
         transformedTasks.sort((a, b) => a.number - b.number)
         setTasks(transformedTasks)
+        tasksLoadedRef.current = dbUser.id
       }
     } catch (err) {
       console.error("Unexpected error:", err)
@@ -116,6 +123,11 @@ export default function ChallengesTab() {
       setLoading(false)
     }
   }, [dbUser?.id, isUserLoading, fetchTasks])
+
+  // Reset tasks loaded ref when user changes
+  useEffect(() => {
+    tasksLoadedRef.current = null
+  }, [dbUser?.id])
 
   const toggleTaskExpansion = (taskNumber: number) => {
     if (expandedTaskId === taskNumber) {
@@ -237,7 +249,7 @@ export default function ChallengesTab() {
               className="w-full"
               onClick={() => {
                 setCompletionModal(null);
-                fetchTasks(); // Refresh tasks when clicking Continue
+                fetchTasks(true); // Force refresh tasks when clicking Continue
               }}
             >
               Continue
