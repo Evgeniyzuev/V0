@@ -334,7 +334,7 @@ export default function TaskOrganizer() {
 
       {/* Tabata Timer */}
       <div className="mt-4 mx-0 bg-white rounded-3xl shadow-lg overflow-hidden">
-        <div className="bg-gradient-to-br from-blue-500 to-purple-600 p-3 text-white min-h-[240px] relative">
+        <div className="bg-gradient-to-br from-blue-500 to-purple-600 p-3 text-white">
           <div className="grid grid-cols-3 gap-3 h-full">
             {/* Left Container */}
             <div className="flex flex-col justify-between">
@@ -344,6 +344,15 @@ export default function TaskOrganizer() {
                 <div className="text-xs opacity-80">
                   Today: {Math.floor(totalWorkTime / 60)}:{(totalWorkTime % 60).toString().padStart(2, '0')} worked
                 </div>
+              </div>
+              <div className="flex justify-start">
+                <Button
+                  onClick={startStop}
+                  size="sm"
+                  className="bg-white text-blue-600 hover:bg-gray-100 rounded-full px-6 py-2 text-sm font-semibold shadow-lg"
+                >
+                  {isRunning ? 'Stop' : (hasStarted ? 'Continue' : 'Start')}
+                </Button>
               </div>
             </div>
 
@@ -450,17 +459,6 @@ export default function TaskOrganizer() {
                 Reset
               </Button>
             </div>
-          </div>
-
-          {/* Start/Stop Button at Bottom */}
-          <div className="absolute bottom-3 left-1/2 transform -translate-x-1/2">
-            <Button
-              onClick={startStop}
-              size="sm"
-              className="bg-white text-blue-600 hover:bg-gray-100 rounded-full px-6 py-2 text-sm font-semibold shadow-lg"
-            >
-              {isRunning ? 'Stop' : (hasStarted ? 'Continue' : 'Start')}
-            </Button>
           </div>
         </div>
       </div>

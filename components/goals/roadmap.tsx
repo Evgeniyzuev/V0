@@ -41,8 +41,8 @@ export default function Roadmap() {
   const roadmapPoints: RoadmapPoint[] = [
     {
       id: "next-level",
-      title: `Следующий уровень: ${dbUser && dbUser.level !== undefined ? dbUser.level + 1 : '?'}`,
-      description: "Продолжайте свой путь к прогрессу",
+      title: `Next Level: ${dbUser && dbUser.level !== undefined ? dbUser.level + 1 : '?'}`,
+      description: "Keep moving",
       icon: <Trophy className="w-5 h-5" />,
       completed: false
     },
