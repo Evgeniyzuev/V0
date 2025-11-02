@@ -1,9 +1,14 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect, useCallback } from "react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Plus, Trash2 } from "lucide-react"
+
+type HistoryEntry = {
+  date: string
+  time: number
+}
 
 // Sample tasks data
 const initialTasks = [
@@ -43,6 +48,74 @@ export default function TaskOrganizer() {
   const [tasks, setTasks] = useState(initialTasks)
   const [newTaskTitle, setNewTaskTitle] = useState("")
 
+  // Tabata timer states
+  const [workDuration, setWorkDuration] = useState(20)
+  const [restDuration, setRestDuration] = useState(10)
+  const [rounds, setRounds] = useState(8)
+  const [isRunning, setIsRunning] = useState(false)
+  const [currentRound, setCurrentRound] = useState(0)
+  const [isWorkPhase, setIsWorkPhase] = useState(true)
+  const [timeLeft, setTimeLeft] = useState(workDuration)
+  const [totalWorkTime, setTotalWorkTime] = useState(0)
+  const [history, setHistory] = useState<HistoryEntry[]>([])
+
+  // Load history from localStorage on mount
+  useEffect(() => {
+    const saved = localStorage.getItem('tabataHistory')
+    if (saved) {
+      const hist: HistoryEntry[] = JSON.parse(saved)
+      setHistory(hist)
+      const today = new Date().toDateString()
+      const todayEntry = hist.find((h) => h.date === today)
+      if (todayEntry) setTotalWorkTime(todayEntry.time)
+    }
+  }, [])
+
+  // Timer logic
+  useEffect(() => {
+    let interval: NodeJS.Timeout | null = null
+    if (isRunning) {
+      interval = setInterval(() => {
+        setTimeLeft((prev) => {
+          if (prev <= 1) {
+            if (isWorkPhase) {
+              setTotalWorkTime((prevTotal) => prevTotal + workDuration)
+              console.log('Work phase ended')
+              playBeep()
+              if (currentRound < rounds - 1) {
+                setIsWorkPhase(false)
+                return restDuration
+              } else {
+                setIsRunning(false)
+                setCurrentRound(0)
+                setIsWorkPhase(true)
+                // Save to history
+                const today = new Date().toDateString()
+                setHistory((prevHistory) => {
+                  const newHistory = prevHistory.filter((h) => h.date !== today)
+                  newHistory.push({ date: today, time: totalWorkTime + workDuration })
+                  localStorage.setItem('tabataHistory', JSON.stringify(newHistory))
+                  return newHistory
+                })
+                return workDuration
+              }
+            } else {
+              console.log('Rest phase ended')
+              playBeep()
+              setCurrentRound((prevRound) => prevRound + 1)
+              setIsWorkPhase(true)
+              return workDuration
+            }
+          }
+          return prev - 1
+        })
+      }, 1000)
+    }
+    return () => {
+      if (interval) clearInterval(interval)
+    }
+  }, [isRunning, isWorkPhase, currentRound, rounds, workDuration, restDuration, totalWorkTime])
+
   const handleAddTask = () => {
     if (!newTaskTitle.trim()) return
 
@@ -63,6 +136,39 @@ export default function TaskOrganizer() {
 
   const handleDeleteTask = (taskId: number) => {
     setTasks(tasks.filter((task) => task.id !== taskId))
+  }
+
+  const playBeep = () => {
+    try {
+      const audioContext = new (window.AudioContext || (window as any).webkitAudioContext)()
+      const oscillator = audioContext.createOscillator()
+      const gainNode = audioContext.createGain()
+
+      oscillator.connect(gainNode)
+      gainNode.connect(audioContext.destination)
+
+      oscillator.frequency.value = 800
+      oscillator.type = 'sine'
+
+      gainNode.gain.setValueAtTime(0.3, audioContext.currentTime)
+      gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.5)
+
+      oscillator.start(audioContext.currentTime)
+      oscillator.stop(audioContext.currentTime + 0.5)
+    } catch (error) {
+      console.log('Audio not supported')
+    }
+  }
+
+  const startStop = () => {
+    if (isRunning) {
+      setIsRunning(false)
+    } else {
+      setCurrentRound(0)
+      setIsWorkPhase(true)
+      setTimeLeft(workDuration)
+      setIsRunning(true)
+    }
   }
 
   return (
@@ -119,7 +225,77 @@ export default function TaskOrganizer() {
           </div>
         ))}
       </div>
+
+      {/* Tabata Timer */}
+      <div className="mt-8 p-4 bg-gray-50 rounded-lg">
+        <h2 className="text-2xl font-bold mb-4">Tabata Timer</h2>
+
+        {/* Configuration */}
+        <div className="grid grid-cols-3 gap-4 mb-6">
+          <div>
+            <label className="block text-sm font-medium mb-1">Work (sec)</label>
+            <Input
+              type="number"
+              value={workDuration}
+              onChange={(e) => setWorkDuration(Number(e.target.value))}
+              min="1"
+            />
+          </div>
+          <div>
+            <label className="block text-sm font-medium mb-1">Rest (sec)</label>
+            <Input
+              type="number"
+              value={restDuration}
+              onChange={(e) => setRestDuration(Number(e.target.value))}
+              min="1"
+            />
+          </div>
+          <div>
+            <label className="block text-sm font-medium mb-1">Rounds</label>
+            <Input
+              type="number"
+              value={rounds}
+              onChange={(e) => setRounds(Number(e.target.value))}
+              min="1"
+            />
+          </div>
+        </div>
+
+        {/* Timer Display */}
+        <div className="text-center mb-6">
+          <div className="text-6xl font-bold mb-2">
+            {Math.floor(timeLeft / 60)}:{(timeLeft % 60).toString().padStart(2, '0')}
+          </div>
+          <div className="text-lg mb-1">Round {currentRound + 1} / {rounds}</div>
+          <div className="text-lg font-semibold">{isWorkPhase ? 'Work' : 'Rest'}</div>
+        </div>
+
+        {/* Controls */}
+        <div className="text-center mb-6">
+          <Button onClick={startStop} size="lg" className="px-8">
+            {isRunning ? 'Stop' : 'Start'}
+          </Button>
+        </div>
+
+        {/* Stats */}
+        <div className="mb-4">
+          <p className="text-sm text-gray-600">
+            Total work time today: {Math.floor(totalWorkTime / 60)}:{(totalWorkTime % 60).toString().padStart(2, '0')}
+          </p>
+        </div>
+
+        {/* History */}
+        <div>
+          <h3 className="text-lg font-semibold mb-2">History</h3>
+          <div className="space-y-1">
+            {history.map((entry) => (
+              <div key={entry.date} className="text-sm text-gray-600">
+                {entry.date}: {Math.floor(entry.time / 60)}:{(entry.time % 60).toString().padStart(2, '0')}
+              </div>
+            ))}
+          </div>
+        </div>
+      </div>
     </div>
   )
 }
-

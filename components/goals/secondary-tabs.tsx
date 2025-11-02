@@ -1,6 +1,6 @@
 "use client"
 
-import { Image, Plus, Radio, LayoutList, MessageCircle, BookOpen } from "lucide-react"
+import { Image, Plus, Radio, LayoutList, ArrowUp, BookOpen } from "lucide-react"
 
 interface SecondaryTabsProps {
   activeTab: string
@@ -14,7 +14,7 @@ export default function SecondaryTabs({ activeTab, setActiveTab, isAuthenticated
     { id: "addwish", icon: Plus, requiresAuth: false }, // Temporarily set to false for testing
     { id: "recommendations", icon: Radio, requiresAuth: false },
     { id: "tasks", icon: LayoutList, requiresAuth: true },
-    { id: "roadmap", icon: MessageCircle, requiresAuth: true },
+    { id: "roadmap", icon: ArrowUp, requiresAuth: true },
     { id: "notebook", icon: BookOpen, requiresAuth: true },
   ]
 

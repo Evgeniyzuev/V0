@@ -123,14 +123,6 @@ export default function Roadmap() {
       {/* Боковые маркеры расстояния */}
       <div className="absolute left-4 top-1/2 transform -translate-y-1/2 space-y-8">
         <div className="text-xs text-gray-400">100м</div>
-        <div className="text-xs text-gray-400">200м</div>
-        <div className="text-xs text-gray-400">300м</div>
-      </div>
-
-      <div className="absolute right-4 top-1/2 transform -translate-y-1/2 space-y-8">
-        <div className="text-xs text-gray-400">500м</div>
-        <div className="text-xs text-gray-400">600м</div>
-        <div className="text-xs text-gray-400">700м</div>
       </div>
     </div>
   )
