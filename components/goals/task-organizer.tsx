@@ -63,6 +63,7 @@ export default function TaskOrganizer() {
   const [totalWorkTime, setTotalWorkTime] = useState(0)
   const [history, setHistory] = useState<HistoryEntry[]>([])
   const [isBlinking, setIsBlinking] = useState(false)
+  const [isCompleted, setIsCompleted] = useState(false)
 
   // Load history from localStorage on mount
   useEffect(() => {
@@ -98,6 +99,7 @@ export default function TaskOrganizer() {
                 return restDuration
               } else {
                 setIsRunning(false)
+                setIsCompleted(true)
                 setCurrentRound(0)
                 setIsWorkPhase(true)
                 // Save to history
@@ -108,6 +110,7 @@ export default function TaskOrganizer() {
                   localStorage.setItem('tabataHistory', JSON.stringify(newHistory))
                   return newHistory
                 })
+                playCompletionSound()
                 return workDuration
               }
             } else {
@@ -173,6 +176,28 @@ export default function TaskOrganizer() {
     }
   }
 
+  const playCompletionSound = () => {
+    try {
+      const audioContext = new (window.AudioContext || (window as any).webkitAudioContext)()
+      const oscillator = audioContext.createOscillator()
+      const gainNode = audioContext.createGain()
+
+      oscillator.connect(gainNode)
+      gainNode.connect(audioContext.destination)
+
+      oscillator.frequency.value = 600
+      oscillator.type = 'sine'
+
+      gainNode.gain.setValueAtTime(0.5, audioContext.currentTime)
+      gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 1)
+
+      oscillator.start(audioContext.currentTime)
+      oscillator.stop(audioContext.currentTime + 1)
+    } catch (error) {
+      console.log('Audio not supported')
+    }
+  }
+
   const startStop = () => {
     if (isRunning) {
       setIsRunning(false)
@@ -194,6 +219,7 @@ export default function TaskOrganizer() {
     setIsWorkPhase(true)
     setTimeLeft(workDuration)
     setIsBlinking(false)
+    setIsCompleted(false)
   }
 
   // Update numeric values from inputs
@@ -297,7 +323,11 @@ export default function TaskOrganizer() {
         </div>
 
         {/* Timer Display */}
-        <div className={`text-center mb-6 p-4 rounded-lg transition-colors duration-200 ${isBlinking ? 'bg-red-100 animate-pulse' : 'bg-transparent'}`}>
+        <div className={`text-center mb-6 p-4 rounded-lg transition-colors duration-200 ${
+          isCompleted ? 'bg-green-100' :
+          isBlinking ? 'bg-red-100 animate-pulse' :
+          'bg-transparent'
+        }`}>
           <div className="text-6xl font-bold mb-2">
             {Math.floor(timeLeft / 60)}:{(timeLeft % 60).toString().padStart(2, '0')}
           </div>
