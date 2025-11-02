@@ -324,86 +324,121 @@ export default function TaskOrganizer() {
 
       {/* Tabata Timer */}
       <div className="mt-6 mx-0 bg-white rounded-3xl shadow-lg overflow-hidden">
-        <div className="bg-gradient-to-br from-blue-500 to-purple-600 p-6 text-white">
-          <h2 className="text-xl font-semibold text-center mb-4">Tabata Timer</h2>
+        <div className="bg-gradient-to-br from-blue-500 to-purple-600 p-4 text-white">
+          <h2 className="text-lg font-semibold text-center mb-3">Tabata Timer</h2>
 
-          {/* Timer Display */}
-          <div className="relative text-center p-6 rounded-2xl overflow-hidden">
-            {/* Animated Background */}
-            <div className={`absolute inset-0 transition-all duration-300 ${
-              isCompleted ? 'bg-green-400' :
-              isBlinking ? 'bg-red-400 animate-pulse' :
-              'bg-white/20 backdrop-blur-sm'
-            }`} />
-
-            {/* Content */}
-            <div className="relative z-10">
-              <div className="text-5xl font-bold mb-2 text-white">
-                {Math.floor(timeLeft / 60)}:{(timeLeft % 60).toString().padStart(2, '0')}
-              </div>
+          {/* Main Content */}
+          <div className="flex items-center justify-between">
+            {/* Left Side - Round Info */}
+            <div className="flex-1 text-left">
               <div className="text-sm opacity-90">Round {currentRound + 1} of {rounds}</div>
-              <div className="text-lg font-medium mt-1">{isWorkPhase ? 'Work' : 'Rest'}</div>
+              <div className="text-lg font-medium">{isWorkPhase ? 'Work' : 'Rest'}</div>
             </div>
-          </div>
 
-          {/* Controls */}
-          <div className="flex justify-center space-x-3 mt-6">
-            <Button
-              onClick={startStop}
-              size="lg"
-              className="bg-white text-blue-600 hover:bg-gray-100 rounded-full px-8 py-3 font-semibold"
-            >
-              {isRunning ? 'Stop' : (hasStarted ? 'Continue' : 'Start')}
-            </Button>
-            <Button
-              onClick={reset}
-              size="lg"
-              className="bg-gray-600 text-white hover:bg-gray-700 rounded-full px-6 py-3 font-semibold"
-            >
-              Reset
-            </Button>
-          </div>
-        </div>
+            {/* Center - Timer with Circular Progress */}
+            <div className="flex-1 flex justify-center">
+              <div className="relative">
+                {/* Circular Progress Background */}
+                <svg className="w-32 h-32 transform -rotate-90" viewBox="0 0 120 120">
+                  <circle
+                    cx="60"
+                    cy="60"
+                    r="54"
+                    stroke="rgba(255,255,255,0.2)"
+                    strokeWidth="6"
+                    fill="none"
+                  />
+                  {/* Progress Circle */}
+                  <circle
+                    cx="60"
+                    cy="60"
+                    r="54"
+                    stroke="rgba(255,255,255,0.8)"
+                    strokeWidth="6"
+                    fill="none"
+                    strokeDasharray={`${2 * Math.PI * 54}`}
+                    strokeDashoffset={`${2 * Math.PI * 54 * (1 - (isWorkPhase ?
+                      (workDuration - timeLeft) / Math.max(workDuration, 1) :
+                      (restDuration - timeLeft) / Math.max(restDuration, 1)
+                    ))}`}
+                    strokeLinecap="round"
+                    className="transition-all duration-300"
+                  />
+                </svg>
 
-        {/* Configuration */}
-        <div className="p-4 bg-gray-50">
-          <div className="grid grid-cols-3 gap-3 mb-4">
-            <div className="text-center">
-              <label className="block text-xs font-medium text-gray-600 mb-1">Work</label>
-              <Input
-                type="text"
-                value={workDurationInput}
-                onChange={(e) => setWorkDurationInput(e.target.value)}
-                placeholder={formatTime(workDurationMinutes)}
-                className="text-center h-10 rounded-lg"
-              />
-              <div className="text-xs text-gray-500 mt-1">min:sec</div>
+                {/* Timer Display */}
+                <div className="absolute inset-0 flex items-center justify-center">
+                  <div className={`text-center transition-all duration-300 ${
+                    isCompleted ? 'text-green-300' :
+                    isBlinking ? 'text-red-300 animate-pulse' :
+                    'text-white'
+                  }`}>
+                    <div className="text-3xl font-bold">
+                      {Math.floor(timeLeft / 60)}:{(timeLeft % 60).toString().padStart(2, '0')}
+                    </div>
+                  </div>
+                </div>
+              </div>
             </div>
-            <div className="text-center">
-              <label className="block text-xs font-medium text-gray-600 mb-1">Rest</label>
-              <Input
-                type="text"
-                value={restDurationInput}
-                onChange={(e) => setRestDurationInput(e.target.value)}
-                placeholder={formatTime(restDurationMinutes)}
-                className="text-center h-10 rounded-lg"
-              />
-              <div className="text-xs text-gray-500 mt-1">min:sec</div>
-            </div>
-            <div className="text-center">
-              <label className="block text-xs font-medium text-gray-600 mb-1">Rounds</label>
-              <Input
-                type="text"
-                value={roundsInput}
-                onChange={(e) => setRoundsInput(e.target.value)}
-                placeholder={rounds.toString()}
-                className="text-center h-10 rounded-lg"
-              />
+
+            {/* Right Side - Controls and Settings */}
+            <div className="flex-1 flex flex-col items-end space-y-3">
+              {/* Settings */}
+              <div className="space-y-2 text-right">
+                <div>
+                  <label className="block text-xs opacity-80">Work</label>
+                  <Input
+                    type="text"
+                    value={workDurationInput}
+                    onChange={(e) => setWorkDurationInput(e.target.value)}
+                    placeholder={formatTime(workDurationMinutes)}
+                    className="w-16 h-8 text-xs text-center bg-white/20 border-white/30 text-white placeholder-white/70 rounded"
+                  />
+                </div>
+                <div>
+                  <label className="block text-xs opacity-80">Rest</label>
+                  <Input
+                    type="text"
+                    value={restDurationInput}
+                    onChange={(e) => setRestDurationInput(e.target.value)}
+                    placeholder={formatTime(restDurationMinutes)}
+                    className="w-16 h-8 text-xs text-center bg-white/20 border-white/30 text-white placeholder-white/70 rounded"
+                  />
+                </div>
+                <div>
+                  <label className="block text-xs opacity-80">Rounds</label>
+                  <Input
+                    type="text"
+                    value={roundsInput}
+                    onChange={(e) => setRoundsInput(e.target.value)}
+                    placeholder={rounds.toString()}
+                    className="w-16 h-8 text-xs text-center bg-white/20 border-white/30 text-white placeholder-white/70 rounded"
+                  />
+                </div>
+              </div>
+
+              {/* Controls */}
+              <div className="flex flex-col space-y-2">
+                <Button
+                  onClick={startStop}
+                  size="sm"
+                  className="bg-white text-blue-600 hover:bg-gray-100 rounded-full px-4 py-2 text-sm font-semibold"
+                >
+                  {isRunning ? 'Stop' : (hasStarted ? 'Continue' : 'Start')}
+                </Button>
+                <Button
+                  onClick={reset}
+                  size="sm"
+                  className="bg-gray-600 text-white hover:bg-gray-700 rounded-full px-4 py-2 text-sm font-semibold"
+                >
+                  Reset
+                </Button>
+              </div>
             </div>
           </div>
 
           {/* Stats */}
-          <div className="text-center text-sm text-gray-600">
+          <div className="text-center text-xs opacity-80 mt-4">
             Today: {Math.floor(totalWorkTime / 60)}:{(totalWorkTime % 60).toString().padStart(2, '0')} worked
           </div>
         </div>
