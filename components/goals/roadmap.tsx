@@ -1,4 +1,7 @@
-import { MapPin, Target, Trophy, Star, ChevronUp } from "lucide-react"
+import { MapPin, Target, Trophy, Star, ChevronUp, Check } from "lucide-react"
+import { useUser } from "@/components/UserContext"
+import React, { useRef, useEffect, useState } from 'react';
+
 
 interface RoadmapPoint {
   id: string
@@ -10,121 +13,149 @@ interface RoadmapPoint {
 }
 
 export default function Roadmap() {
+  const { dbUser, goals } = useUser()
+  const roadmapRef = useRef<HTMLDivElement>(null);
+  const [scrollPosition, setScrollPosition] = useState(0);
+
+  useEffect(() => {
+    const handleScroll = () => {
+      if (roadmapRef.current) {
+        setScrollPosition(roadmapRef.current.scrollTop);
+      }
+    };
+
+    const currentRef = roadmapRef.current;
+    if (currentRef) {
+      currentRef.addEventListener('scroll', handleScroll);
+    }
+
+    return () => {
+      if (currentRef) {
+        currentRef.removeEventListener('scroll', handleScroll);
+      }
+    };
+  }, []);
+
+  const completedGoals = (goals || []).filter(goal => goal.status === 'completed');
+
   const roadmapPoints: RoadmapPoint[] = [
     {
-      id: "1",
+      id: "start",
       title: "Начало пути",
       description: "Определите свои первые цели",
       icon: <MapPin className="w-5 h-5" />,
       completed: true
     },
+    ...completedGoals.map((goal, index) => ({
+      id: `goal-${goal.id}`,
+      title: goal.title || 'Без названия',
+      description: `Завершено: ${new Date(goal.updated_at || goal.created_at || '').toLocaleDateString()}`,
+      icon: <Check className="w-5 h-5" />, // Используем иконку Check для завершенных целей
+      completed: true,
+    })),
     {
-      id: "2", 
-      title: "Первые достижения",
-      description: "Выполните 3 задачи",
+      id: "current-level",
+      title: `Текущий уровень: ${dbUser?.level || 0}`,
+      description: "Ваш текущий прогресс",
       icon: <Target className="w-5 h-5" />,
-      completed: true
-    },
-    {
-      id: "3",
-      title: "Следующий уровень",
-      description: "Создайте план развития",
-      icon: <Trophy className="w-5 h-5" />,
-      completed: false,
+      completed: true,
       current: true
     },
     {
-      id: "4",
-      title: "Мастерство",
-      description: "Достигните продвинутых навыков",
-      icon: <Star className="w-5 h-5" />,
+      id: "next-level",
+      title: `Следующий уровень: ${dbUser && dbUser.level !== undefined ? dbUser.level + 1 : '?'}`,
+      description: "Продолжайте свой путь к прогрессу",
+      icon: <Trophy className="w-5 h-5" />,
       completed: false
     }
-  ]
+  ];
 
   return (
-    <div className="relative h-full bg-gradient-to-b from-purple-50 to-white overflow-hidden">
-      {/* Фоновая сетка для эффекта навигатора */}
-      <div className="absolute inset-0 opacity-5">
-        <div className="h-full w-full" style={{
-          backgroundImage: 'linear-gradient(0deg, #000 1px, transparent 1px), linear-gradient(90deg, #000 1px, transparent 1px)',
-          backgroundSize: '20px 20px'
-        }} />
-      </div>
+    <div
+      ref={roadmapRef}
+      className="relative h-full w-full overflow-y-auto"
+      style={{
+        backgroundImage: 'url("https://blush-keen-constrictor-906.mypinata.cloud/ipfs/bafkreieyx5fpjifkodtnpvg56hkc335derfxljfyolhg5pkbjcuisxcxle")',
+        backgroundSize: 'cover',
+        backgroundPosition: 'center',
+        animation: 'scrollBackground 60s linear infinite', // Добавим анимацию
+      }}
+    >
+      {/* Затемненный оверлей для лучшей читаемости текста */}
+      <div className="absolute inset-0 bg-black opacity-30"></div>
 
       {/* Контейнер маршрута */}
-      <div className="relative h-full flex flex-col justify-between py-8">
-        {/* Верхняя точка маршрута - следующий уровень */}
-        <div className="flex flex-col items-center px-4">
-          <div className="relative">
-            <div className="w-16 h-16 bg-purple-600 rounded-full flex items-center justify-center shadow-lg animate-pulse">
-              <Trophy className="w-8 h-8 text-white" />
-            </div>
-            <div className="absolute -top-1 -right-1 w-4 h-4 bg-red-500 rounded-full animate-ping" />
-            <div className="absolute -top-1 -right-1 w-4 h-4 bg-red-500 rounded-full" />
-          </div>
-          <div className="mt-3 text-center">
-            <h3 className="font-semibold text-purple-900">Следующий уровень</h3>
-            <p className="text-sm text-gray-600 mt-1">Создайте план развития</p>
-          </div>
-        </div>
-
+      <div className="relative z-10 flex flex-col items-center py-8">
         {/* Вертикальная линия маршрута */}
-        <div className="absolute left-1/2 transform -translate-x-1/2 top-24 bottom-24 w-1 bg-gradient-to-b from-purple-400 via-purple-300 to-purple-200" />
+        <div className="absolute left-1/2 transform -translate-x-1/2 top-0 bottom-0 w-1 bg-gradient-to-b from-purple-400 via-purple-300 to-purple-200 opacity-70" />
 
-        {/* Промежуточные точки */}
-        <div className="absolute left-1/2 transform -translate-x-1/2 top-1/3 space-y-32">
-          {roadmapPoints.slice(1, 3).map((point, index) => (
-            <div key={point.id} className="relative">
-              <div className={`w-12 h-12 rounded-full flex items-center justify-center shadow-md ${
-                point.completed ? 'bg-green-500' : 'bg-gray-300'
-              }`}>
+        {roadmapPoints.map((point, index) => (
+          <React.Fragment key={point.id}>
+            {/* Точка маршрута */}
+            <div className={`relative flex flex-col items-center my-8 ${point.current ? 'z-20' : ''}`}>
+              <div
+                className={`relative w-16 h-16 rounded-full flex items-center justify-center shadow-lg transform transition-all duration-300
+                  ${point.completed ? 'bg-green-500 scale-105' : 'bg-gray-300'}
+                  ${point.current ? 'bg-purple-600 animate-pulse scale-125' : ''}`
+                }
+              >
                 {point.icon}
+                {point.current && (
+                  <>
+                    <div className="absolute -top-1 -right-1 w-4 h-4 bg-red-500 rounded-full animate-ping" />
+                    <div className="absolute -top-1 -right-1 w-4 h-4 bg-red-500 rounded-full" />
+                  </>
+                )}
               </div>
-              <div className="absolute left-16 top-1/2 transform -translate-y-1/2 w-32">
-                <p className={`text-sm font-medium ${
-                  point.completed ? 'text-green-700' : 'text-gray-500'
-                }`}>
-                  {point.title}
-                </p>
+              <div className={`mt-3 text-center px-4 ${point.current ? 'text-white' : 'text-gray-800'}`}>
+                <h3 className="font-semibold text-lg">{point.title}</h3>
+                <p className="text-sm text-gray-200">{point.description}</p>
               </div>
             </div>
-          ))}
-        </div>
+
+            {/* Соединительная линия между точками (если это не последняя) */}
+            {index < roadmapPoints.length - 1 && (
+              <div className="w-1 h-32 bg-gray-400 opacity-50 relative -my-8" />
+            )}
+          </React.Fragment>
+        ))}
 
         {/* Указатель местоположения внизу */}
-        <div className="flex flex-col items-center">
-          <div className="relative">
-            {/* Тень указателя */}
-            <div className="absolute inset-0 bg-purple-400 rounded-full blur-xl opacity-30 scale-150" />
-            
-            {/* Основной указатель */}
-            <div className="relative w-20 h-20 bg-gradient-to-b from-purple-600 to-purple-700 rounded-full flex items-center justify-center shadow-2xl">
-              <ChevronUp className="w-10 h-10 text-white animate-bounce" />
-            </div>
-            
-            {/* Внутренний круг для эффекта */}
-            <div className="absolute inset-2 bg-white rounded-full opacity-20" />
+        <div className="flex flex-col items-center mt-8 relative z-20">
+          {/* Тень указателя */}
+          <div className="absolute inset-0 bg-purple-400 rounded-full blur-xl opacity-30 scale-150" />
+
+          {/* Основной указатель */}
+          <div className="relative w-20 h-20 bg-gradient-to-b from-purple-600 to-purple-700 rounded-full flex items-center justify-center shadow-2xl">
+            <ChevronUp className="w-10 h-10 text-white animate-bounce" />
           </div>
           
-          <div className="mt-4 text-center">
-            <p className="text-sm font-semibold text-purple-900">Ваше местоположение</p>
-            <p className="text-xs text-gray-600 mt-1">Двигайтесь вверх к цели</p>
+          {/* Внутренний круг для эффекта */}
+          <div className="absolute inset-2 bg-white rounded-full opacity-20" />
+
+          <div className="mt-4 text-center text-white">
+            <p className="text-sm font-semibold">Ваше местоположение</p>
+            <p className="text-xs text-gray-200 mt-1">Двигайтесь вверх к цели</p>
           </div>
 
           {/* Индикатор прогресса */}
           <div className="mt-4 w-32 h-2 bg-gray-200 rounded-full overflow-hidden">
             <div className="h-full w-3/4 bg-gradient-to-r from-purple-500 to-purple-600 rounded-full" />
           </div>
-          <p className="text-xs text-gray-500 mt-1">75% завершено</p>
+          <p className="text-xs text-gray-200 mt-1">75% завершено</p>
         </div>
       </div>
-
-      {/* Боковые маркеры расстояния */}
-      <div className="absolute left-4 top-1/2 transform -translate-y-1/2 space-y-8">
-        <div className="text-xs text-gray-400">100м</div>
-      </div>
+{/* // Добавим ключевые кадры для анимации фона через глобальные стили или styled-components */}
+      <style jsx global>{`
+        @keyframes scrollBackground {
+          from {
+            background-position-y: 0%;
+          }
+          to {
+            background-position-y: 100%;
+          }
+        }
+      `}</style>
     </div>
   )
 }
-
