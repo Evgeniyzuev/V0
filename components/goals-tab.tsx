@@ -9,7 +9,7 @@ import NotesPage from "@/components/goals/add-note"
 import RecommendationsFeed from "@/components/goals/recommendations-feed"
 import TaskOrganizer from "@/components/goals/task-organizer"
 import Roadmap from "@/components/goals/roadmap"
-import Notebook from "@/components/goals/notebook"
+import Results from "@/components/goals/results"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
 import { Avatar, AvatarFallback } from "@/components/ui/avatar"
@@ -30,6 +30,10 @@ export default function GoalsTab() {
       if (activeSecondaryTab === "addwish") {
         return <NotesPage />
       }
+      // allow viewing results page for testing even when unauthenticated
+      if (activeSecondaryTab === "results") {
+        return <Results />
+      }
       return <WishBoard showOnlyRecommendations={true} />
     }
 
@@ -42,8 +46,8 @@ export default function GoalsTab() {
         return <TaskOrganizer />
       case "roadmap":
         return <Roadmap />
-      case "notebook":
-        return <Notebook />
+      case "results":
+        return <Results />
       default:
         return <WishBoard showOnlyRecommendations={false} />
     }
