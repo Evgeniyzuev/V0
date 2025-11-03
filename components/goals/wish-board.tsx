@@ -5,6 +5,7 @@ import { useState, useRef } from "react"
 import { Dialog } from "@/components/ui/dialog"
 import { Edit, X, DollarSign, CheckSquare, User, Plus } from "lucide-react"
 import AddWish from "./add-wish"
+import TaskEditor from "@/components/tasks/TaskEditor"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
 import { Avatar, AvatarFallback } from "@/components/ui/avatar"
@@ -97,6 +98,8 @@ const WishBoard: React.FC<WishBoardProps> = ({ showOnlyRecommendations }) => {
   const [editedProgress, setEditedProgress] = useState(0)
   const [editedDifficultyLevel, setEditedDifficultyLevel] = useState(0)
   const [isAddWishModalOpen, setIsAddWishModalOpen] = useState(false)
+  const [taskEditorOpen, setTaskEditorOpen] = useState(false)
+  const [taskEditorInitial, setTaskEditorInitial] = useState<any | null>(null)
 
   // Check if a goal is in user's personal goals
   const isGoalInPersonalGoals = (goalId: number) => {
@@ -383,6 +386,25 @@ const WishBoard: React.FC<WishBoardProps> = ({ showOnlyRecommendations }) => {
                       className="w-full h-full object-cover"
                       loading="lazy"
                     />
+                    {/* small overlay action buttons */}
+                    <div className="absolute bottom-2 right-2 flex flex-col gap-2 opacity-0 hover:opacity-100 transition-opacity">
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation()
+                          setTaskEditorInitial({
+                            title: goal?.title || goal?.goal?.title || "",
+                            description: goal?.description || goal?.goal?.description || "",
+                            image_url: goal?.image_url || undefined,
+                            estimated_cost: goal?.estimated_cost || undefined,
+                            difficulty_level: goal?.difficulty_level || 0,
+                          })
+                          setTaskEditorOpen(true)
+                        }}
+                        className="bg-white/90 text-sm text-gray-700 px-2 py-1 rounded shadow-sm border border-gray-200"
+                      >
+                        +Task
+                      </button>
+                    </div>
                     <div className="absolute inset-0 bg-gradient-to-t from-black/50 to-transparent flex items-end">
                       <div className="p-3 text-white">
                         <div className="text-sm font-medium">{goal?.title || goal?.goal?.title}</div>
@@ -556,31 +578,51 @@ const WishBoard: React.FC<WishBoardProps> = ({ showOnlyRecommendations }) => {
                         <p className="text-gray-600">{selectedWish.description}</p>
                       </div>
                       <div className="flex gap-2">
-                        {dbUser?.id &&
-                          selectedWish &&
-                          (isFromPersonalGoals ? (
-                            <button
-                              onClick={(e) => {
-                                e.stopPropagation()
-                                handleRemoveFromPersonalGoals(selectedWish)
-                              }}
-                              className="px-4 py-2 text-white rounded hover:opacity-90 transition-colors bg-red-600 hover:bg-red-700"
-                            >
-                              Remove from Personal Goals
-                            </button>
-                          ) : (
-                            !isGoalInPersonalGoals(selectedWish.id) && (
-                              <button
-                                onClick={(e) => {
-                                  e.stopPropagation()
-                                  handleAddToPersonalGoals(selectedWish)
-                                }}
-                                className="px-4 py-2 text-white rounded hover:opacity-90 transition-colors bg-purple-600 hover:bg-purple-700"
-                              >
-                                Add to Personal Goals
-                              </button>
-                            )
-                          ))}
+                        {dbUser?.id && selectedWish && (
+                          <div className="flex flex-col gap-2">
+                            {isFromPersonalGoals ? (
+                              <>
+                                <button
+                                  onClick={(e) => {
+                                    e.stopPropagation()
+                                    handleRemoveFromPersonalGoals(selectedWish)
+                                  }}
+                                  className="px-3 py-1 text-white rounded hover:opacity-90 transition-colors bg-red-600 hover:bg-red-700 text-sm"
+                                >
+                                  Remove
+                                </button>
+                                <button
+                                  onClick={(e) => {
+                                    e.stopPropagation()
+                                    setTaskEditorInitial({
+                                      title: selectedWish.title || "",
+                                      description: selectedWish.description || "",
+                                      image_url: selectedWish.image_url || undefined,
+                                      estimated_cost: selectedWish.estimated_cost || undefined,
+                                      difficulty_level: selectedWish.difficulty_level || 0,
+                                    })
+                                    setTaskEditorOpen(true)
+                                  }}
+                                  className="px-3 py-1 text-white rounded hover:opacity-90 transition-colors bg-green-600 hover:bg-green-700 text-sm"
+                                >
+                                  Create Task from Wish (+Task)
+                                </button>
+                              </>
+                            ) : (
+                              !isGoalInPersonalGoals(selectedWish.id) && (
+                                <button
+                                  onClick={(e) => {
+                                    e.stopPropagation()
+                                    handleAddToPersonalGoals(selectedWish)
+                                  }}
+                                  className="px-4 py-2 text-white rounded hover:opacity-90 transition-colors bg-purple-600 hover:bg-purple-700"
+                                >
+                                  Add to Personal Goals
+                                </button>
+                              )
+                            )}
+                          </div>
+                        )}
                         {isFromPersonalGoals && (
                           <button
                             onClick={(e) => {
@@ -650,6 +692,13 @@ const WishBoard: React.FC<WishBoardProps> = ({ showOnlyRecommendations }) => {
             </div>
           </div>
         </Dialog>
+      )}
+      {taskEditorOpen && (
+        <TaskEditor
+          open={taskEditorOpen}
+          onClose={() => setTaskEditorOpen(false)}
+          initial={taskEditorInitial || undefined}
+        />
       )}
     </div>
   )

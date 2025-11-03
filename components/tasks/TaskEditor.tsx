@@ -97,15 +97,43 @@ export default function TaskEditor({ open, onClose, onSuccess, initial }: TaskEd
         },
       }
 
-      const { error } = await supabase.from("user_goals").insert([payload])
+      // Insert into personal_tasks table (JSON fields for subtasks/resources)
+      // If initial provided an image_url, include it as a resource (unless already present)
+      const finalResources = [...resources]
+      if (initial?.image_url) {
+        const exists = finalResources.some((r) => r.type === 'image' && r.content === initial.image_url)
+        if (!exists) {
+          finalResources.unshift({ id: `img_${Date.now()}`, type: 'image', title: 'Image', content: initial.image_url })
+        }
+      }
+
+      const insertPayload = {
+        user_id: dbUser.id,
+        title: payload.title,
+        description: payload.description ?? null,
+        subtasks: subtasks,
+        resources: finalResources,
+        status: 'open',
+        progress_percentage: progress_percentage,
+      }
+
+      const { data, error } = await supabase.from('personal_tasks').insert([insertPayload]).select().single()
 
       if (error) {
-        console.error("Error creating task (user_goal):", error)
+        console.error("Error creating personal task:", error)
         toast.error(error.message || "Failed to create task")
       } else {
         toast.success("Task created")
+        // notify other components to reload personal tasks
+        try {
+          if (typeof window !== 'undefined') {
+            window.dispatchEvent(new CustomEvent('personal_tasks_changed', { detail: { task: data } }))
+          }
+        } catch (e) {
+          // ignore
+        }
         await refreshGoals()
-        onSuccess && onSuccess(null)
+        onSuccess && onSuccess(data as any)
         onClose()
       }
     } catch (err) {

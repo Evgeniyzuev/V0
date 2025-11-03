@@ -277,37 +277,33 @@ export default function AddWish({ onSuccess, isModal = false }: AddWishProps) {
       // Определяем URL изображения в зависимости от режима
       const finalImageUrl = imageMode === "url" ? imageUrl : localImageUrl
 
-      // Create a user_goal entry directly
-      const { error: userGoalError } = await supabase
-        .from("user_goals")
-        .insert([
-          {
-            user_id: dbUser.id,
-            title,
-            description: description || null,
-            image_url: finalImageUrl,
-            estimated_cost: estimatedCost || null,
-            difficulty_level: difficultyLevel,
-            status: "not_started",
-            progress_percentage: 0,
-            steps: []
-          }
-        ])
-
-      if (userGoalError) {
-        throw new Error(userGoalError.message)
+      // Insert into user_goals (user-created wish)
+      const newUserGoal = {
+        user_id: dbUser.id,
+        title,
+        image_url: finalImageUrl || undefined,
+        description: description || undefined,
+        estimated_cost: estimatedCost || undefined,
+        steps: [],
+        status: 'not_started',
+        started_at: null,
+        target_date: null,
+        completed_at: null,
+        progress_percentage: 0,
+        current_step_index: null,
+        progress_details: null,
+        notes: undefined,
+        difficulty_level: difficultyLevel || undefined,
       }
 
-      // Refresh goals in UserContext (this will update the personal goals list)
-      await refreshGoals()
-      
-      // Also invalidate any related queries to ensure UI updates
-      await queryClient.invalidateQueries({ queryKey: ["user-goals"] })
-      await queryClient.invalidateQueries({ queryKey: ["goals"] })
-      
-      console.log('Goal added and context refreshed')
+      const { data: inserted, error: insertError } = await supabase.from('user_goals').insert([newUserGoal]).select()
+      if (insertError) throw new Error(insertError.message)
 
-      toast.success("Wish added successfully!")
+      // Invalidate and refresh user goals
+      await queryClient.invalidateQueries({ queryKey: ['user-goals'] })
+      await refreshGoals()
+
+      toast.success("Wish saved")
 
       // Call onSuccess callback if provided
       if (onSuccess) {
