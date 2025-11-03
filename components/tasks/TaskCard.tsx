@@ -7,7 +7,7 @@ import { createClientSupabaseClient } from "@/lib/supabase"
 import { toast } from "sonner"
 // TaskCard works with both legacy `user_goals` rows and new `personal_tasks` rows.
 // We accept a generic `any` for compatibility.
-import { Check } from "lucide-react"
+import { Check, Trash2 } from "lucide-react"
 
 type SubtaskType = { id: string; title: string; completed?: boolean }
 
@@ -50,6 +50,9 @@ export default function TaskCard({ goal, onUpdated }: TaskCardProps) {
       }
     }
   }, [goal])
+
+  // choose image from resources if available
+  const imageResource = resources.find((r) => r?.type === 'image' || (r?.type === 'link' && /\.(jpe?g|png|webp|gif|svg)$/i.test(r.content || '')) )
 
   const computeProgress = (subs: SubtaskType[]) => {
     if (!subs.length) return 0
@@ -122,8 +125,14 @@ export default function TaskCard({ goal, onUpdated }: TaskCardProps) {
         className="flex items-center gap-3 p-3 bg-white rounded-lg shadow-sm hover:shadow-md cursor-pointer"
         onClick={() => setOpen(true)}
       >
-        <div className="w-12 h-12 bg-gray-100 rounded-md flex items-center justify-center overflow-hidden">
-          {goal.image_url ? <img src={goal.image_url} alt={goal.title} className="w-full h-full object-cover" /> : <div className="text-gray-400">🎯</div>}
+        <div className="w-20 h-20 bg-gray-100 rounded-md flex items-center justify-center overflow-hidden">
+          {imageResource ? (
+            <img src={imageResource.content} alt={goal.title} className="w-full h-full object-cover" />
+          ) : goal.image_url ? (
+            <img src={goal.image_url} alt={goal.title} className="w-full h-full object-cover" />
+          ) : (
+            <div className="text-gray-400 text-2xl">🎯</div>
+          )}
         </div>
         <div className="flex-1">
           <div className="flex items-center justify-between">
@@ -138,7 +147,7 @@ export default function TaskCard({ goal, onUpdated }: TaskCardProps) {
 
       {open && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4">
-          <div className="w-full max-w-xl bg-white rounded-lg p-4 max-h-[85vh] overflow-y-auto">
+          <div className="w-full max-w-xl bg-white rounded-lg p-4 max-h-[85vh] overflow-y-auto relative">
             <div className="flex items-start justify-between pb-2">
               <div>
                 <h3 className="text-lg font-semibold">{goal.title}</h3>
@@ -196,7 +205,7 @@ export default function TaskCard({ goal, onUpdated }: TaskCardProps) {
             )}
 
             <div className="mt-4 flex justify-end gap-2">
-              <Button onClick={async () => {
+              <Button className="bg-green-500 text-white hover:bg-green-600" onClick={async () => {
                   // Quick mark all done
                   const all = subtasks.map(s => ({ ...s, completed: true }))
                   setSubtasks(all)
@@ -227,6 +236,31 @@ export default function TaskCard({ goal, onUpdated }: TaskCardProps) {
                     setOpen(false)
                   }
                 }}>Mark all done</Button>
+
+                {/* Delete button in bottom-left of modal */}
+              <div className="absolute left-4 bottom-4">
+                <Button className="bg-green-500 text-white hover:bg-green-600" onClick={async () => {
+                  // delete personal task if applicable
+                  if (!Array.isArray(goal?.subtasks)) {
+                    toast.error('Cannot delete this goal')
+                    return
+                  }
+                  if (!confirm('Delete this task?')) return
+                  try {
+                    const supabase = createClientSupabaseClient()
+                    const { error } = await supabase.from('personal_tasks').delete().eq('id', goal.id)
+                    if (error) throw error
+                    toast.success('Deleted')
+                    onUpdated && onUpdated()
+                    setOpen(false)
+                  } catch (err: any) {
+                    console.error('Failed to delete personal task', err)
+                    toast.error(err?.message || 'Delete failed')
+                  }
+                }}>
+                  <Trash2 className="h-4 w-4" />
+                </Button>
+              </div>
             </div>
           </div>
         </div>
