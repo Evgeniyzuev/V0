@@ -13,12 +13,8 @@ type HistoryEntry = {
   time: number
 }
 
-// Start with empty local tasks (we no longer ship a sample task)
-const initialLocalTasks: Array<any> = []
-
 export default function TaskOrganizer() {
-  const { refreshGoals } = useUser()
-  const [localTasks, setLocalTasks] = useState(initialLocalTasks as Array<any>)
+  const { refreshGoals, dbUser } = useUser() as any
   const [personalTasks, setPersonalTasks] = useState<Array<any>>([])
   const [isCompletedExpandedLocal, setIsCompletedExpandedLocal] = useState(false)
 
@@ -65,7 +61,6 @@ export default function TaskOrganizer() {
   const [timeThresholdInput, setTimeThresholdInput] = useState("25:00")
   const [timeThreshold, setTimeThreshold] = useState(25)
   const supabase = typeof window !== 'undefined' ? createClientSupabaseClient() : null
-  const { authUser } = useUser() as any
 
   // Load settings and history from localStorage on mount
   useEffect(() => {
@@ -94,12 +89,12 @@ export default function TaskOrganizer() {
 
   // Loader for personal tasks (reusable)
   const fetchPersonalTasks = useCallback(async () => {
-    if (!supabase || !authUser) return
+    if (!supabase || !dbUser) return
     try {
       const { data, error } = await supabase
         .from('personal_tasks')
         .select('*')
-        .eq('user_id', authUser.id)
+        .eq('user_id', dbUser.id)
         .order('created_at', { ascending: false })
 
       if (error) {
@@ -110,7 +105,7 @@ export default function TaskOrganizer() {
     } catch (e) {
       console.error('Error loading personal tasks', e)
     }
-  }, [supabase, authUser])
+  }, [supabase, dbUser])
 
   useEffect(() => {
     fetchPersonalTasks()
@@ -202,13 +197,7 @@ export default function TaskOrganizer() {
 
 
 
-  const handleToggleComplete = (taskId: number) => {
-    setLocalTasks(localTasks.map((task) => (task.id === taskId ? { ...task, completed: !task.completed } : task)))
-  }
-
-  const handleDeleteTask = (taskId: number) => {
-    setLocalTasks(localTasks.filter((task) => task.id !== taskId))
-  }
+  // local quick-task helpers removed (we now rely on `personal_tasks` from DB)
 
   // Delete a personal task (server-side)
   const handleDeletePersonalTask = async (id: string) => {
@@ -385,17 +374,7 @@ export default function TaskOrganizer() {
                     </div>
                   </div>
                 ))}
-                {localTasks.filter((t) => t.completed).map((task) => (
-                  <div key={task.id} className="flex items-center justify-between p-3 bg-green-50 rounded-lg">
-                    <div className="flex items-center">
-                      <div className="w-6 h-6 rounded-full bg-green-500 mr-3 flex items-center justify-center text-white">✓</div>
-                      <span className="line-through text-gray-500">{task.title}</span>
-                    </div>
-                    <div className="flex items-center space-x-2">
-                      <Button size="sm" variant="ghost" onClick={() => handleDeleteTask(task.id)}>Delete</Button>
-                    </div>
-                  </div>
-                ))}
+                
               </div>
             )}
           </div>
