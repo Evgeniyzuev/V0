@@ -341,7 +341,7 @@ export default function TaskOrganizer() {
       <div className="space-y-4">
         {/* Saved tasks (personal_tasks) - render using TaskCard to preserve UI */}
         {personalTasks && personalTasks.length > 0 ? (
-          <div className="grid gap-3">
+          <div className="grid gap-0">
             {personalTasks.filter((t) => t.status !== 'completed').map((t) => (
               <TaskCard key={t.id} goal={t} onUpdated={fetchPersonalTasks} />
             ))}

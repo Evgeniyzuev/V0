@@ -122,10 +122,10 @@ export default function TaskCard({ goal, onUpdated }: TaskCardProps) {
   return (
     <>
       <div
-        className="flex items-center gap-3 p-3 bg-white rounded-lg shadow-sm hover:shadow-md cursor-pointer"
+        className="flex items-center p-0 bg-white rounded-lg shadow-sm hover:shadow-md cursor-pointer"
         onClick={() => setOpen(true)}
       >
-        <div className="w-20 h-20 bg-gray-100 rounded-md flex items-center justify-center overflow-hidden">
+        <div className="w-16 h-16 bg-gray-100 rounded-l-lg flex items-center justify-center overflow-hidden">
           {imageResource ? (
             <img src={imageResource.content} alt={goal.title} className="w-full h-full object-cover" />
           ) : goal.image_url ? (
@@ -134,7 +134,7 @@ export default function TaskCard({ goal, onUpdated }: TaskCardProps) {
             <div className="text-gray-400 text-2xl">🎯</div>
           )}
         </div>
-        <div className="flex-1">
+        <div className="flex-1 px-3 py-3">
           <div className="flex items-center justify-between">
             <div className="font-medium text-gray-900 line-clamp-1">{goal.title}</div>
             <div className="text-sm text-gray-500">{goal.progress_percentage ?? 0}%</div>
@@ -236,31 +236,31 @@ export default function TaskCard({ goal, onUpdated }: TaskCardProps) {
                     setOpen(false)
                   }
                 }}>Mark all done</Button>
+            </div>
 
-                {/* Delete button in bottom-left of modal */}
-              <div className="absolute left-4 bottom-4">
-                <Button className="bg-green-500 text-white hover:bg-green-600" onClick={async () => {
-                  // delete personal task if applicable
-                  if (!Array.isArray(goal?.subtasks)) {
-                    toast.error('Cannot delete this goal')
-                    return
-                  }
-                  if (!confirm('Delete this task?')) return
-                  try {
-                    const supabase = createClientSupabaseClient()
-                    const { error } = await supabase.from('personal_tasks').delete().eq('id', goal.id)
-                    if (error) throw error
-                    toast.success('Deleted')
-                    onUpdated && onUpdated()
-                    setOpen(false)
-                  } catch (err: any) {
-                    console.error('Failed to delete personal task', err)
-                    toast.error(err?.message || 'Delete failed')
-                  }
-                }}>
-                  <Trash2 className="h-4 w-4" />
-                </Button>
-              </div>
+            {/* Delete button in bottom-left of modal */}
+            <div className="absolute left-4 bottom-4">
+              <Button className="bg-red-500 text-white hover:bg-red-600" onClick={async () => {
+                // delete personal task if applicable
+                if (!Array.isArray(goal?.subtasks)) {
+                  toast.error('Cannot delete this goal')
+                  return
+                }
+                if (!confirm('Delete this task?')) return
+                try {
+                  const supabase = createClientSupabaseClient()
+                  const { error } = await supabase.from('personal_tasks').delete().eq('id', goal.id)
+                  if (error) throw error
+                  toast.success('Deleted')
+                  onUpdated && onUpdated()
+                  setOpen(false)
+                } catch (err: any) {
+                  console.error('Failed to delete personal task', err)
+                  toast.error(err?.message || 'Delete failed')
+                }
+              }}>
+                <Trash2 className="h-4 w-4" />
+              </Button>
             </div>
           </div>
         </div>
