@@ -6,6 +6,7 @@ import { useState, useEffect, useMemo, useRef } from "react"
 import { Button } from "@/components/ui/button"
 import { Textarea } from "@/components/ui/textarea"
 import { Input } from "@/components/ui/input"
+import TaskEditor from "@/components/tasks/TaskEditor"
 import {
   Plus,
   Info,
@@ -73,6 +74,8 @@ export default function NotesPage() {
   const [editingListModal, setEditingListModal] = useState<CustomList | null>(null)
   const [customLists, setCustomLists] = useState<CustomList[]>([])
   const [showListSelectionModal, setShowListSelectionModal] = useState<boolean>(false)
+  const [taskEditorOpen, setTaskEditorOpen] = useState(false)
+  const [taskInitial, setTaskInitial] = useState<any>(null)
   const [metadataForm, setMetadataForm] = useState<{
     date: string
     time: string
@@ -671,6 +674,14 @@ export default function NotesPage() {
         <div className="relative">
           <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-gray-400" />
           <Input placeholder="Search" className="pl-10 bg-gray-100 border-none rounded-lg" />
+          <div className="absolute right-3 top-1/2 transform -translate-y-1/2">
+            <Button size="sm" onClick={() => {
+              // Prefill with currently editing text if available
+              const title = editingText ? editingText.split('\n')[0].slice(0, 80) : 'Note Task'
+              setTaskInitial({ title, description: editingText || '' })
+              setTaskEditorOpen(true)
+            }}>Create Task</Button>
+          </div>
         </div>
       </div>
 
@@ -752,6 +763,13 @@ export default function NotesPage() {
 
         {/* My Lists */}
         <div>
+        {taskEditorOpen && (
+          <TaskEditor
+            open={taskEditorOpen}
+            onClose={() => setTaskEditorOpen(false)}
+            initial={taskInitial}
+          />
+        )}
           {/* <h2 className="text-lg font-semibold text-gray-900 mb-3">My Lists</h2> */}
           <div className="space-y-1">
             {customLists.map((list) => (

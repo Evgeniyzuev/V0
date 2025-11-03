@@ -12,6 +12,7 @@ import Link from "next/link"
 import TaskUpdater from "@/components/TaskUpdater"
 import { useTaskVerification } from '@/hooks/useTaskVerification'
 import { useLevelCheck } from '@/hooks/useLevelCheck'
+import TaskEditor from "@/components/tasks/TaskEditor"
 
 // Initialize Supabase client
 const supabase = createClientSupabaseClient();
@@ -50,6 +51,8 @@ export default function ChallengesTab() {
     newCore?: number;
   } | null>(null)
   const [selectedTask, setSelectedTask] = useState<Challenge | null>(null)
+  const [taskEditorOpen, setTaskEditorOpen] = useState(false)
+  const [taskEditorInitial, setTaskEditorInitial] = useState<any>(null)
   const tasksLoadedRef = useRef<string | null>(null)
 
   const onTaskComplete = useCallback((taskNumber: number, reward: number, oldCore: number, newCore: number) => {
@@ -413,6 +416,16 @@ export default function ChallengesTab() {
                         )}
                       </Button>
                     )}
+                    <Button
+                      variant="outline"
+                      onClick={() => {
+                        // Prefill TaskEditor with selected challenge info
+                        setTaskEditorInitial({ title: selectedTask.title, description: selectedTask.description, estimated_cost: null, difficulty_level: 1, image_url: selectedTask.icon_url })
+                        setTaskEditorOpen(true)
+                      }}
+                    >
+                      Create Personal Task
+                    </Button>
                   </div>
                 </div>
 
@@ -471,6 +484,9 @@ export default function ChallengesTab() {
               </div>
             </div>
           </div>
+          {taskEditorOpen && (
+            <TaskEditor open={taskEditorOpen} onClose={() => setTaskEditorOpen(false)} initial={taskEditorInitial} />
+          )}
         </Dialog>
       )}
     </div>

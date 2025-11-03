@@ -12,6 +12,7 @@ import { useUser } from "@/components/UserContext"
 import { useQueryClient } from "@tanstack/react-query"
 import { toast } from "sonner"
 import type { Goal } from "@/types/supabase"
+import TaskEditor from "@/components/tasks/TaskEditor"
 
 interface AddWishProps {
   onSuccess?: () => void;
@@ -27,6 +28,7 @@ export default function AddWish({ onSuccess, isModal = false }: AddWishProps) {
   const [isPreviewLoading, setIsPreviewLoading] = useState(false)
   const [estimatedCost, setEstimatedCost] = useState("")
   const [difficultyLevel, setDifficultyLevel] = useState(1)
+  const [taskEditorOpen, setTaskEditorOpen] = useState(false)
   const [imageMode, setImageMode] = useState<"url" | "upload">("url")
   const [selectedFile, setSelectedFile] = useState<File | null>(null)
   const [localImageUrl, setLocalImageUrl] = useState<string>("")
@@ -492,10 +494,28 @@ export default function AddWish({ onSuccess, isModal = false }: AddWishProps) {
           />
         </div>
 
-        <Button type="submit" className="w-full bg-purple-500 hover:bg-purple-600 text-white py-3">
-          Save Wish
-        </Button>
+        <div className="space-y-2">
+          <Button type="submit" className="w-full bg-purple-500 hover:bg-purple-600 text-white py-3">
+            Save Wish
+          </Button>
+          <Button type="button" variant="outline" className="w-full" onClick={() => setTaskEditorOpen(true)}>
+            Create Task from Wish
+          </Button>
+        </div>
       </form>
+      {taskEditorOpen && (
+        <TaskEditor
+          open={taskEditorOpen}
+          onClose={() => setTaskEditorOpen(false)}
+          initial={{
+            title,
+            description,
+            image_url: imageMode === "url" ? imageUrl : localImageUrl,
+            estimated_cost: estimatedCost,
+            difficulty_level: difficultyLevel,
+          }}
+        />
+      )}
     </div>
   )
 }
