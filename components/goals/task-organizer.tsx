@@ -3,10 +3,9 @@
 import { useState, useEffect, useCallback } from "react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
-import { Plus, Trash2 } from "lucide-react"
+import { Trash2 } from "lucide-react"
 import { useUser } from "@/components/UserContext"
 import TaskCard from "@/components/tasks/TaskCard"
-import TaskEditor from "@/components/tasks/TaskEditor"
 import { createClientSupabaseClient } from "@/lib/supabase"
 
 type HistoryEntry = {
@@ -18,9 +17,7 @@ type HistoryEntry = {
 const initialLocalTasks: Array<any> = []
 
 export default function TaskOrganizer() {
-  const { goals, refreshGoals } = useUser()
-  const [newTaskTitle, setNewTaskTitle] = useState("")
-  const [taskEditorOpen, setTaskEditorOpen] = useState(false)
+  const { refreshGoals } = useUser()
   const [localTasks, setLocalTasks] = useState(initialLocalTasks as Array<any>)
   const [personalTasks, setPersonalTasks] = useState<Array<any>>([])
   const [isCompletedExpandedLocal, setIsCompletedExpandedLocal] = useState(false)
@@ -203,40 +200,7 @@ export default function TaskOrganizer() {
     }
   }, [isRunning, isWorkPhase, currentRound, rounds, workDuration, restDuration, totalWorkTime])
 
-  const handleAddTask = () => {
-    if (!newTaskTitle.trim()) return
-    // If user is authenticated, persist to personal_tasks
-    (async () => {
-      if (supabase && authUser) {
-        try {
-          const payload = {
-            user_id: authUser.id,
-            title: newTaskTitle.trim(),
-            description: null,
-            subtasks: [],
-            resources: [],
-            status: 'open',
-            progress_percentage: 0,
-          }
-          const { data, error } = await supabase.from('personal_tasks').insert(payload).select().single()
-          if (error) throw error
-          setPersonalTasks((prev) => [data, ...prev])
-          setNewTaskTitle("")
-        } catch (err) {
-          console.error('Failed to create personal task', err)
-          // fallback: add to local tasks if create fails
-          const newTask = { id: Date.now(), title: newTaskTitle.trim(), completed: false, date: new Date().toLocaleDateString() }
-          setLocalTasks((prev) => [newTask, ...prev])
-          setNewTaskTitle("")
-        }
-      } else {
-        // not logged in: keep locally
-        const newTask = { id: Date.now(), title: newTaskTitle.trim(), completed: false, date: new Date().toLocaleDateString() }
-        setLocalTasks((prev) => [newTask, ...prev])
-        setNewTaskTitle("")
-      }
-    })()
-  }
+
 
   const handleToggleComplete = (taskId: number) => {
     setLocalTasks(localTasks.map((task) => (task.id === taskId ? { ...task, completed: !task.completed } : task)))
@@ -386,108 +350,18 @@ export default function TaskOrganizer() {
 
       {/* Task list (saved user goals + personal tasks + local quick tasks) */}
       <div className="space-y-4">
-        {/* Saved tasks (user_goals) */}
-        {goals && goals.length > 0 ? (
+        {/* Saved tasks (personal_tasks) - render using TaskCard to preserve UI */}
+        {personalTasks && personalTasks.length > 0 ? (
           <div className="grid gap-3">
-            {goals.map((g) => (
-              <TaskCard key={g.id} goal={g} onUpdated={refreshGoals} />
+            {personalTasks.map((t) => (
+              <TaskCard key={t.id} goal={t} onUpdated={fetchPersonalTasks} />
             ))}
           </div>
         ) : (
           <div className="text-sm text-gray-500">No saved tasks yet</div>
         )}
 
-        {/* Personal tasks (server-side) */}
-        <div className="mt-4">
-          <h3 className="text-sm font-medium mb-2">My Tasks</h3>
-          <div className="flex mb-3">
-            <Input
-              placeholder="Add a new task..."
-              value={newTaskTitle}
-              onChange={(e) => setNewTaskTitle(e.target.value)}
-              className="flex-1 rounded-r-none"
-            />
-            <Button onClick={handleAddTask} className="rounded-l-none bg-purple-500 hover:bg-purple-600">
-              <Plus className="h-5 w-5" />
-            </Button>
-          </div>
-
-          {personalTasks.length === 0 ? (
-            <div className="text-sm text-gray-500">No personal tasks yet</div>
-          ) : (
-            <div className="space-y-2">
-              {personalTasks.filter((t) => t.status !== 'completed').map((task) => (
-                <div key={task.id} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
-                  <div className="flex items-center">
-                    <button
-                      className={`w-6 h-6 rounded-full border flex items-center justify-center mr-3 ${
-                        task.status === 'completed' ? "bg-purple-500 border-purple-500 text-white" : "bg-white border-gray-300"
-                      }`}
-                      onClick={() => handleCompletePersonalTask(task.id)}
-                    >
-                      {task.status === 'completed' && (
-                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                          <path
-                            d="M20 6L9 17L4 12"
-                            stroke="currentColor"
-                            strokeWidth="2"
-                            strokeLinecap="round"
-                            strokeLinejoin="round"
-                          />
-                        </svg>
-                      )}
-                    </button>
-
-                    <span className={task.status === 'completed' ? "line-through text-gray-500" : ""}>{task.title}</span>
-                  </div>
-
-                  <div className="flex items-center space-x-2">
-                    <Button size="sm" variant="ghost" onClick={() => handleCancelPersonalTask(task.id)}>Cancel</Button>
-                    <Button size="sm" variant="destructive" onClick={() => handleDeletePersonalTask(task.id)}>Delete</Button>
-                  </div>
-                </div>
-              ))}
-            </div>
-          )}
-
-          {/* Local quick tasks (fallback when not signed in or insert fails) */}
-          {localTasks.length > 0 && (
-            <div className="mt-3 space-y-2">
-              {localTasks.map((task) => (
-                <div key={task.id} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
-                  <div className="flex items-center">
-                    <button
-                      className={`w-6 h-6 rounded-full border flex items-center justify-center mr-3 ${
-                        task.completed ? "bg-purple-500 border-purple-500 text-white" : "bg-white border-gray-300"
-                      }`}
-                      onClick={() => handleToggleComplete(task.id)}
-                    >
-                      {task.completed && (
-                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                          <path
-                            d="M20 6L9 17L4 12"
-                            stroke="currentColor"
-                            strokeWidth="2"
-                            strokeLinecap="round"
-                            strokeLinejoin="round"
-                          />
-                        </svg>
-                      )}
-                    </button>
-
-                    <span className={task.completed ? "line-through text-gray-500" : ""}>{task.title}</span>
-                  </div>
-
-                  <div className="flex items-center">
-                    <span className="text-sm text-gray-500 mr-3">{task.date}</span>
-                    <button className="text-gray-400 hover:text-red-500" onClick={() => handleDeleteTask(task.id)}>
-                      <Trash2 className="h-4 w-4" />
-                    </button>
-                  </div>
-                </div>
-              ))}
-            </div>
-          )}
+        {/* Personal tasks list removed here (deduplicated). Top list uses TaskCard and Completed section below shows completed tasks. */}
 
           {/* Completed tasks - collapsed by default */}
           <div className="mt-4">
@@ -525,7 +399,6 @@ export default function TaskOrganizer() {
               </div>
             )}
           </div>
-        </div>
       </div>
 
       {/* Tabata Timer */}
