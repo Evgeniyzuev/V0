@@ -65,7 +65,12 @@ export default function TaskOrganizer() {
 
   const parseTimeInput = (input: string) => {
     const parts = input.split(':')
-    if (parts.length === 2) {
+    if (parts.length === 3) {
+      const hours = parseInt(parts[0]) || 0
+      const mins = parseInt(parts[1]) || 0
+      const secs = parseInt(parts[2]) || 0
+      return hours * 60 + mins + secs / 60
+    } else if (parts.length === 2) {
       const mins = parseInt(parts[0]) || 0
       const secs = parseInt(parts[1]) || 0
       return mins + secs / 60
@@ -483,8 +488,8 @@ export default function TaskOrganizer() {
               type="text"
               value={timeThresholdInput}
               onChange={(e) => setTimeThresholdInput(e.target.value)}
-              placeholder="25:00"
-              className="w-16 h-8 text-xs bg-gray-100 border-gray-300 rounded"
+              placeholder="1:25:00"
+              className="w-20 h-8 text-xs bg-gray-100 border-gray-300 rounded"
             />
             <Button
               onClick={() => setIsHistoryExpanded(!isHistoryExpanded)}
@@ -500,16 +505,25 @@ export default function TaskOrganizer() {
             {history.length === 0 ? (
               <div className="text-center text-gray-500 py-4">-----</div>
             ) : (
-              history.slice().reverse().map((entry) => (
-                <div key={entry.date} className={`flex justify-between items-center p-3 rounded-lg ${
-                  entry.time > timeThreshold ? 'bg-green-100' : 'bg-red-100'
-                }`}>
-                  <span className="text-sm font-medium">{entry.date}</span>
-                  <span className="text-sm text-gray-600">
-                    {Math.floor(entry.time / 60)}:{(entry.time % 60).toString().padStart(2, '0')}
-                  </span>
-                </div>
-              ))
+              history.slice().reverse().map((entry) => {
+                const timeInMinutes = entry.time / 60
+                const hours = Math.floor(timeInMinutes / 60)
+                const minutes = Math.floor(timeInMinutes % 60)
+                const seconds = Math.round((timeInMinutes % 1) * 60)
+                const timeDisplay = hours > 0
+                  ? `${hours}:${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`
+                  : `${minutes}:${seconds.toString().padStart(2, '0')}`
+                return (
+                  <div key={entry.date} className={`flex justify-between items-center p-3 rounded-lg ${
+                    timeInMinutes > timeThreshold ? 'bg-green-100' : 'bg-red-100'
+                  }`}>
+                    <span className="text-sm font-medium">{entry.date}</span>
+                    <span className="text-sm text-gray-600">
+                      {timeDisplay}
+                    </span>
+                  </div>
+                )
+              })
             )}
           </div>
         )}
