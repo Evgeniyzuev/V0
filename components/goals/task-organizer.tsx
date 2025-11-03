@@ -342,7 +342,7 @@ export default function TaskOrganizer() {
         {/* Saved tasks (personal_tasks) - render using TaskCard to preserve UI */}
         {personalTasks && personalTasks.length > 0 ? (
           <div className="grid gap-3">
-            {personalTasks.map((t) => (
+            {personalTasks.filter((t) => t.status !== 'completed').map((t) => (
               <TaskCard key={t.id} goal={t} onUpdated={fetchPersonalTasks} />
             ))}
           </div>
@@ -364,17 +364,8 @@ export default function TaskOrganizer() {
             {isCompletedExpandedLocal && (
               <div className="mt-2 space-y-2">
                 {personalTasks.filter((t) => t.status === 'completed').map((task) => (
-                  <div key={task.id} className="flex items-center justify-between p-3 bg-green-50 rounded-lg">
-                    <div className="flex items-center">
-                      <div className="w-6 h-6 rounded-full bg-green-500 mr-3 flex items-center justify-center text-white">✓</div>
-                      <span className="line-through text-gray-500">{task.title}</span>
-                    </div>
-                    <div className="flex items-center space-x-2">
-                      <Button size="sm" variant="ghost" onClick={() => handleDeletePersonalTask(task.id)}>Delete</Button>
-                    </div>
-                  </div>
+                  <TaskCard key={task.id} goal={task} onUpdated={fetchPersonalTasks} />
                 ))}
-                
               </div>
             )}
           </div>
