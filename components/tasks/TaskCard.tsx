@@ -5,13 +5,14 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { createClientSupabaseClient } from "@/lib/supabase"
 import { toast } from "sonner"
-import type { UserGoal } from "@/types/supabase"
+// TaskCard works with both legacy `user_goals` rows and new `personal_tasks` rows.
+// We accept a generic `any` for compatibility.
 import { Check } from "lucide-react"
 
 type SubtaskType = { id: string; title: string; completed?: boolean }
 
 interface TaskCardProps {
-  goal: UserGoal
+  goal: any
   onUpdated?: () => void
 }
 
@@ -24,15 +25,24 @@ export default function TaskCard({ goal, onUpdated }: TaskCardProps) {
   const saveTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
 
   useEffect(() => {
-    const pd = goal.progress_details as any
-    if (pd?.subtasks && Array.isArray(pd.subtasks)) {
-      setSubtasks(pd.subtasks.map((s: any) => ({ id: s.id ?? String(Math.random()), title: s.title ?? "", completed: !!s.completed })))
-    } else if (goal.steps && Array.isArray(goal.steps)) {
-      setSubtasks(goal.steps.map((s, i) => ({ id: String(i), title: s || "", completed: false })))
+    // personal_tasks store subtasks/resources at top-level (subtasks, resources)
+    // legacy user_goals store them inside progress_details
+    const isPersonal = Array.isArray(goal?.subtasks)
+    if (isPersonal) {
+      setSubtasks((goal.subtasks || []).map((s: any) => ({ id: s.id ?? String(Math.random()), title: s.title ?? "", completed: !!s.completed })))
+      setResources(goal.resources || [])
     } else {
-      setSubtasks([])
+      const pd = goal.progress_details as any
+      if (pd?.subtasks && Array.isArray(pd.subtasks)) {
+        setSubtasks(pd.subtasks.map((s: any) => ({ id: s.id ?? String(Math.random()), title: s.title ?? "", completed: !!s.completed })))
+      } else if (goal.steps && Array.isArray(goal.steps)) {
+        setSubtasks(goal.steps.map((s: any, i: number) => ({ id: String(i), title: s || "", completed: false })))
+      } else {
+        setSubtasks([])
+      }
+      if (pd?.resources && Array.isArray(pd.resources)) setResources(pd.resources)
     }
-    if (pd?.resources && Array.isArray(pd.resources)) setResources(pd.resources)
+
     return () => {
       if (saveTimerRef.current) {
         clearTimeout(saveTimerRef.current)
@@ -50,7 +60,7 @@ export default function TaskCard({ goal, onUpdated }: TaskCardProps) {
   const toggleSubtask = async (id: string) => {
     const next = subtasks.map((s) => (s.id === id ? { ...s, completed: !s.completed } : s))
     setSubtasks(next)
-    // persist to user_goals.progress_details
+    // persist to appropriate table (personal_tasks or user_goals)
     await saveSubtasks(next)
   }
 
@@ -60,10 +70,16 @@ export default function TaskCard({ goal, onUpdated }: TaskCardProps) {
       setSaving(true)
       const supabase = createClientSupabaseClient()
       const progress_percentage = computeProgress(next)
-      const progress_details = { ...(goal.progress_details || {}), subtasks: next }
 
-      const { error } = await supabase.from('user_goals').update({ progress_details, progress_percentage }).eq('id', goal.id)
-      if (error) throw error
+      // If this is a personal_tasks row, update that table; otherwise update legacy user_goals
+      if (Array.isArray(goal?.subtasks)) {
+        const { error } = await supabase.from('personal_tasks').update({ subtasks: next, progress_percentage }).eq('id', goal.id)
+        if (error) throw error
+      } else {
+        const progress_details = { ...(goal.progress_details || {}), subtasks: next }
+        const { error } = await supabase.from('user_goals').update({ progress_details, progress_percentage }).eq('id', goal.id)
+        if (error) throw error
+      }
       onUpdated && onUpdated()
       toast.success('Saved')
     } catch (err: any) {
@@ -180,26 +196,22 @@ export default function TaskCard({ goal, onUpdated }: TaskCardProps) {
             )}
 
             <div className="mt-4 flex justify-end gap-2">
-              <Button onClick={() => {
+              <Button onClick={async () => {
                 // Quick mark all done
                 const all = subtasks.map(s => ({ ...s, completed: true }))
-                setSubtasks(all);
-                // persist
-                (async () => {
-                  setSaving(true)
-                  try {
-                    const supabase = createClientSupabaseClient()
-                    const progress_percentage = computeProgress(all)
-                    const progress_details = { ...(goal.progress_details || {}), subtasks: all }
-                    const { error } = await supabase.from('user_goals').update({ progress_details, progress_percentage }).eq('id', goal.id)
-                    if (error) throw error
-                    toast.success('Updated')
-                    onUpdated && onUpdated()
-                  } catch (err: any) {
-                    console.error(err)
-                    toast.error(err?.message || 'Failed')
-                  } finally { setSaving(false); setOpen(false) }
-                })()
+                setSubtasks(all)
+                setSaving(true)
+                try {
+                  await saveSubtasks(all)
+                  toast.success('Updated')
+                  onUpdated && onUpdated()
+                } catch (err: any) {
+                  console.error(err)
+                  toast.error(err?.message || 'Failed')
+                } finally {
+                  setSaving(false)
+                  setOpen(false)
+                }
               }}>Mark all done</Button>
             </div>
           </div>

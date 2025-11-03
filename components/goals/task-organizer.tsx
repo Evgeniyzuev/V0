@@ -17,7 +17,7 @@ type HistoryEntry = {
 const initialLocalTasks: Array<any> = []
 
 export default function TaskOrganizer() {
-  const { goals, refreshGoals } = useUser()
+  const { goals, refreshGoals, dbUser } = useUser()
   
   const [taskEditorOpen, setTaskEditorOpen] = useState(false)
   const [localTasks, setLocalTasks] = useState(initialLocalTasks as Array<any>)
@@ -67,7 +67,6 @@ export default function TaskOrganizer() {
   const [timeThresholdInput, setTimeThresholdInput] = useState("25:00")
   const [timeThreshold, setTimeThreshold] = useState(25)
   const supabase = typeof window !== 'undefined' ? createClientSupabaseClient() : null
-  const { authUser } = useUser() as any
 
   // Load settings and history from localStorage on mount
   useEffect(() => {
@@ -96,12 +95,15 @@ export default function TaskOrganizer() {
 
   // Loader for personal tasks (reusable)
   const fetchPersonalTasks = useCallback(async () => {
-    if (!supabase || !authUser) return
+    // Use dbUser.id (the users table id) to query personal_tasks.
+    // authUser (Supabase auth user) may be null while dbUser exists (Telegram flow),
+    // so we must rely on dbUser which is the canonical owner of personal_tasks rows.
+    if (!supabase || !dbUser?.id) return
     try {
       const { data, error } = await supabase
         .from('personal_tasks')
         .select('*')
-        .eq('user_id', authUser.id)
+        .eq('user_id', dbUser.id)
         .order('created_at', { ascending: false })
 
       if (error) {
@@ -112,7 +114,7 @@ export default function TaskOrganizer() {
     } catch (e) {
       console.error('Error loading personal tasks', e)
     }
-  }, [supabase, authUser])
+  }, [supabase, dbUser?.id])
 
   useEffect(() => {
     fetchPersonalTasks()
