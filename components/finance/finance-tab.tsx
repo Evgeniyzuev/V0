@@ -120,6 +120,11 @@ export default function FinanceTab() {
     if (!isNaN(num) && num >= 0 && num <= 100) {
       setReinvestPercentage(num)
       setIsReinvestChanged(true)
+    } else {
+      // Reset to 100 for invalid inputs
+      setReinvestPercentage(100)
+      setReinvestInputValue('100')
+      setIsReinvestChanged(true)
     }
   }
 
