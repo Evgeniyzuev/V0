@@ -82,6 +82,9 @@ export default function TaskOrganizer() {
   const [isBlinking, setIsBlinking] = useState(false)
   const [isCompleted, setIsCompleted] = useState(false)
   const [isMuted, setIsMuted] = useState(false)
+  const [isHistoryExpanded, setIsHistoryExpanded] = useState(false)
+  const [timeThresholdInput, setTimeThresholdInput] = useState("25:00")
+  const [timeThreshold, setTimeThreshold] = useState(25)
 
   // Load settings and history from localStorage on mount
   useEffect(() => {
@@ -95,6 +98,7 @@ export default function TaskOrganizer() {
       if (settings.workInput) setWorkDurationInput(settings.workInput)
       if (settings.restInput) setRestDurationInput(settings.restInput)
       if (settings.roundsInput) setRoundsInput(settings.roundsInput)
+      if (settings.timeThresholdInput) setTimeThresholdInput(settings.timeThresholdInput)
     }
 
     const savedHistory = localStorage.getItem('tabataHistory')
@@ -115,10 +119,11 @@ export default function TaskOrganizer() {
       rounds: rounds,
       workInput: workDurationInput,
       restInput: restDurationInput,
-      roundsInput: roundsInput
+      roundsInput: roundsInput,
+      timeThresholdInput: timeThresholdInput
     }
     localStorage.setItem('tabataSettings', JSON.stringify(settings))
-  }, [workDurationMinutes, restDurationMinutes, rounds, workDurationInput, restDurationInput, roundsInput])
+  }, [workDurationMinutes, restDurationMinutes, rounds, workDurationInput, restDurationInput, roundsInput, timeThresholdInput])
 
   // Convert minutes to seconds
   const workDuration = Math.round(workDurationMinutes * 60)
@@ -276,6 +281,12 @@ export default function TaskOrganizer() {
     setRestDurationMinutes(rest)
     setRounds(r)
   }, [workDurationInput, restDurationInput, roundsInput])
+
+  // Update time threshold from input
+  useEffect(() => {
+    const parsed = parseTimeInput(timeThresholdInput)
+    setTimeThreshold(parsed)
+  }, [timeThresholdInput])
 
   return (
     <div className="p-4 bg-white">
@@ -465,21 +476,43 @@ export default function TaskOrganizer() {
 
       {/* History Container */}
       <div className="mt-6 mx-0 bg-white rounded-3xl shadow-lg p-4">
-        <h3 className="text-lg font-semibold mb-3 text-center">Workout History</h3>
-        <div className="space-y-2 max-h-40 overflow-y-auto">
-          {history.length === 0 ? (
-            <div className="text-center text-gray-500 py-4">No workouts yet</div>
-          ) : (
-            history.map((entry) => (
-              <div key={entry.date} className="flex justify-between items-center p-3 bg-gray-50 rounded-lg">
-                <span className="text-sm font-medium">{entry.date}</span>
-                <span className="text-sm text-gray-600">
-                  {Math.floor(entry.time / 60)}:{(entry.time % 60).toString().padStart(2, '0')}
-                </span>
-              </div>
-            ))
-          )}
-        </div>
+        <h3 className="text-lg font-semibold mb-3 flex items-center justify-between">
+          <span>History</span>
+          <div className="flex items-center space-x-2">
+            <Input
+              type="text"
+              value={timeThresholdInput}
+              onChange={(e) => setTimeThresholdInput(e.target.value)}
+              placeholder="25:00"
+              className="w-16 h-8 text-xs bg-gray-100 border-gray-300 rounded"
+            />
+            <Button
+              onClick={() => setIsHistoryExpanded(!isHistoryExpanded)}
+              size="sm"
+              className="text-xs"
+            >
+              {isHistoryExpanded ? 'Collapse' : 'Expand'}
+            </Button>
+          </div>
+        </h3>
+        {isHistoryExpanded && (
+          <div className="space-y-2 max-h-40 overflow-y-auto">
+            {history.length === 0 ? (
+              <div className="text-center text-gray-500 py-4">-----</div>
+            ) : (
+              history.slice().reverse().map((entry) => (
+                <div key={entry.date} className={`flex justify-between items-center p-3 rounded-lg ${
+                  entry.time > timeThreshold ? 'bg-green-100' : 'bg-red-100'
+                }`}>
+                  <span className="text-sm font-medium">{entry.date}</span>
+                  <span className="text-sm text-gray-600">
+                    {Math.floor(entry.time / 60)}:{(entry.time % 60).toString().padStart(2, '0')}
+                  </span>
+                </div>
+              ))
+            )}
+          </div>
+        )}
       </div>
     </div>
   )
