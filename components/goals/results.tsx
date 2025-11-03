@@ -44,8 +44,8 @@ function Modal({ open, onClose, title, children }: { open: boolean; onClose: () 
 }
 
 const sampleAchievements: Achievement[] = [
-  { id: 1, title: "First Steps", subtitle: "Reputation +5", image: "🏆", description: "Awarded for completing your first task." },
-  { id: 2, title: "Explorer", subtitle: "Visited 10 places", image: "🧭", description: "You explored new areas and discovered secrets." },
+  { id: 1, title: "Core", subtitle: "LVL 8", image: "https://blush-keen-constrictor-906.mypinata.cloud/ipfs/bafkreibb77axafktdr7vjlurwizg6fh54so2pfwhlg2wqeluy5sweuk3ya", description: "Yor core at level 8" },
+  { id: 2, title: "Explorer", subtitle: "Visited 10 places", image: "https://blush-keen-constrictor-906.mypinata.cloud/ipfs/bafkreibb77axafktdr7vjlurwizg6fh54so2pfwhlg2wqeluy5sweuk3ya", description: "You explored new areas and discovered secrets." },
   { id: 3, title: "Collector", subtitle: "Collected 50 items", image: "💎", description: "A seasoned collector of rare items." },
   { id: 4, title: "Champion", subtitle: "Top 10 in leaderboard", image: "🥇", description: "You ranked high in the weekly leaderboard." },
   { id: 5, title: "Marathoner", subtitle: "Complete 100 tasks", image: "🏃‍♂️", description: "You demonstrate persistence and consistency." },
@@ -135,8 +135,12 @@ export default function Results() {
     setModalTitle(a.title)
     setModalContent(
       <div className="space-y-3">
-        <div className="text-6xl">{a.image}</div>
-        <p className="text-sm text-gray-600">{a.subtitle}</p>
+        {typeof a.image === "string" && /^https?:\/\//.test(a.image) ? (
+          <img src={a.image} alt={a.title} className="w-full max-h-56 object-contain rounded" />
+        ) : (
+          <div className="text-6xl">{a.image}</div>
+        )}
+        {a.subtitle && <p className="text-sm text-gray-600">{a.subtitle}</p>}
         <p className="text-gray-800">{a.description}</p>
       </div>
     )
@@ -167,7 +171,7 @@ export default function Results() {
   }
 
   return (
-    <div className="flex flex-col h-full bg-white">
+  <div className="flex flex-col h-full bg-white overscroll-none">
       <div className="p-4 flex items-center justify-between">
         {/* <h1 className="text-2xl font-bold">Achievements & Inventory</h1> */}
         {/* <Button variant="ghost" size="icon" className="text-purple-600">
@@ -197,7 +201,7 @@ export default function Results() {
                 setThumbWidth(0)
               }
             }}
-            className="overflow-x-auto ach-carousel"
+            className="overflow-x-auto ach-carousel overscroll-none"
             style={{ WebkitOverflowScrolling: "touch" }}
           >
             <div className="grid grid-rows-2 grid-flow-col auto-cols-[200px] gap-0 pb-0 items-start">
@@ -205,55 +209,30 @@ export default function Results() {
                 <button
                   key={a.id}
                   onClick={() => openAchievementModal(a)}
-                  className="aspect-square w-[200px] flex-shrink-0 bg-white rounded-sm p-1 border hover:shadow-sm text-left relative overflow-hidden"
+                  className="aspect-square w-[200px] flex-shrink-0 bg-white rounded-sm p-0 border hover:shadow-sm text-left relative overflow-hidden"
                 >
-                  {/* Background emoji/image */}
-                  <div className="absolute inset-0 flex items-center justify-center text-4xl opacity-95">{a.image}</div>
-                  {/* Foreground overlay with title */}
-                  <div className="relative z-10 mt-auto">
-                    <div className="font-semibold text-sm bg-white/80 rounded px-2 py-1 inline-block">{a.title}</div>
-                    <div className="text-xs text-gray-500 mt-1">{a.subtitle}</div>
+                  {/* Background image or emoji */}
+                  {typeof a.image === "string" && /^https?:\/\//.test(a.image) ? (
+                    <img src={a.image} alt={a.title} className="absolute inset-0 w-full h-full object-cover" />
+                  ) : (
+                    <div className="absolute inset-0 flex items-center justify-center text-4xl opacity-95">{a.image}</div>
+                  )}
+
+                  {/* Foreground overlay with title on top of image */}
+                  <div className="relative z-10 mt-auto p-2">
+                    <div className="bg-black/60 rounded px-2 py-1 inline-block">
+                      <div className="font-semibold text-sm text-white">{a.title}</div>
+                      {a.subtitle && <div className="text-xs text-white mt-1 bg-black/40 rounded px-1 inline-block">{a.subtitle}</div>}
+                    </div>
                   </div>
                 </button>
               ))}
             </div>
           </div>
 
-          {/* Custom thin transparent scrollbar overlay (top layer) at bottom of achievements */}
-          <div className="absolute left-0 right-0 bottom-1 h-1.5 z-30 pointer-events-none">
-            <div className="w-full h-full bg-transparent relative">
-              {thumbWidth > 0 && (
-                <div
-                  className="absolute top-0 h-full bg-black/10 rounded-full"
-                  style={{ left: `${thumbLeft}%`, width: `${thumbWidth}%` }}
-                />
-              )}
-            </div>
-          </div>
+          {/* custom overlay removed to avoid duplicate scrollbar visuals */}
 
-          {/* Right arrow - narrow (10x50) semi-transparent on top layer */}
-          {canScrollRight && (
-            <button
-              aria-label="Scroll achievements right"
-              onClick={() => scrollAchievements("right")}
-              className="absolute right-1 top-2 z-20 flex items-center justify-center rounded"
-              style={{ width: 10, height: 50, background: "rgba(0,0,0,0.12)" }}
-            >
-              <ChevronRight className="text-white" size={16} />
-            </button>
-          )}
-
-          {/* Left arrow - appears when scrolled right */}
-          {canScrollLeft && (
-            <button
-              aria-label="Scroll achievements left"
-              onClick={() => scrollAchievements("left")}
-              className="absolute left-1 top-2 z-20 flex items-center justify-center rounded"
-              style={{ width: 10, height: 50, background: "rgba(0,0,0,0.12)" }}
-            >
-              <ChevronLeft className="text-white" size={16} />
-            </button>
-          )}
+          {/* arrows removed per request */}
         </div>
       </div>
 
