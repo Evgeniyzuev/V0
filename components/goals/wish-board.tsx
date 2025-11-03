@@ -605,7 +605,7 @@ const WishBoard: React.FC<WishBoardProps> = ({ showOnlyRecommendations }) => {
                                   }}
                                   className="px-3 py-1 text-white rounded hover:opacity-90 transition-colors bg-green-600 hover:bg-green-700 text-sm"
                                 >
-                                  Create Task from Wish (+Task)
+                                  Create Task
                                 </button>
                               </>
                             ) : (

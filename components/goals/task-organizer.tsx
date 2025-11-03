@@ -3,10 +3,9 @@
 import { useState, useEffect, useCallback } from "react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
-import { Plus, Trash2 } from "lucide-react"
+import { Trash2 } from "lucide-react"
 import { useUser } from "@/components/UserContext"
-import TaskCard from "@/components/tasks/TaskCard"
-import TaskEditor from "@/components/tasks/TaskEditor"
+// TaskCard/TaskEditor removed: TaskOrganizer now focuses on `personal_tasks`
 import { createClientSupabaseClient } from "@/lib/supabase"
 
 type HistoryEntry = {
@@ -19,7 +18,7 @@ const initialLocalTasks: Array<any> = []
 
 export default function TaskOrganizer() {
   const { goals, refreshGoals } = useUser()
-  const [newTaskTitle, setNewTaskTitle] = useState("")
+  
   const [taskEditorOpen, setTaskEditorOpen] = useState(false)
   const [localTasks, setLocalTasks] = useState(initialLocalTasks as Array<any>)
   const [personalTasks, setPersonalTasks] = useState<Array<any>>([])
@@ -203,40 +202,7 @@ export default function TaskOrganizer() {
     }
   }, [isRunning, isWorkPhase, currentRound, rounds, workDuration, restDuration, totalWorkTime])
 
-  const handleAddTask = () => {
-    if (!newTaskTitle.trim()) return
-    // If user is authenticated, persist to personal_tasks
-    (async () => {
-      if (supabase && authUser) {
-        try {
-          const payload = {
-            user_id: authUser.id,
-            title: newTaskTitle.trim(),
-            description: null,
-            subtasks: [],
-            resources: [],
-            status: 'open',
-            progress_percentage: 0,
-          }
-          const { data, error } = await supabase.from('personal_tasks').insert(payload).select().single()
-          if (error) throw error
-          setPersonalTasks((prev) => [data, ...prev])
-          setNewTaskTitle("")
-        } catch (err) {
-          console.error('Failed to create personal task', err)
-          // fallback: add to local tasks if create fails
-          const newTask = { id: Date.now(), title: newTaskTitle.trim(), completed: false, date: new Date().toLocaleDateString() }
-          setLocalTasks((prev) => [newTask, ...prev])
-          setNewTaskTitle("")
-        }
-      } else {
-        // not logged in: keep locally
-        const newTask = { id: Date.now(), title: newTaskTitle.trim(), completed: false, date: new Date().toLocaleDateString() }
-        setLocalTasks((prev) => [newTask, ...prev])
-        setNewTaskTitle("")
-      }
-    })()
-  }
+  // add-task UI removed; handleAddTask and related state were deleted per request
 
   const handleToggleComplete = (taskId: number) => {
     setLocalTasks(localTasks.map((task) => (task.id === taskId ? { ...task, completed: !task.completed } : task)))
@@ -386,31 +352,12 @@ export default function TaskOrganizer() {
 
       {/* Task list (saved user goals + personal tasks + local quick tasks) */}
       <div className="space-y-4">
-        {/* Saved tasks (user_goals) */}
-        {goals && goals.length > 0 ? (
-          <div className="grid gap-3">
-            {goals.map((g) => (
-              <TaskCard key={g.id} goal={g} onUpdated={refreshGoals} />
-            ))}
-          </div>
-        ) : (
-          <div className="text-sm text-gray-500">No saved tasks yet</div>
-        )}
+        {/* Personal tasks will be shown below (replacing previous user_goals list) */}
 
         {/* Personal tasks (server-side) */}
         <div className="mt-4">
           <h3 className="text-sm font-medium mb-2">My Tasks</h3>
-          <div className="flex mb-3">
-            <Input
-              placeholder="Add a new task..."
-              value={newTaskTitle}
-              onChange={(e) => setNewTaskTitle(e.target.value)}
-              className="flex-1 rounded-r-none"
-            />
-            <Button onClick={handleAddTask} className="rounded-l-none bg-purple-500 hover:bg-purple-600">
-              <Plus className="h-5 w-5" />
-            </Button>
-          </div>
+          {/* add-new-task input removed per request */}
 
           {personalTasks.length === 0 ? (
             <div className="text-sm text-gray-500">No personal tasks yet</div>
@@ -442,8 +389,10 @@ export default function TaskOrganizer() {
                   </div>
 
                   <div className="flex items-center space-x-2">
-                    <Button size="sm" variant="ghost" onClick={() => handleCancelPersonalTask(task.id)}>Cancel</Button>
-                    <Button size="sm" variant="destructive" onClick={() => handleDeletePersonalTask(task.id)}>Delete</Button>
+                    <Button size="sm" variant="ghost" onClick={() => handleCompletePersonalTask(task.id)}>Mark all done</Button>
+                    <button className="text-gray-400 hover:text-red-500" onClick={() => handleDeletePersonalTask(task.id)}>
+                      <Trash2 className="h-4 w-4" />
+                    </button>
                   </div>
                 </div>
               ))}
