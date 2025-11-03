@@ -197,22 +197,36 @@ export default function TaskCard({ goal, onUpdated }: TaskCardProps) {
 
             <div className="mt-4 flex justify-end gap-2">
               <Button onClick={async () => {
-                // Quick mark all done
-                const all = subtasks.map(s => ({ ...s, completed: true }))
-                setSubtasks(all)
-                setSaving(true)
-                try {
-                  await saveSubtasks(all)
-                  toast.success('Updated')
-                  onUpdated && onUpdated()
-                } catch (err: any) {
-                  console.error(err)
-                  toast.error(err?.message || 'Failed')
-                } finally {
-                  setSaving(false)
-                  setOpen(false)
-                }
-              }}>Mark all done</Button>
+                  // Quick mark all done
+                  const all = subtasks.map(s => ({ ...s, completed: true }))
+                  setSubtasks(all)
+                  setSaving(true)
+                  try {
+                    // Save subtasks and progress
+                    await saveSubtasks(all)
+
+                    // If this is a personal_tasks row, also mark the task as completed
+                    if (Array.isArray(goal?.subtasks)) {
+                      try {
+                        const supabase = createClientSupabaseClient()
+                        const { error } = await supabase.from('personal_tasks').update({ status: 'completed', progress_percentage: 100 }).eq('id', goal.id)
+                        if (error) throw error
+                      } catch (err) {
+                        console.error('Failed to mark personal task as completed:', err)
+                        // don't block UI; continue
+                      }
+                    }
+
+                    toast.success('Updated')
+                    onUpdated && onUpdated()
+                  } catch (err: any) {
+                    console.error(err)
+                    toast.error(err?.message || 'Failed')
+                  } finally {
+                    setSaving(false)
+                    setOpen(false)
+                  }
+                }}>Mark all done</Button>
             </div>
           </div>
         </div>
