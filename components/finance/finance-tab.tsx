@@ -87,7 +87,7 @@ export default function FinanceTab() {
       })
       setWalletBalance(dbUser.wallet_balance || 0)
       setCoreBalance(dbUser.aicore_balance || 0)
-      const reinvestValue = dbUser.reinvest || 100
+      const reinvestValue = dbUser.reinvest !== null && dbUser.reinvest !== undefined ? dbUser.reinvest : 100
       setReinvestPercentage(reinvestValue)
       setReinvestInputValue(reinvestValue.toString())
       setUserId(dbUser.id)

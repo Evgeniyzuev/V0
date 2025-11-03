@@ -45,7 +45,7 @@ export default function WelcomeModal({ isOpen, onClose }: WelcomeModalProps) {
     {
       id: 3,
       video: "https://blush-keen-constrictor-906.mypinata.cloud/ipfs/bafybeifjxnntvcvxuodk3xeyp24vdijjwcnsgsu2entr5hha65msxa2e7m",
-      title: "The Abundance Effect - a navigator to your desires",
+      title: "The Abundance Effect\na navigator to your desires",
       subtitle: null,
       buttonText: null,
       buttonColor: "bg-white text-purple-600 hover:bg-gray-200"
