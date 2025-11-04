@@ -1,6 +1,6 @@
 "use client"
 
-import React, { useState, useRef, useEffect } from "react"
+import React, { useState, useEffect } from "react"
 import { Button } from "@/components/ui/button"
 import { Plus, X, ChevronRight, ChevronLeft } from "lucide-react"
 
@@ -96,7 +96,7 @@ export default function Results() {
   // responsive circle size (px) — 1/12 of min(viewport width, height)
   const [circleSize, setCircleSize] = useState<number>(() => {
     if (typeof window === "undefined") return 60
-    return Math.floor(Math.min(window.innerWidth, window.innerHeight) / 12)
+    return Math.floor(Math.min(window.innerWidth/ 12, window.innerHeight/24) )
   })
   useEffect(() => {
     const onResize = () => setCircleSize(Math.floor(Math.min(window.innerWidth, window.innerHeight) / 12))
@@ -116,38 +116,7 @@ export default function Results() {
   // index of empty slot being filled by picker (null = none)
   const [pickerSlot, setPickerSlot] = useState<number | null>(null)
 
-  // ref + state for horizontal achievements carousel
-  const achRef = useRef<HTMLDivElement | null>(null)
-  const [canScrollLeft, setCanScrollLeft] = useState(false)
-  const [canScrollRight, setCanScrollRight] = useState(false)
-  const [thumbLeft, setThumbLeft] = useState(0)
-  const [thumbWidth, setThumbWidth] = useState(0)
 
-  useEffect(() => {
-    const el = achRef.current
-    if (!el) return
-
-    const update = () => {
-      setCanScrollLeft(el.scrollLeft > 0)
-      setCanScrollRight(el.scrollLeft + el.clientWidth < el.scrollWidth - 1)
-      // update custom thumb
-      if (el.scrollWidth > el.clientWidth) {
-        const left = (el.scrollLeft / (el.scrollWidth - el.clientWidth)) * 100
-        const width = (el.clientWidth / el.scrollWidth) * 100
-        setThumbLeft(left)
-        setThumbWidth(width)
-      } else {
-        setThumbLeft(0)
-        setThumbWidth(0)
-      }
-    }
-
-    update()
-    // update on resize
-    window.addEventListener("resize", update)
-    // cleanup
-    return () => window.removeEventListener("resize", update)
-  }, [achRef])
 
   const [modalOpen, setModalOpen] = useState(false)
   const [modalTitle, setModalTitle] = useState("")
@@ -180,17 +149,7 @@ export default function Results() {
     )
     setModalOpen(true)
   }
-  const scrollAchievements = (dir: "left" | "right") => {
-    const el = achRef.current
-    if (!el) return
-    const step = Math.max(220, Math.floor(el.clientWidth * 0.6))
-    el.scrollBy({ left: dir === "right" ? step : -step, behavior: "smooth" })
-    // optimistic update (the effect + scroll event will correct it)
-    setTimeout(() => {
-      setCanScrollLeft(el.scrollLeft > 0)
-      setCanScrollRight(el.scrollLeft + el.clientWidth < el.scrollWidth - 1)
-    }, 300)
-  }
+
 
   const gap = 2
   const totalCircles = 7 // toggle + 6 empty circles
@@ -246,7 +205,11 @@ export default function Results() {
               {/* Toggle button (leftmost circle) */}
               <button onClick={() => setFloaterOpen((v) => !v)} aria-label="Toggle floating circles" className="relative flex items-center justify-center" style={{ left: 0, position: "absolute", width: circleSize, height: circleSize }}>
                 <div style={{ width: '100%', height: '100%', borderRadius: '9999px', background: 'linear-gradient(135deg, rgba(255,255,255,0.2), rgba(220,220,220,0.15))', border: '1px solid rgba(0,0,0,0.3)' }} />
-                <ChevronRight className="absolute" style={{ width: Math.max(12, Math.floor(circleSize / 5)), height: Math.max(12, Math.floor(circleSize / 5)), color: '#4B5563' }} />
+                {floaterOpen ? (
+                  <ChevronLeft className="absolute" style={{ width: Math.max(12, Math.floor(circleSize / 5)), height: Math.max(12, Math.floor(circleSize / 5)), color: 'white' }} />
+                ) : (
+                  <ChevronRight className="absolute" style={{ width: Math.max(12, Math.floor(circleSize / 5)), height: Math.max(12, Math.floor(circleSize / 5)), color: 'white' }} />
+                )}
               </button>
             </div>
 
@@ -256,61 +219,34 @@ export default function Results() {
       </div>
 
 
-  {/* Top: Achievements (half) */}
+  {/* Top: Achievements (full height) */}
   {activeTab === "achievements" && (
-  <div>
-  <div className="p-0 relative">
-          {/* <h2 className="text-lg font-medium mb-2">Achievements (Reputation)</h2> */}
-          {/* Achievements: 2 rows per column, square cards matching add-wish style */}
-          <div
-            ref={achRef}
-            onScroll={() => {
-              const el = achRef.current
-              if (!el) return
-              setCanScrollLeft(el.scrollLeft > 0)
-              setCanScrollRight(el.scrollLeft + el.clientWidth < el.scrollWidth - 1)
-              if (el.scrollWidth > el.clientWidth) {
-                const left = (el.scrollLeft / (el.scrollWidth - el.clientWidth)) * 100
-                const width = (el.clientWidth / el.scrollWidth) * 100
-                setThumbLeft(left)
-                setThumbWidth(width)
-              } else {
-                setThumbLeft(0)
-                setThumbWidth(0)
-              }
-            }}
-            className="overflow-x-auto ach-carousel overscroll-none"
-            style={{ WebkitOverflowScrolling: "touch" }}
-          >
-            <div className="grid grid-rows-2 grid-flow-col auto-cols-[200px] gap-0 pb-0 items-start">
-              {achievements.map((a) => (
-                <button
-                  key={a.id}
-                  onClick={() => openAchievementModal(a)}
-                  className="aspect-square w-[200px] flex-shrink-0 bg-white rounded-sm p-0 border hover:shadow-sm text-left relative overflow-hidden"
-                >
-                  {/* Background image or emoji */}
-                  {typeof a.image === "string" && /^https?:\/\//.test(a.image) ? (
-                    <img src={a.image} alt={a.title} className="absolute inset-0 w-full h-full object-cover" />
-                  ) : (
-                    <div className="absolute inset-0 flex items-center justify-center text-4xl opacity-95">{a.image}</div>
-                  )}
+  <div className="h-full flex flex-col">
+  <div className="p-4 flex-1 overflow-y-auto">
+          {/* <h2 className="text-lg font-medium mb-4">Achievements (Reputation)</h2> */}
+          {/* Achievements: vertical grid, 3 columns on mobile, smaller cards */}
+          <div className="grid grid-cols-3 gap-3">
+            {achievements.map((a) => (
+              <button
+                key={a.id}
+                onClick={() => openAchievementModal(a)}
+                className="aspect-square bg-white rounded-lg border-2 border-dashed border-gray-300 hover:border-gray-400 hover:shadow-md transition-all duration-200 text-left relative overflow-hidden flex flex-col items-center justify-center p-3"
+              >
+                {/* Background image or emoji */}
+                {typeof a.image === "string" && /^https?:\/\//.test(a.image) ? (
+                  <img src={a.image} alt={a.title} className="w-12 h-12 object-cover rounded mb-2" />
+                ) : (
+                  <div className="text-3xl mb-2">{a.image}</div>
+                )}
 
-                  {/* Foreground overlay with title on top of image */}
-                  <div className="relative z-10 mt-auto p-2">
-                    <div className="bg-black/60 rounded px-2 py-1 inline-block">
-                      <div className="font-semibold text-sm text-white">{a.title}</div>
-                      {a.subtitle && <div className="text-xs text-white mt-1 bg-black/40 rounded px-1 inline-block">{a.subtitle}</div>}
-                    </div>
-                  </div>
-                </button>
-              ))}
-            </div>
+                {/* Title and subtitle */}
+                <div className="text-center">
+                  <div className="font-semibold text-sm text-gray-800 leading-tight">{a.title}</div>
+                  {a.subtitle && <div className="text-xs text-gray-600 mt-1">{a.subtitle}</div>}
+                </div>
+              </button>
+            ))}
           </div>
-
-          {/* custom overlay removed to avoid duplicate scrollbar visuals */}
-
-          {/* arrows removed per request */}
         </div>
       </div>
       )}
