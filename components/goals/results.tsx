@@ -386,8 +386,8 @@ export default function Results() {
   <div className="h-full flex flex-col">
   <div className="p-4 flex-1 overflow-y-auto">
           {/* <h2 className="text-lg font-medium mb-4">Achievements (Reputation)</h2> */}
-          {/* Achievements: vertical grid, 3 columns on mobile, smaller cards */}
-          <div className="grid grid-cols-3 gap-3">
+          {/* Achievements: responsive grid, 3 columns on mobile, 6 columns on horizontal screens */}
+          <div className="grid grid-cols-3 lg:grid-cols-6 gap-3">
             {achievements.map((a) => (
               <button
                 key={a.id}
