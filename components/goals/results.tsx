@@ -224,7 +224,11 @@ export default function Results() {
     setModalTitle(item.name)
     setModalContent(
       <div className="space-y-3">
-        <div className="text-6xl">{item.emoji}</div>
+        {typeof item.emoji === "string" && /^https?:\/\//.test(item.emoji) ? (
+          <img src={item.emoji} alt={item.name} className="w-full max-h-56 object-contain rounded" />
+        ) : (
+          <div className="text-6xl">{item.emoji}</div>
+        )}
         <p className="text-sm text-gray-600">Count: {item.count ?? 1}</p>
         <p className="text-gray-800">{item.description}</p>
       </div>
@@ -280,7 +284,11 @@ export default function Results() {
             className="flex items-center justify-center h-10 w-10 bg-white border rounded hover:bg-gray-50"
             title={item.title}
           >
-            <span className="text-lg">{item.img}</span>
+            {typeof item.img === "string" && /^https?:\/\//.test(item.img) ? (
+              <img src={item.img} alt={item.title} className="w-6 h-6 object-cover rounded" />
+            ) : (
+              <span className="text-lg">{item.img}</span>
+            )}
           </button>
         ))}
       </div>
@@ -431,7 +439,11 @@ export default function Results() {
                           onClick={() => openInventoryItemModal(it)}
                           className="absolute inset-0 flex items-center justify-center text-5xl leading-none select-none"
                         >
-                          {it.emoji}
+                          {typeof it.emoji === "string" && /^https?:\/\//.test(it.emoji) ? (
+                            <img src={it.emoji} alt={it.name} className="w-12 h-12 object-cover rounded" />
+                          ) : (
+                            <div className="text-5xl">{it.emoji}</div>
+                          )}
                         </div>
                     <div className="absolute bottom-1 left-1 right-1 text-center text-xs bg-white/70 rounded px-1 py-0.5">{it.name}</div>
                     <button
@@ -479,7 +491,11 @@ export default function Results() {
                           onClick={() => openInventoryItemModal(it)}
                           className="absolute inset-0 flex items-center justify-center text-5xl leading-none select-none"
                         >
-                          {it.emoji}
+                          {typeof it.emoji === "string" && /^https?:\/\//.test(it.emoji) ? (
+                            <img src={it.emoji} alt={it.name} className="w-12 h-12 object-cover rounded" />
+                          ) : (
+                            <div className="text-5xl">{it.emoji}</div>
+                          )}
                         </div>
                     <div className="absolute bottom-1 left-1 right-1 text-center text-xs bg-white/70 rounded px-1 py-0.5">{it.name}</div>
                     <button
@@ -510,29 +526,43 @@ export default function Results() {
 
       {/* Base */}
       {activeTab === "base" && (
-        <div className="relative h-full bg-gray-200" style={{ backgroundImage: `url(${baseBackgrounds[baseIndex]?.img})`, backgroundSize: 'cover', backgroundPosition: 'center', backgroundRepeat: 'no-repeat' }}>
-          <button
-            className="absolute bottom-4 right-4 w-16 h-16 rounded-full border-2 border-white shadow-lg flex items-center justify-center text-white font-bold text-lg bg-black/50"
-            onClick={() => {
-              setBaseIndex(prev => (prev + 1) % baseBackgrounds.length)
-            }}
-          >
-            {baseIndex + 1}
-          </button>
+        <div className="relative h-full flex">
+          {/* Left gray stripe - only on horizontal screens */}
+          {window.innerWidth > window.innerHeight && <div className="w-8 bg-gray-200 flex-shrink-0"></div>}
+          {/* Center content with background image */}
+          <div className="flex-1 relative bg-gray-200" style={{ backgroundImage: `url(${baseBackgrounds[baseIndex]?.img})`, backgroundSize: 'auto 100%', backgroundPosition: 'center', backgroundRepeat: 'no-repeat' }}>
+            <button
+              className="absolute bottom-4 right-4 w-16 h-16 rounded-full border-2 border-white shadow-lg flex items-center justify-center text-white font-bold text-lg bg-black/50"
+              onClick={() => {
+                setBaseIndex(prev => (prev + 1) % baseBackgrounds.length)
+              }}
+            >
+              {baseIndex + 1}
+            </button>
+          </div>
+          {/* Right gray stripe - only on horizontal screens */}
+          {window.innerWidth > window.innerHeight && <div className="w-8 bg-gray-200 flex-shrink-0"></div>}
         </div>
       )}
 
       {/* Character */}
       {activeTab === "character" && (
-        <div className="relative h-full bg-gray-200" style={{ backgroundImage: `url(${characterBackgrounds[characterIndex]?.img})`, backgroundSize: 'cover', backgroundPosition: 'center', backgroundRepeat: 'no-repeat' }}>
-          <button
-            className="absolute bottom-4 right-4 w-16 h-16 rounded-full border-2 border-white shadow-lg flex items-center justify-center text-white font-bold text-lg bg-black/50"
-            onClick={() => {
-              setCharacterIndex(prev => (prev + 1) % characterBackgrounds.length)
-            }}
-          >
-            {characterIndex + 1}
-          </button>
+        <div className="relative h-full flex">
+          {/* Left gray stripe - only on horizontal screens */}
+          {window.innerWidth > window.innerHeight && <div className="w-8 bg-gray-200 flex-shrink-0"></div>}
+          {/* Center content with background image */}
+          <div className="flex-1 relative bg-gray-200" style={{ backgroundImage: `url(${characterBackgrounds[characterIndex]?.img})`, backgroundSize: 'auto 100%', backgroundPosition: 'center', backgroundRepeat: 'no-repeat' }}>
+            <button
+              className="absolute bottom-4 right-4 w-16 h-16 rounded-full border-2 border-white shadow-lg flex items-center justify-center text-white font-bold text-lg bg-black/50"
+              onClick={() => {
+                setCharacterIndex(prev => (prev + 1) % characterBackgrounds.length)
+              }}
+            >
+              {characterIndex + 1}
+            </button>
+          </div>
+          {/* Right gray stripe - only on horizontal screens */}
+          {window.innerWidth > window.innerHeight && <div className="w-8 bg-gray-200 flex-shrink-0"></div>}
         </div>
       )}
 
