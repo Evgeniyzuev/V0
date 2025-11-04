@@ -117,8 +117,15 @@ const sampleKnowledge: InventoryCell[] = Array.from({ length: 60 }).map((_, i) =
 // Base tab backgrounds
 const baseBackgrounds = [
   "https://blush-keen-constrictor-906.mypinata.cloud/ipfs/bafkreidae7sneuejwbie7mytgjcuxi775j6zcall6ywfjf6jxuuwtmjlw4",
-  "https://blush-keen-constrictor-906.mypinata.cloud/ipfs/bafkreigpgvix4rumjuu2orw7ij7bc2umcgai7kwuvbylkj4rzgaluh42dy",
+  "https://blush-keen-constrictor-906.mypinata.cloud/ipfs/bafkreicoiinuapd7evdnahz7s5bm4255sjena3rccom53s47aztpmyunyu",
   "https://blush-keen-constrictor-906.mypinata.cloud/ipfs/bafybeidrqqjj73obl35ceqeg7qoqmc2aphlvpuau57o7b3sd5zoz6ecjtq"
+]
+
+// Character tab backgrounds
+const characterBackgrounds = [
+  "https://i.pinimg.com/736x/1e/fd/b6/1efdb63278aa6883bf73a4dab68eecd9.jpg",
+  "https://i.pinimg.com/736x/db/ad/37/dbad378fbb3ec5661fdc564ea5858ca3.jpg",
+  "https://i.pinimg.com/736x/5b/cc/68/5bcc688778eb1e83950d3d39c5b138ed.jpg"
 ]
 
 export default function Results() {
@@ -151,6 +158,8 @@ export default function Results() {
   const [pickerSlot, setPickerSlot] = useState<number | null>(null)
   // base tab state
   const [baseIndex, setBaseIndex] = useState(0)
+  // character tab state
+  const [characterIndex, setCharacterIndex] = useState(0)
 
 
 
@@ -288,7 +297,7 @@ export default function Results() {
       )}
 
       {/* Placeholder for other tabs */}
-      {activeTab !== "achievements" && activeTab !== "inventory" && activeTab !== "knowledge" && activeTab !== "base" && (
+      {activeTab !== "achievements" && activeTab !== "inventory" && activeTab !== "knowledge" && activeTab !== "base" && activeTab !== "character" && (
         <div className="p-0">
           <h2 className="text-xl font-semibold">{tabs.find((t) => t.key === activeTab)?.title ?? ""}</h2>
         </div>
@@ -592,6 +601,20 @@ export default function Results() {
             }}
           >
             {baseIndex + 1}
+          </button>
+        </div>
+      )}
+
+      {/* Character */}
+      {activeTab === "character" && (
+        <div className="relative h-full" style={{ backgroundImage: `url(${characterBackgrounds[characterIndex]})`, backgroundSize: 'cover' }}>
+          <button
+            className="absolute bottom-4 right-4 w-16 h-16 rounded-full border-2 border-white shadow-lg flex items-center justify-center text-white font-bold text-lg bg-black/50"
+            onClick={() => {
+              setCharacterIndex(prev => (prev + 1) % characterBackgrounds.length)
+            }}
+          >
+            {characterIndex + 1}
           </button>
         </div>
       )}
