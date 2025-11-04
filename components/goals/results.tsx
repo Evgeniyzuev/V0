@@ -88,9 +88,36 @@ const sampleInventory: InventoryCell[] = Array.from({ length: 60 }).map((_, i) =
   item: i < samplePalette.length ? { ...samplePalette[i] } : null,
 }))
 
+// Knowledge items palette (books, scrolls, maps with different colors, names, descriptions)
+const knowledgePalette: InventoryItem[] = [
+  { id: 1, name: "Ancient Tome", emoji: "📚", description: "A dusty book containing forgotten knowledge.", count: 1 },
+  { id: 2, name: "Spell Scroll", emoji: "📜", description: "Magical writings that reveal arcane secrets.", count: 1 },
+  { id: 3, name: "Treasure Map", emoji: "🗺️", description: "A map leading to hidden treasures.", count: 1 },
+  { id: 4, name: "Herbal Guide", emoji: "🌿", description: "Knowledge of medicinal plants and herbs.", count: 1 },
+  { id: 5, name: "Star Chart", emoji: "⭐", description: "Celestial navigation and astronomical knowledge.", count: 1 },
+  { id: 6, name: "Alchemy Notes", emoji: "⚗️", description: "Recipes and formulas for potions.", count: 1 },
+  { id: 7, name: "Battle Tactics", emoji: "⚔️", description: "Strategic combat knowledge.", count: 1 },
+  { id: 8, name: "Language Primer", emoji: "📖", description: "Ancient languages and their translations.", count: 1 },
+  { id: 9, name: "Rune Dictionary", emoji: "🔮", description: "Mystical symbols and their meanings.", count: 1 },
+  { id: 10, name: "Weather Almanac", emoji: "🌤️", description: "Patterns and predictions of weather.", count: 1 },
+  { id: 11, name: "Beast Compendium", emoji: "🦁", description: "Encyclopedia of creatures and monsters.", count: 1 },
+  { id: 12, name: "Crafting Manual", emoji: "🔨", description: "Instructions for creating tools and weapons.", count: 1 },
+  { id: 13, name: "History Scrolls", emoji: "📜", description: "Chronicles of past events and civilizations.", count: 1 },
+  { id: 14, name: "Music Sheets", emoji: "🎵", description: "Melodies and compositions from different eras.", count: 1 },
+  { id: 15, name: "Cooking Recipes", emoji: "👨‍🍳", description: "Culinary knowledge and meal preparations.", count: 1 },
+  { id: 16, name: "Architecture Plans", emoji: "🏗️", description: "Blueprints and building techniques.", count: 1 },
+]
+
+// Knowledge: 10 rows × 6 columns = 60 slots. Fill first 16 slots with different knowledge items.
+const sampleKnowledge: InventoryCell[] = Array.from({ length: 60 }).map((_, i) => ({
+  id: i + 1,
+  item: i < knowledgePalette.length ? { ...knowledgePalette[i] } : null,
+}))
+
 export default function Results() {
   const [achievements] = useState<Achievement[]>(sampleAchievements)
   const [inventory, setInventory] = useState<InventoryCell[]>(sampleInventory)
+  const [knowledge, setKnowledge] = useState<InventoryCell[]>(sampleKnowledge)
   // floating top-left control open state
   const [floaterOpen, setFloaterOpen] = useState(false)
   // responsive circle size (px) — 1/12 of min(viewport width, height)
@@ -252,7 +279,7 @@ export default function Results() {
       )}
 
       {/* Placeholder for other tabs */}
-      {activeTab !== "achievements" && activeTab !== "inventory" && (
+      {activeTab !== "achievements" && activeTab !== "inventory" && activeTab !== "knowledge" && (
         <div className="p-0">
           <h2 className="text-xl font-semibold">{tabs.find((t) => t.key === activeTab)?.title ?? ""}</h2>
         </div>
@@ -374,6 +401,150 @@ export default function Results() {
                               key={p.id}
                               onClick={() => {
                                 setInventory((prev) => {
+                                  const copy = prev.slice()
+                                  copy[idx] = { ...copy[idx], item: { ...p } }
+                                  return copy
+                                })
+                                setPickerSlot(null)
+                                setModalOpen(false)
+                              }}
+                              className="flex items-center justify-center h-10 w-10 bg-white border rounded"
+                              title={p.name}
+                            >
+                              <span className="text-lg">{p.emoji}</span>
+                            </button>
+                          ))}
+                        </div>
+                      )
+                      setModalOpen(true)
+                    }}
+                  >
+                    {/* empty slot (click to choose) */}
+                  </div>
+                )}
+              </div>
+            )
+          })}
+        </div>
+      </div>
+      )}
+
+      {/* Knowledge */}
+      {activeTab === "knowledge" && (
+  <div className="py-0 px-0 overflow-y-auto">
+        {/* Palette: draggable items to add into empty slots */}
+          {/* top palette removed per UX request */}
+
+        <div className="grid grid-cols-[repeat(auto-fill,minmax(120px,1fr))] gap-0 justify-items-stretch">
+          {knowledge.map((cell, idx) => {
+            const it = cell.item
+            return (
+              <div key={cell.id} className="relative">
+                {it ? (
+                  <div
+                    draggable
+                    onDragStart={(e) => e.dataTransfer.setData("text/plain", String(idx))}
+                    onDragOver={(e) => e.preventDefault()}
+                    onDrop={(e) => {
+                      e.preventDefault()
+                      const data = e.dataTransfer.getData("text/plain")
+                      // if dropped from palette
+                      if (data.startsWith("knowledge-palette-")) {
+                        const pid = Number(data.split("-")[2])
+                        const p = knowledgePalette.find((x) => x.id === pid)
+                        if (p) {
+                          setKnowledge((prev) => {
+                            const copy = prev.slice()
+                            copy[idx] = { ...copy[idx], item: { ...p } }
+                            return copy
+                          })
+                        }
+                      } else {
+                        const src = Number(data)
+                        if (!Number.isNaN(src)) {
+                          setKnowledge((prev) => {
+                            const copy = prev.slice()
+                            const moving = copy[src].item
+                            copy[src] = { ...copy[src], item: null }
+                            copy[idx] = { ...copy[idx], item: moving }
+                            return copy
+                          })
+                        }
+                      }
+                    }}
+                    className="aspect-square w-full bg-white border rounded-lg relative overflow-hidden flex items-center justify-center hover:shadow-sm"
+                  >
+                        <div
+                          onClick={() => openInventoryItemModal(it)}
+                          className="absolute inset-0 flex items-center justify-center text-5xl leading-none select-none"
+                        >
+                          {it.emoji}
+                        </div>
+                    <div className="absolute bottom-1 left-1 right-1 text-center text-xs bg-white/70 rounded px-1 py-0.5">{it.name}</div>
+                    <button
+                          onClick={(e) => {
+                            // prevent opening item modal when clicking remove
+                            e.stopPropagation()
+                            setKnowledge((prev) => {
+                              const copy = prev.slice()
+                              copy[idx] = { ...copy[idx], item: null }
+                              return copy
+                            })
+                          }}
+                      className="absolute top-1 right-1 bg-white/80 rounded-full p-0.5 text-xs"
+                      aria-label="Remove item"
+                    >
+                      ✕
+                    </button>
+                  </div>
+                ) : (
+                  <div
+                    onDragOver={(e) => e.preventDefault()}
+                    onDrop={(e) => {
+                      e.preventDefault()
+                      const data = e.dataTransfer.getData("text/plain")
+                      if (data.startsWith("knowledge-palette-")) {
+                        const pid = Number(data.split("-")[2])
+                        const p = knowledgePalette.find((x) => x.id === pid)
+                        if (p) {
+                          setKnowledge((prev) => {
+                            const copy = prev.slice()
+                            copy[idx] = { ...copy[idx], item: { ...p } }
+                            return copy
+                          })
+                        }
+                          if (p) {
+                            setKnowledge((prev) => {
+                              const copy = prev.slice()
+                              copy[idx] = { ...copy[idx], item: { ...p } }
+                              return copy
+                            })
+                          }
+                      } else {
+                        const src = Number(data)
+                        if (!Number.isNaN(src)) {
+                          setKnowledge((prev) => {
+                            const copy = prev.slice()
+                            const moving = copy[src].item
+                            copy[src] = { ...copy[src], item: null }
+                            copy[idx] = { ...copy[idx], item: moving }
+                            return copy
+                          })
+                        }
+                      }
+                    }}
+                    className="aspect-square w-full bg-gray-50 border rounded-lg flex items-center justify-center text-sm text-gray-400 cursor-pointer"
+                    onClick={() => {
+                      // open picker for this empty slot
+                      setPickerSlot(idx)
+                      setModalTitle("Choose knowledge")
+                      setModalContent(
+                        <div className="grid grid-cols-6 gap-2 p-2">
+                          {knowledgePalette.map((p) => (
+                            <button
+                              key={p.id}
+                              onClick={() => {
+                                setKnowledge((prev) => {
                                   const copy = prev.slice()
                                   copy[idx] = { ...copy[idx], item: { ...p } }
                                   return copy
