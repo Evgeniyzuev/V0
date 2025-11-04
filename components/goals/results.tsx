@@ -161,6 +161,42 @@ export default function Results() {
   const [baseIndex, setBaseIndex] = useState(0)
   // character tab state
   const [characterIndex, setCharacterIndex] = useState(0)
+  // inventory and knowledge state management
+  const [inventorySlots, setInventorySlots] = useState<InventoryCell[]>([])
+  const [knowledgeSlots, setKnowledgeSlots] = useState<InventoryCell[]>([])
+
+  // Initialize inventory and knowledge slots when data is loaded
+  useEffect(() => {
+    if (inventoryItems.length > 0) {
+      const slots = Array.from({ length: 60 }).map((_, i) => ({
+        id: i + 1,
+        item: i < inventoryItems.length ? {
+          id: inventoryItems[i].id,
+          name: inventoryItems[i].title,
+          emoji: inventoryItems[i].img || '',
+          description: inventoryItems[i].description || '',
+          count: inventoryItems[i].info?.count || 1
+        } : null,
+      }))
+      setInventorySlots(slots)
+    }
+  }, [inventoryItems])
+
+  useEffect(() => {
+    if (knowledgeItems.length > 0) {
+      const slots = Array.from({ length: 60 }).map((_, i) => ({
+        id: i + 1,
+        item: i < knowledgeItems.length ? {
+          id: knowledgeItems[i].id,
+          name: knowledgeItems[i].title,
+          emoji: knowledgeItems[i].img || '',
+          description: knowledgeItems[i].description || '',
+          count: knowledgeItems[i].info?.count || 1
+        } : null,
+      }))
+      setKnowledgeSlots(slots)
+    }
+  }, [knowledgeItems])
 
 
 
@@ -194,6 +230,78 @@ export default function Results() {
       </div>
     )
     setModalOpen(true)
+  }
+
+  // Functions for managing inventory and knowledge slots
+  const openItemPicker = (slotIndex: number, type: 'inventory' | 'knowledge') => {
+    const availableItems = type === 'inventory' ? inventoryItems : knowledgeItems
+    setPickerSlot(slotIndex)
+    setModalTitle(`Choose ${type === 'inventory' ? 'item' : 'knowledge'}`)
+    setModalContent(
+      <div className="grid grid-cols-6 gap-2 p-2 max-h-96 overflow-y-auto">
+        {availableItems.map((item) => (
+          <button
+            key={item.id}
+            onClick={() => {
+              if (type === 'inventory') {
+                setInventorySlots(prev => {
+                  const newSlots = [...prev]
+                  newSlots[slotIndex] = {
+                    ...newSlots[slotIndex],
+                    item: {
+                      id: item.id,
+                      name: item.title,
+                      emoji: item.img || '',
+                      description: item.description || '',
+                      count: item.info?.count || 1
+                    }
+                  }
+                  return newSlots
+                })
+              } else {
+                setKnowledgeSlots(prev => {
+                  const newSlots = [...prev]
+                  newSlots[slotIndex] = {
+                    ...newSlots[slotIndex],
+                    item: {
+                      id: item.id,
+                      name: item.title,
+                      emoji: item.img || '',
+                      description: item.description || '',
+                      count: item.info?.count || 1
+                    }
+                  }
+                  return newSlots
+                })
+              }
+              setPickerSlot(null)
+              setModalOpen(false)
+            }}
+            className="flex items-center justify-center h-10 w-10 bg-white border rounded hover:bg-gray-50"
+            title={item.title}
+          >
+            <span className="text-lg">{item.img}</span>
+          </button>
+        ))}
+      </div>
+    )
+    setModalOpen(true)
+  }
+
+  const removeItem = (slotIndex: number, type: 'inventory' | 'knowledge') => {
+    if (type === 'inventory') {
+      setInventorySlots(prev => {
+        const newSlots = [...prev]
+        newSlots[slotIndex] = { ...newSlots[slotIndex], item: null }
+        return newSlots
+      })
+    } else {
+      setKnowledgeSlots(prev => {
+        const newSlots = [...prev]
+        newSlots[slotIndex] = { ...newSlots[slotIndex], item: null }
+        return newSlots
+      })
+    }
   }
 
 
@@ -311,7 +419,7 @@ export default function Results() {
           {/* top palette removed per UX request */}
 
         <div className="grid grid-cols-[repeat(auto-fill,minmax(120px,1fr))] gap-0 justify-items-stretch">
-          {inventory.map((cell, idx) => {
+          {inventorySlots.map((cell, idx) => {
             const it = cell.item
             return (
               <div key={cell.id} className="relative">
@@ -326,10 +434,23 @@ export default function Results() {
                           {it.emoji}
                         </div>
                     <div className="absolute bottom-1 left-1 right-1 text-center text-xs bg-white/70 rounded px-1 py-0.5">{it.name}</div>
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation()
+                        removeItem(idx, 'inventory')
+                      }}
+                      className="absolute top-1 right-1 bg-white/80 rounded-full p-0.5 text-xs hover:bg-red-100"
+                      aria-label="Remove item"
+                    >
+                      ✕
+                    </button>
                   </div>
                 ) : (
-                  <div className="aspect-square w-full bg-gray-50 border rounded-lg flex items-center justify-center text-sm text-gray-400">
-                    {/* empty slot */}
+                  <div
+                    className="aspect-square w-full bg-gray-50 border rounded-lg flex items-center justify-center text-sm text-gray-400 cursor-pointer hover:bg-gray-100 transition-colors"
+                    onClick={() => openItemPicker(idx, 'inventory')}
+                  >
+                    +
                   </div>
                 )}
               </div>
@@ -346,7 +467,7 @@ export default function Results() {
           {/* top palette removed per UX request */}
 
         <div className="grid grid-cols-[repeat(auto-fill,minmax(120px,1fr))] gap-0 justify-items-stretch">
-          {knowledge.map((cell, idx) => {
+          {knowledgeSlots.map((cell, idx) => {
             const it = cell.item
             return (
               <div key={cell.id} className="relative">
@@ -361,10 +482,23 @@ export default function Results() {
                           {it.emoji}
                         </div>
                     <div className="absolute bottom-1 left-1 right-1 text-center text-xs bg-white/70 rounded px-1 py-0.5">{it.name}</div>
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation()
+                        removeItem(idx, 'knowledge')
+                      }}
+                      className="absolute top-1 right-1 bg-white/80 rounded-full p-0.5 text-xs hover:bg-red-100"
+                      aria-label="Remove item"
+                    >
+                      ✕
+                    </button>
                   </div>
                 ) : (
-                  <div className="aspect-square w-full bg-gray-50 border rounded-lg flex items-center justify-center text-sm text-gray-400">
-                    {/* empty slot */}
+                  <div
+                    className="aspect-square w-full bg-gray-50 border rounded-lg flex items-center justify-center text-sm text-gray-400 cursor-pointer hover:bg-gray-100 transition-colors"
+                    onClick={() => openItemPicker(idx, 'knowledge')}
+                  >
+                    +
                   </div>
                 )}
               </div>
