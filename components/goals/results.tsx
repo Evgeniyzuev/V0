@@ -91,6 +91,18 @@ const sampleInventory: InventoryCell[] = Array.from({ length: 60 }).map((_, i) =
 export default function Results() {
   const [achievements] = useState<Achievement[]>(sampleAchievements)
   const [inventory, setInventory] = useState<InventoryCell[]>(sampleInventory)
+  // floating top-left control open state
+  const [floaterOpen, setFloaterOpen] = useState(false)
+  // responsive circle size (px) — 1/12 of min(viewport width, height)
+  const [circleSize, setCircleSize] = useState<number>(() => {
+    if (typeof window === "undefined") return 60
+    return Math.floor(Math.min(window.innerWidth, window.innerHeight) / 12)
+  })
+  useEffect(() => {
+    const onResize = () => setCircleSize(Math.floor(Math.min(window.innerWidth, window.innerHeight) / 12))
+    window.addEventListener("resize", onResize)
+    return () => window.removeEventListener("resize", onResize)
+  }, [])
   // index of empty slot being filled by picker (null = none)
   const [pickerSlot, setPickerSlot] = useState<number | null>(null)
 
@@ -170,8 +182,59 @@ export default function Results() {
     }, 300)
   }
 
+  const gap = 2
+  const totalCircles = 7 // toggle + 6 empty circles
+  const panelWidth = circleSize * totalCircles + gap * (totalCircles - 1)
+
   return (
-  <div className="flex flex-col h-full bg-white overscroll-none">
+  <div className="relative flex flex-col h-full bg-white overscroll-none">
+      {/* Floating top-left control */}
+  <div className="absolute top-0 left-0 z-50">
+        {/* Frosted panel: width = min(100vw, 100vh) so it fits either screen orientation */}
+        <div
+          className="relative rounded-full shadow-lg overflow-hidden"
+          style={{ width: floaterOpen ? panelWidth : circleSize, height: circleSize, transition: "width 260ms cubic-bezier(.2,.8,.2,1)" }}
+        >
+          {/* background layer (match achievements overlay bg) */}
+          <div className="absolute inset-0 rounded-full bg-black/60 backdrop-blur-md" style={{ border: "1px solid rgba(255,255,255,0.06)" }} />
+
+          {/* content row (no extra padding — circles fit exactly) */}
+          <div className="relative z-10 h-full flex items-center">
+            {/* left area for toggle + circles occupying full panel width */}
+            <div className="relative" style={{ width: panelWidth, height: "100%" }}>
+              {Array.from({ length: 6 }).map((_, i) => {
+                const size = circleSize
+                const offset = (i + 1) * (size + gap)
+                const leftPos = floaterOpen ? offset : 0
+                const style: React.CSSProperties = {
+                  left: leftPos,
+                  transition: "left 240ms cubic-bezier(.2,.8,.2,1), opacity 200ms",
+                  opacity: floaterOpen ? 1 : 0,
+                  pointerEvents: floaterOpen ? "auto" : "none",
+                  position: "absolute",
+                  width: size,
+                  height: size,
+                  borderRadius: "9999px",
+                  boxShadow: "0 6px 18px rgba(0,0,0,0.18)",
+                }
+                return (
+                  <button key={i} style={style} aria-label={`empty-slot-${i}`} title="" className="flex items-center justify-center">
+                    <div style={{ width: '100%', height: '100%', borderRadius: '9999px', background: 'linear-gradient(135deg, rgba(255,255,255,0.3), rgba(220,220,220,0.2))', border: '1px solid rgba(255,255,255,0.12)' }} />
+                  </button>
+                )
+              })}
+
+              {/* Toggle button (leftmost circle) */}
+              <button onClick={() => setFloaterOpen((v) => !v)} aria-label="Toggle floating circles" className="relative flex items-center justify-center" style={{ left: 0, position: "absolute", width: circleSize, height: circleSize }}>
+                <div style={{ width: '100%', height: '100%', borderRadius: '9999px', background: 'linear-gradient(135deg, rgba(255,255,255,0.35), rgba(220,220,220,0.25))', border: '1px solid rgba(255,255,255,0.12)' }} />
+                <ChevronRight className="absolute" style={{ width: Math.max(12, Math.floor(circleSize / 5)), height: Math.max(12, Math.floor(circleSize / 5)), color: '#4B5563' }} />
+              </button>
+            </div>
+
+            {/* optional spacer or other controls can go here */}
+          </div>
+        </div>
+      </div>
       <div className="p-4 flex items-center justify-between">
         {/* <h1 className="text-2xl font-bold">Achievements & Inventory</h1> */}
         {/* <Button variant="ghost" size="icon" className="text-purple-600">
