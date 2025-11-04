@@ -118,6 +118,11 @@ export interface Database {
         Insert: Omit<UserGoal, 'id' | 'created_at' | 'updated_at'>;
         Update: Partial<Omit<UserGoal, 'id' | 'user_id' | 'goal_id' | 'created_at' | 'updated_at'>>;
       };
+      results: {
+        Row: Result;
+        Insert: Omit<Result, 'id' | 'created_at' | 'updated_at'>;
+        Update: Partial<Omit<Result, 'id' | 'created_at' | 'updated_at'>>;
+      };
     };
     Enums: {
       goal_status: GoalStatus;
@@ -174,4 +179,19 @@ export interface UserGoal {
     description?: string;
     created_at: string;
   };
+}
+
+/**
+ * Represents the structure of the public.results table.
+ * Unified table for items, books, achievements, base backgrounds, and character backgrounds.
+ */
+export interface Result {
+  id: number;
+  type: 'achievement' | 'item' | 'book' | 'base' | 'character';
+  img?: string | null; // URL, emoji, or other image representation
+  title: string;
+  description?: string | null;
+  info?: Record<string, any> | null; // Additional structured data (subtitle, count, etc.)
+  created_at: string; // ISO timestamp
+  updated_at: string; // ISO timestamp
 }

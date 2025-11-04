@@ -3,6 +3,7 @@
 import React, { useState, useEffect } from "react"
 import { Button } from "@/components/ui/button"
 import { Plus, X, ChevronRight, ChevronLeft } from "lucide-react"
+import { Result } from "@/types/supabase"
 
 type Achievement = {
   id: number
@@ -43,95 +44,95 @@ function Modal({ open, onClose, title, children }: { open: boolean; onClose: () 
   )
 }
 
-const sampleAchievements: Achievement[] = [
-  { id: 1, title: "Core", subtitle: "LVL 8", image: "https://blush-keen-constrictor-906.mypinata.cloud/ipfs/bafkreibb77axafktdr7vjlurwizg6fh54so2pfwhlg2wqeluy5sweuk3ya", description: "Yor core at level 8" },
-  { id: 2, title: "Explorer", subtitle: "Visited 10 places", image: "https://blush-keen-constrictor-906.mypinata.cloud/ipfs/bafkreibb77axafktdr7vjlurwizg6fh54so2pfwhlg2wqeluy5sweuk3ya", description: "You explored new areas and discovered secrets." },
-  { id: 3, title: "Collector", subtitle: "Collected 50 items", image: "💎", description: "A seasoned collector of rare items." },
-  { id: 4, title: "Champion", subtitle: "Top 10 in leaderboard", image: "🥇", description: "You ranked high in the weekly leaderboard." },
-  { id: 5, title: "Marathoner", subtitle: "Complete 100 tasks", image: "🏃‍♂️", description: "You demonstrate persistence and consistency." },
-  { id: 6, title: "Socializer", subtitle: "10 friends invited", image: "🤝", description: "You helped grow the community by inviting others." },
-  { id: 7, title: "Strategist", subtitle: "5 goals planned", image: "🧠", description: "You planned and prioritized important goals effectively." },
-  { id: 8, title: "Treasure Hunter", subtitle: "Found hidden item", image: "🗺️", description: "You found a rare treasure while exploring." },
-  { id: 9, title: "Innovator", subtitle: "Created a feature", image: "💡", description: "You shipped something useful." },
-  { id: 10, title: "Helper", subtitle: "Answered 10 questions", image: "🆘", description: "You helped the community." },
-  { id: 11, title: "Speedster", subtitle: "Fast completion", image: "⚡", description: "Completed a task very quickly." },
-  { id: 12, title: "Perfectionist", subtitle: "All subtasks done", image: "✅", description: "You finished every subtask." },
-  { id: 13, title: "Collaborator", subtitle: "Worked with a friend", image: "🤝", description: "Teamwork makes the dream work." },
-  { id: 14, title: "Architect", subtitle: "Planned 10 steps", image: "🏗️", description: "You created a solid plan." },
-  { id: 15, title: "Gardener", subtitle: "Grew a garden", image: "🌱", description: "You nurtured something over time." },
-  { id: 16, title: "Archivist", subtitle: "Saved 100 notes", image: "🗂️", description: "Your records are complete." },
-]
-
-// Palette of available item types (16 distinct items)
-const samplePalette: InventoryItem[] = [
-  { id: 1, name: "Ruby", emoji: "🔴", description: "A small red gem." },
-  { id: 2, name: "Bread", emoji: "🍞", description: "Restores energy." },
-  { id: 3, name: "Potion", emoji: "🧪", description: "Heals wounds." },
-  { id: 4, name: "Coin", emoji: "🪙", description: "Currency." },
-  { id: 5, name: "Key", emoji: "🗝️", description: "Opens locks." },
-  { id: 6, name: "Map", emoji: "�️", description: "Shows locations." },
-  { id: 7, name: "Book", emoji: "📘", description: "Knowledge." },
-  { id: 8, name: "Feather", emoji: "🪶", description: "Light item." },
-  { id: 9, name: "Gem", emoji: "💎", description: "Valuable gem." },
-  { id: 10, name: "Apple", emoji: "�", description: "Healthy snack." },
-  { id: 11, name: "Shield", emoji: "🛡️", description: "Protection." },
-  { id: 12, name: "Sword", emoji: "🗡️", description: "Weapon." },
-  { id: 13, name: "Lantern", emoji: "🏮", description: "Lights the way." },
-  { id: 14, name: "Scroll", emoji: "📜", description: "Ancient knowledge." },
-  { id: 15, name: "Ticket", emoji: "🎫", description: "Entry pass." },
-  { id: 16, name: "Crown", emoji: "👑", description: "Rare trophy." },
-]
-
-// Inventory: 10 rows × 6 columns = 60 slots (no gaps). Fill first 16 slots with different items from palette.
-const sampleInventory: InventoryCell[] = Array.from({ length: 60 }).map((_, i) => ({
-  id: i + 1,
-  item: i < samplePalette.length ? { ...samplePalette[i] } : null,
-}))
-
-// Knowledge items palette (books, scrolls, maps with different colors, names, descriptions)
-const knowledgePalette: InventoryItem[] = [
-  { id: 1, name: "Ancient Tome", emoji: "📚", description: "A dusty book containing forgotten knowledge.", count: 1 },
-  { id: 2, name: "Spell Scroll", emoji: "📜", description: "Magical writings that reveal arcane secrets.", count: 1 },
-  { id: 3, name: "Treasure Map", emoji: "🗺️", description: "A map leading to hidden treasures.", count: 1 },
-  { id: 4, name: "Herbal Guide", emoji: "🌿", description: "Knowledge of medicinal plants and herbs.", count: 1 },
-  { id: 5, name: "Star Chart", emoji: "⭐", description: "Celestial navigation and astronomical knowledge.", count: 1 },
-  { id: 6, name: "Alchemy Notes", emoji: "⚗️", description: "Recipes and formulas for potions.", count: 1 },
-  { id: 7, name: "Battle Tactics", emoji: "⚔️", description: "Strategic combat knowledge.", count: 1 },
-  { id: 8, name: "Language Primer", emoji: "📖", description: "Ancient languages and their translations.", count: 1 },
-  { id: 9, name: "Rune Dictionary", emoji: "🔮", description: "Mystical symbols and their meanings.", count: 1 },
-  { id: 10, name: "Weather Almanac", emoji: "🌤️", description: "Patterns and predictions of weather.", count: 1 },
-  { id: 11, name: "Beast Compendium", emoji: "🦁", description: "Encyclopedia of creatures and monsters.", count: 1 },
-  { id: 12, name: "Crafting Manual", emoji: "🔨", description: "Instructions for creating tools and weapons.", count: 1 },
-  { id: 13, name: "History Scrolls", emoji: "📜", description: "Chronicles of past events and civilizations.", count: 1 },
-  { id: 14, name: "Music Sheets", emoji: "🎵", description: "Melodies and compositions from different eras.", count: 1 },
-  { id: 15, name: "Cooking Recipes", emoji: "👨‍🍳", description: "Culinary knowledge and meal preparations.", count: 1 },
-  { id: 16, name: "Architecture Plans", emoji: "🏗️", description: "Blueprints and building techniques.", count: 1 },
-]
-
-// Knowledge: 10 rows × 6 columns = 60 slots. Fill first 16 slots with different knowledge items.
-const sampleKnowledge: InventoryCell[] = Array.from({ length: 60 }).map((_, i) => ({
-  id: i + 1,
-  item: i < knowledgePalette.length ? { ...knowledgePalette[i] } : null,
-}))
-
-// Base tab backgrounds
-const baseBackgrounds = [
-  "https://blush-keen-constrictor-906.mypinata.cloud/ipfs/bafkreidae7sneuejwbie7mytgjcuxi775j6zcall6ywfjf6jxuuwtmjlw4",
-  "https://blush-keen-constrictor-906.mypinata.cloud/ipfs/bafkreigpgvix4rumjuu2orw7ij7bc2umcgai7kwuvbylkj4rzgaluh42dy",
-  "https://blush-keen-constrictor-906.mypinata.cloud/ipfs/bafybeidrqqjj73obl35ceqeg7qoqmc2aphlvpuau57o7b3sd5zoz6ecjtq"
-]
-
-// Character tab backgrounds
-const characterBackgrounds = [
-  "https://i.pinimg.com/736x/1e/fd/b6/1efdb63278aa6883bf73a4dab68eecd9.jpg",
-  "https://i.pinimg.com/736x/db/ad/37/dbad378fbb3ec5661fdc564ea5858ca3.jpg",
-  "https://i.pinimg.com/736x/5b/cc/68/5bcc688778eb1e83950d3d39c5b138ed.jpg"
-]
-
 export default function Results() {
-  const [achievements] = useState<Achievement[]>(sampleAchievements)
-  const [inventory, setInventory] = useState<InventoryCell[]>(sampleInventory)
-  const [knowledge, setKnowledge] = useState<InventoryCell[]>(sampleKnowledge)
+  const [achievements, setAchievements] = useState<Achievement[]>([])
+  const [inventoryItems, setInventoryItems] = useState<Result[]>([])
+  const [knowledgeItems, setKnowledgeItems] = useState<Result[]>([])
+  const [baseBackgrounds, setBaseBackgrounds] = useState<Result[]>([])
+  const [characterBackgrounds, setCharacterBackgrounds] = useState<Result[]>([])
+  const [loading, setLoading] = useState(true)
+
+  // Fetch data from API
+  useEffect(() => {
+    const fetchData = async () => {
+      try {
+        setLoading(true)
+
+        // Fetch achievements
+        const achievementsRes = await fetch('/api/results?type=achievement')
+        if (achievementsRes.ok) {
+          const achievementsData: Result[] = await achievementsRes.json()
+          const formattedAchievements: Achievement[] = achievementsData.map(result => ({
+            id: result.id,
+            title: result.title,
+            subtitle: result.info?.subtitle || '',
+            image: result.img || '',
+            description: result.description || ''
+          }))
+          setAchievements(formattedAchievements)
+        }
+
+        // Fetch inventory items
+        const itemsRes = await fetch('/api/results?type=item')
+        if (itemsRes.ok) {
+          const itemsData: Result[] = await itemsRes.json()
+          setInventoryItems(itemsData)
+        }
+
+        // Fetch knowledge items (books)
+        const booksRes = await fetch('/api/results?type=book')
+        if (booksRes.ok) {
+          const booksData: Result[] = await booksRes.json()
+          setKnowledgeItems(booksData)
+        }
+
+        // Fetch base backgrounds
+        const baseRes = await fetch('/api/results?type=base')
+        if (baseRes.ok) {
+          const baseData: Result[] = await baseRes.json()
+          setBaseBackgrounds(baseData)
+        }
+
+        // Fetch character backgrounds
+        const characterRes = await fetch('/api/results?type=character')
+        if (characterRes.ok) {
+          const characterData: Result[] = await characterRes.json()
+          setCharacterBackgrounds(characterData)
+        }
+
+      } catch (error) {
+        console.error('Error fetching results data:', error)
+      } finally {
+        setLoading(false)
+      }
+    }
+
+    fetchData()
+  }, [])
+
+  // Create inventory grid from items
+  const inventory: InventoryCell[] = Array.from({ length: 60 }).map((_, i) => ({
+    id: i + 1,
+    item: i < inventoryItems.length ? {
+      id: inventoryItems[i].id,
+      name: inventoryItems[i].title,
+      emoji: inventoryItems[i].img || '',
+      description: inventoryItems[i].description || '',
+      count: inventoryItems[i].info?.count || 1
+    } : null,
+  }))
+
+  // Create knowledge grid from books
+  const knowledge: InventoryCell[] = Array.from({ length: 60 }).map((_, i) => ({
+    id: i + 1,
+    item: i < knowledgeItems.length ? {
+      id: knowledgeItems[i].id,
+      name: knowledgeItems[i].title,
+      emoji: knowledgeItems[i].img || '',
+      description: knowledgeItems[i].description || '',
+      count: knowledgeItems[i].info?.count || 1
+    } : null,
+  }))
   // floating top-left control open state
   const [floaterOpen, setFloaterOpen] = useState(false)
   // responsive circle size (px) — 1/12 of min(viewport width, height)
@@ -316,36 +317,6 @@ export default function Results() {
               <div key={cell.id} className="relative">
                 {it ? (
                   <div
-                    draggable
-                    onDragStart={(e) => e.dataTransfer.setData("text/plain", String(idx))}
-                    onDragOver={(e) => e.preventDefault()}
-                    onDrop={(e) => {
-                      e.preventDefault()
-                      const data = e.dataTransfer.getData("text/plain")
-                      // if dropped from palette
-                      if (data.startsWith("palette-")) {
-                        const pid = Number(data.split("-")[1])
-                        const p = samplePalette.find((x) => x.id === pid)
-                        if (p) {
-                          setInventory((prev) => {
-                            const copy = prev.slice()
-                            copy[idx] = { ...copy[idx], item: { ...p } }
-                            return copy
-                          })
-                        }
-                      } else {
-                        const src = Number(data)
-                        if (!Number.isNaN(src)) {
-                          setInventory((prev) => {
-                            const copy = prev.slice()
-                            const moving = copy[src].item
-                            copy[src] = { ...copy[src], item: null }
-                            copy[idx] = { ...copy[idx], item: moving }
-                            return copy
-                          })
-                        }
-                      }
-                    }}
                     className="aspect-square w-full bg-white border rounded-lg relative overflow-hidden flex items-center justify-center hover:shadow-sm"
                   >
                         <div
@@ -355,89 +326,10 @@ export default function Results() {
                           {it.emoji}
                         </div>
                     <div className="absolute bottom-1 left-1 right-1 text-center text-xs bg-white/70 rounded px-1 py-0.5">{it.name}</div>
-                    <button
-                          onClick={(e) => {
-                            // prevent opening item modal when clicking remove
-                            e.stopPropagation()
-                            setInventory((prev) => {
-                              const copy = prev.slice()
-                              copy[idx] = { ...copy[idx], item: null }
-                              return copy
-                            })
-                          }}
-                      className="absolute top-1 right-1 bg-white/80 rounded-full p-0.5 text-xs"
-                      aria-label="Remove item"
-                    >
-                      ✕
-                    </button>
                   </div>
                 ) : (
-                  <div
-                    onDragOver={(e) => e.preventDefault()}
-                    onDrop={(e) => {
-                      e.preventDefault()
-                      const data = e.dataTransfer.getData("text/plain")
-                      if (data.startsWith("palette-")) {
-                        const pid = Number(data.split("-")[1])
-                        const p = samplePalette.find((x) => x.id === pid)
-                        if (p) {
-                          setInventory((prev) => {
-                            const copy = prev.slice()
-                            copy[idx] = { ...copy[idx], item: { ...p } }
-                            return copy
-                          })
-                        }
-                          if (p) {
-                            setInventory((prev) => {
-                              const copy = prev.slice()
-                              copy[idx] = { ...copy[idx], item: { ...p } }
-                              return copy
-                            })
-                          }
-                      } else {
-                        const src = Number(data)
-                        if (!Number.isNaN(src)) {
-                          setInventory((prev) => {
-                            const copy = prev.slice()
-                            const moving = copy[src].item
-                            copy[src] = { ...copy[src], item: null }
-                            copy[idx] = { ...copy[idx], item: moving }
-                            return copy
-                          })
-                        }
-                      }
-                    }}
-                    className="aspect-square w-full bg-gray-50 border rounded-lg flex items-center justify-center text-sm text-gray-400 cursor-pointer"
-                    onClick={() => {
-                      // open picker for this empty slot
-                      setPickerSlot(idx)
-                      setModalTitle("Choose an item")
-                      setModalContent(
-                        <div className="grid grid-cols-6 gap-2 p-2">
-                          {samplePalette.map((p) => (
-                            <button
-                              key={p.id}
-                              onClick={() => {
-                                setInventory((prev) => {
-                                  const copy = prev.slice()
-                                  copy[idx] = { ...copy[idx], item: { ...p } }
-                                  return copy
-                                })
-                                setPickerSlot(null)
-                                setModalOpen(false)
-                              }}
-                              className="flex items-center justify-center h-10 w-10 bg-white border rounded"
-                              title={p.name}
-                            >
-                              <span className="text-lg">{p.emoji}</span>
-                            </button>
-                          ))}
-                        </div>
-                      )
-                      setModalOpen(true)
-                    }}
-                  >
-                    {/* empty slot (click to choose) */}
+                  <div className="aspect-square w-full bg-gray-50 border rounded-lg flex items-center justify-center text-sm text-gray-400">
+                    {/* empty slot */}
                   </div>
                 )}
               </div>
@@ -460,36 +352,6 @@ export default function Results() {
               <div key={cell.id} className="relative">
                 {it ? (
                   <div
-                    draggable
-                    onDragStart={(e) => e.dataTransfer.setData("text/plain", String(idx))}
-                    onDragOver={(e) => e.preventDefault()}
-                    onDrop={(e) => {
-                      e.preventDefault()
-                      const data = e.dataTransfer.getData("text/plain")
-                      // if dropped from palette
-                      if (data.startsWith("knowledge-palette-")) {
-                        const pid = Number(data.split("-")[2])
-                        const p = knowledgePalette.find((x) => x.id === pid)
-                        if (p) {
-                          setKnowledge((prev) => {
-                            const copy = prev.slice()
-                            copy[idx] = { ...copy[idx], item: { ...p } }
-                            return copy
-                          })
-                        }
-                      } else {
-                        const src = Number(data)
-                        if (!Number.isNaN(src)) {
-                          setKnowledge((prev) => {
-                            const copy = prev.slice()
-                            const moving = copy[src].item
-                            copy[src] = { ...copy[src], item: null }
-                            copy[idx] = { ...copy[idx], item: moving }
-                            return copy
-                          })
-                        }
-                      }
-                    }}
                     className="aspect-square w-full bg-white border rounded-lg relative overflow-hidden flex items-center justify-center hover:shadow-sm"
                   >
                         <div
@@ -499,89 +361,10 @@ export default function Results() {
                           {it.emoji}
                         </div>
                     <div className="absolute bottom-1 left-1 right-1 text-center text-xs bg-white/70 rounded px-1 py-0.5">{it.name}</div>
-                    <button
-                          onClick={(e) => {
-                            // prevent opening item modal when clicking remove
-                            e.stopPropagation()
-                            setKnowledge((prev) => {
-                              const copy = prev.slice()
-                              copy[idx] = { ...copy[idx], item: null }
-                              return copy
-                            })
-                          }}
-                      className="absolute top-1 right-1 bg-white/80 rounded-full p-0.5 text-xs"
-                      aria-label="Remove item"
-                    >
-                      ✕
-                    </button>
                   </div>
                 ) : (
-                  <div
-                    onDragOver={(e) => e.preventDefault()}
-                    onDrop={(e) => {
-                      e.preventDefault()
-                      const data = e.dataTransfer.getData("text/plain")
-                      if (data.startsWith("knowledge-palette-")) {
-                        const pid = Number(data.split("-")[2])
-                        const p = knowledgePalette.find((x) => x.id === pid)
-                        if (p) {
-                          setKnowledge((prev) => {
-                            const copy = prev.slice()
-                            copy[idx] = { ...copy[idx], item: { ...p } }
-                            return copy
-                          })
-                        }
-                          if (p) {
-                            setKnowledge((prev) => {
-                              const copy = prev.slice()
-                              copy[idx] = { ...copy[idx], item: { ...p } }
-                              return copy
-                            })
-                          }
-                      } else {
-                        const src = Number(data)
-                        if (!Number.isNaN(src)) {
-                          setKnowledge((prev) => {
-                            const copy = prev.slice()
-                            const moving = copy[src].item
-                            copy[src] = { ...copy[src], item: null }
-                            copy[idx] = { ...copy[idx], item: moving }
-                            return copy
-                          })
-                        }
-                      }
-                    }}
-                    className="aspect-square w-full bg-gray-50 border rounded-lg flex items-center justify-center text-sm text-gray-400 cursor-pointer"
-                    onClick={() => {
-                      // open picker for this empty slot
-                      setPickerSlot(idx)
-                      setModalTitle("Choose knowledge")
-                      setModalContent(
-                        <div className="grid grid-cols-6 gap-2 p-2">
-                          {knowledgePalette.map((p) => (
-                            <button
-                              key={p.id}
-                              onClick={() => {
-                                setKnowledge((prev) => {
-                                  const copy = prev.slice()
-                                  copy[idx] = { ...copy[idx], item: { ...p } }
-                                  return copy
-                                })
-                                setPickerSlot(null)
-                                setModalOpen(false)
-                              }}
-                              className="flex items-center justify-center h-10 w-10 bg-white border rounded"
-                              title={p.name}
-                            >
-                              <span className="text-lg">{p.emoji}</span>
-                            </button>
-                          ))}
-                        </div>
-                      )
-                      setModalOpen(true)
-                    }}
-                  >
-                    {/* empty slot (click to choose) */}
+                  <div className="aspect-square w-full bg-gray-50 border rounded-lg flex items-center justify-center text-sm text-gray-400">
+                    {/* empty slot */}
                   </div>
                 )}
               </div>
@@ -593,7 +376,7 @@ export default function Results() {
 
       {/* Base */}
       {activeTab === "base" && (
-        <div className="relative h-full bg-gray-200" style={{ backgroundImage: `url(${baseBackgrounds[baseIndex]})`, backgroundSize: 'cover', backgroundPosition: 'center', backgroundRepeat: 'no-repeat' }}>
+        <div className="relative h-full bg-gray-200" style={{ backgroundImage: `url(${baseBackgrounds[baseIndex]?.img})`, backgroundSize: 'cover', backgroundPosition: 'center', backgroundRepeat: 'no-repeat' }}>
           <button
             className="absolute bottom-4 right-4 w-16 h-16 rounded-full border-2 border-white shadow-lg flex items-center justify-center text-white font-bold text-lg bg-black/50"
             onClick={() => {
@@ -607,7 +390,7 @@ export default function Results() {
 
       {/* Character */}
       {activeTab === "character" && (
-        <div className="relative h-full bg-gray-200" style={{ backgroundImage: `url(${characterBackgrounds[characterIndex]})`, backgroundSize: 'cover', backgroundPosition: 'center', backgroundRepeat: 'no-repeat' }}>
+        <div className="relative h-full bg-gray-200" style={{ backgroundImage: `url(${characterBackgrounds[characterIndex]?.img})`, backgroundSize: 'cover', backgroundPosition: 'center', backgroundRepeat: 'no-repeat' }}>
           <button
             className="absolute bottom-4 right-4 w-16 h-16 rounded-full border-2 border-white shadow-lg flex items-center justify-center text-white font-bold text-lg bg-black/50"
             onClick={() => {
