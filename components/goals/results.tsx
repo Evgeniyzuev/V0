@@ -114,6 +114,13 @@ const sampleKnowledge: InventoryCell[] = Array.from({ length: 60 }).map((_, i) =
   item: i < knowledgePalette.length ? { ...knowledgePalette[i] } : null,
 }))
 
+// Base tab backgrounds
+const baseBackgrounds = [
+  "https://blush-keen-constrictor-906.mypinata.cloud/ipfs/bafkreidae7sneuejwbie7mytgjcuxi775j6zcall6ywfjf6jxuuwtmjlw4",
+  "https://blush-keen-constrictor-906.mypinata.cloud/ipfs/bafkreigpgvix4rumjuu2orw7ij7bc2umcgai7kwuvbylkj4rzgaluh42dy",
+  "https://blush-keen-constrictor-906.mypinata.cloud/ipfs/bafybeidrqqjj73obl35ceqeg7qoqmc2aphlvpuau57o7b3sd5zoz6ecjtq"
+]
+
 export default function Results() {
   const [achievements] = useState<Achievement[]>(sampleAchievements)
   const [inventory, setInventory] = useState<InventoryCell[]>(sampleInventory)
@@ -142,6 +149,8 @@ export default function Results() {
   const [activeTab, setActiveTab] = useState<string>("achievements")
   // index of empty slot being filled by picker (null = none)
   const [pickerSlot, setPickerSlot] = useState<number | null>(null)
+  // base tab state
+  const [baseIndex, setBaseIndex] = useState(0)
 
 
 
@@ -279,7 +288,7 @@ export default function Results() {
       )}
 
       {/* Placeholder for other tabs */}
-      {activeTab !== "achievements" && activeTab !== "inventory" && activeTab !== "knowledge" && (
+      {activeTab !== "achievements" && activeTab !== "inventory" && activeTab !== "knowledge" && activeTab !== "base" && (
         <div className="p-0">
           <h2 className="text-xl font-semibold">{tabs.find((t) => t.key === activeTab)?.title ?? ""}</h2>
         </div>
@@ -571,6 +580,20 @@ export default function Results() {
           })}
         </div>
       </div>
+      )}
+
+      {/* Base */}
+      {activeTab === "base" && (
+        <div className="relative h-full" style={{ backgroundImage: `url(${baseBackgrounds[baseIndex]})`, backgroundSize: 'cover' }}>
+          <button
+            className="absolute bottom-4 right-4 w-16 h-16 rounded-full border-2 border-white shadow-lg flex items-center justify-center text-white font-bold text-lg bg-black/50"
+            onClick={() => {
+              setBaseIndex(prev => (prev + 1) % baseBackgrounds.length)
+            }}
+          >
+            {baseIndex + 1}
+          </button>
+        </div>
       )}
 
       <Modal open={modalOpen} onClose={() => setModalOpen(false)} title={modalTitle}>
