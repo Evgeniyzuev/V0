@@ -103,6 +103,16 @@ export default function Results() {
     window.addEventListener("resize", onResize)
     return () => window.removeEventListener("resize", onResize)
   }, [])
+  // tabs for the floating buttons (emoji -> tab key/title)
+  const tabs = [
+    { key: "base", emoji: "🏡", title: "Base" },
+    { key: "character", emoji: "😀", title: "Character" },
+    { key: "reputation", emoji: "👍", title: "Reputation" },
+    { key: "achievements", emoji: "🏆", title: "Achievements" },
+    { key: "inventory", emoji: "🎒", title: "Inventory" },
+    { key: "knowledge", emoji: "📚", title: "Knowledge" },
+  ]
+  const [activeTab, setActiveTab] = useState<string>("achievements")
   // index of empty slot being filled by picker (null = none)
   const [pickerSlot, setPickerSlot] = useState<number | null>(null)
 
@@ -196,13 +206,13 @@ export default function Results() {
           style={{ width: floaterOpen ? panelWidth : circleSize, height: circleSize, transition: "width 260ms cubic-bezier(.2,.8,.2,1)" }}
         >
           {/* background layer (match achievements overlay bg) */}
-          <div className="absolute inset-0 rounded-full bg-black/60 backdrop-blur-md" style={{ border: "1px solid rgba(255,255,255,0.06)" }} />
+          <div className="absolute inset-0 rounded-full bg-black/20 backdrop-blur-md" style={{ border: "1px solid rgba(255,255,255,0.06)" }} />
 
           {/* content row (no extra padding — circles fit exactly) */}
           <div className="relative z-10 h-full flex items-center">
             {/* left area for toggle + circles occupying full panel width */}
             <div className="relative" style={{ width: panelWidth, height: "100%" }}>
-              {Array.from({ length: 6 }).map((_, i) => {
+              {tabs.map((tab, i) => {
                 const size = circleSize
                 const offset = (i + 1) * (size + gap)
                 const leftPos = floaterOpen ? offset : 0
@@ -218,15 +228,24 @@ export default function Results() {
                   boxShadow: "0 6px 18px rgba(0,0,0,0.18)",
                 }
                 return (
-                  <button key={i} style={style} aria-label={`empty-slot-${i}`} title="" className="flex items-center justify-center">
-                    <div style={{ width: '100%', height: '100%', borderRadius: '9999px', background: 'linear-gradient(135deg, rgba(255,255,255,0.3), rgba(220,220,220,0.2))', border: '1px solid rgba(255,255,255,0.12)' }} />
+                  <button
+                    key={tab.key}
+                    style={style}
+                    aria-label={tab.title}
+                    title={tab.title}
+                    className="flex items-center justify-center"
+                    onClick={() => setActiveTab(tab.key)}
+                  >
+                    <div style={{ width: '100%', height: '100%', borderRadius: '9999px', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: Math.max(12, Math.floor(circleSize / 2.8)), background: 'linear-gradient(135deg, rgba(255,255,255,0.2), rgba(220,220,220,0.15))', border: '1px solid rgba(0,0,0,0.3)' }}>
+                      <span>{tab.emoji}</span>
+                    </div>
                   </button>
                 )
               })}
 
               {/* Toggle button (leftmost circle) */}
               <button onClick={() => setFloaterOpen((v) => !v)} aria-label="Toggle floating circles" className="relative flex items-center justify-center" style={{ left: 0, position: "absolute", width: circleSize, height: circleSize }}>
-                <div style={{ width: '100%', height: '100%', borderRadius: '9999px', background: 'linear-gradient(135deg, rgba(255,255,255,0.35), rgba(220,220,220,0.25))', border: '1px solid rgba(255,255,255,0.12)' }} />
+                <div style={{ width: '100%', height: '100%', borderRadius: '9999px', background: 'linear-gradient(135deg, rgba(255,255,255,0.2), rgba(220,220,220,0.15))', border: '1px solid rgba(0,0,0,0.3)' }} />
                 <ChevronRight className="absolute" style={{ width: Math.max(12, Math.floor(circleSize / 5)), height: Math.max(12, Math.floor(circleSize / 5)), color: '#4B5563' }} />
               </button>
             </div>
@@ -235,15 +254,11 @@ export default function Results() {
           </div>
         </div>
       </div>
-      <div className="p-4 flex items-center justify-between">
-        {/* <h1 className="text-2xl font-bold">Achievements & Inventory</h1> */}
-        {/* <Button variant="ghost" size="icon" className="text-purple-600">
-          <Plus className="h-5 w-5" />
-        </Button> */}
-      </div>
 
-      {/* Top: Achievements (half) */}
-      <div className="border-t border-b">
+
+  {/* Top: Achievements (half) */}
+  {activeTab === "achievements" && (
+  <div>
   <div className="p-0 relative">
           {/* <h2 className="text-lg font-medium mb-2">Achievements (Reputation)</h2> */}
           {/* Achievements: 2 rows per column, square cards matching add-wish style */}
@@ -298,9 +313,18 @@ export default function Results() {
           {/* arrows removed per request */}
         </div>
       </div>
+      )}
+
+      {/* Placeholder for other tabs */}
+      {activeTab !== "achievements" && activeTab !== "inventory" && (
+        <div className="p-0">
+          <h2 className="text-xl font-semibold">{tabs.find((t) => t.key === activeTab)?.title ?? ""}</h2>
+        </div>
+      )}
 
       {/* Bottom: Inventory */}
-  <div className="py-4 px-0 overflow-y-auto">
+      {activeTab === "inventory" && (
+  <div className="py-0 px-0 overflow-y-auto">
         {/* Palette: draggable items to add into empty slots */}
           {/* top palette removed per UX request */}
 
@@ -440,6 +464,7 @@ export default function Results() {
           })}
         </div>
       </div>
+      )}
 
       <Modal open={modalOpen} onClose={() => setModalOpen(false)} title={modalTitle}>
         {modalContent}
