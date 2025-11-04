@@ -117,7 +117,7 @@ const sampleKnowledge: InventoryCell[] = Array.from({ length: 60 }).map((_, i) =
 // Base tab backgrounds
 const baseBackgrounds = [
   "https://blush-keen-constrictor-906.mypinata.cloud/ipfs/bafkreidae7sneuejwbie7mytgjcuxi775j6zcall6ywfjf6jxuuwtmjlw4",
-  "https://blush-keen-constrictor-906.mypinata.cloud/ipfs/bafkreicoiinuapd7evdnahz7s5bm4255sjena3rccom53s47aztpmyunyu",
+  "https://blush-keen-constrictor-906.mypinata.cloud/ipfs/bafkreigpgvix4rumjuu2orw7ij7bc2umcgai7kwuvbylkj4rzgaluh42dy",
   "https://blush-keen-constrictor-906.mypinata.cloud/ipfs/bafybeidrqqjj73obl35ceqeg7qoqmc2aphlvpuau57o7b3sd5zoz6ecjtq"
 ]
 
@@ -593,7 +593,7 @@ export default function Results() {
 
       {/* Base */}
       {activeTab === "base" && (
-        <div className="relative h-full" style={{ backgroundImage: `url(${baseBackgrounds[baseIndex]})`, backgroundSize: 'cover' }}>
+        <div className="relative h-full bg-gray-200" style={{ backgroundImage: `url(${baseBackgrounds[baseIndex]})`, backgroundSize: 'cover', backgroundPosition: 'center', backgroundRepeat: 'no-repeat' }}>
           <button
             className="absolute bottom-4 right-4 w-16 h-16 rounded-full border-2 border-white shadow-lg flex items-center justify-center text-white font-bold text-lg bg-black/50"
             onClick={() => {
@@ -607,7 +607,7 @@ export default function Results() {
 
       {/* Character */}
       {activeTab === "character" && (
-        <div className="relative h-full" style={{ backgroundImage: `url(${characterBackgrounds[characterIndex]})`, backgroundSize: 'cover' }}>
+        <div className="relative h-full bg-gray-200" style={{ backgroundImage: `url(${characterBackgrounds[characterIndex]})`, backgroundSize: 'cover', backgroundPosition: 'center', backgroundRepeat: 'no-repeat' }}>
           <button
             className="absolute bottom-4 right-4 w-16 h-16 rounded-full border-2 border-white shadow-lg flex items-center justify-center text-white font-bold text-lg bg-black/50"
             onClick={() => {
