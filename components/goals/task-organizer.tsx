@@ -117,6 +117,7 @@ export default function TaskOrganizer() {
         let currentRound = 0
         let isWorkPhase = true
         let timeLeftInPhase = savedWorkDuration
+        let completedWorkTime = 0
 
         // Simulate timer progression through all completed phases
         while (remainingTime > 0 && currentRound < savedRounds) {
@@ -125,6 +126,8 @@ export default function TaskOrganizer() {
             remainingTime -= timeLeftInPhase
 
             if (isWorkPhase) {
+              // Work phase completed - add to total work time
+              completedWorkTime += savedWorkDuration
               // Work phase ended, move to rest (if not last round)
               if (currentRound < savedRounds - 1) {
                 isWorkPhase = false
@@ -141,6 +144,10 @@ export default function TaskOrganizer() {
             }
           } else {
             // Current phase still in progress
+            if (isWorkPhase) {
+              // If we're in work phase, add the completed part to work time
+              completedWorkTime += (timeLeftInPhase - remainingTime)
+            }
             timeLeftInPhase -= remainingTime
             remainingTime = 0
           }
@@ -149,7 +156,8 @@ export default function TaskOrganizer() {
         console.log('Restored timer state:', {
           currentRound,
           isWorkPhase,
-          timeLeftInPhase
+          timeLeftInPhase,
+          completedWorkTime
         })
 
         setTimerStartTime(startTime)
@@ -158,6 +166,7 @@ export default function TaskOrganizer() {
         setCurrentRound(currentRound)
         setIsWorkPhase(isWorkPhase)
         setTimeLeft(timeLeftInPhase)
+        setTotalWorkTime(completedWorkTime)
       } else {
         // Timer has completed
         setIsCompleted(true)
