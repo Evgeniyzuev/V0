@@ -219,22 +219,23 @@ export default function TaskCard({ goal, onUpdated }: TaskCardProps) {
                     {(() => {
                       const today = new Date().toDateString()
                       const lastStreakDate = goal.last_streak_date
-                      const canMarkToday = !lastStreakDate || lastStreakDate !== today
 
-                      if (!canMarkToday) {
+                      if (lastStreakDate === today) {
                         return "Already marked today! Come back tomorrow."
                       }
 
-                      // Check if streak is broken (more than 1 day gap)
-                      if (lastStreakDate) {
-                        const lastDate = new Date(lastStreakDate)
-                        const yesterday = new Date()
-                        yesterday.setDate(yesterday.getDate() - 1)
-                        const isConsecutive = lastDate.toDateString() === yesterday.toDateString()
+                      if (!lastStreakDate) {
+                        return "Ready to mark today's progress!"
+                      }
 
-                        if (!isConsecutive) {
-                          return "Streak was broken. Starting fresh today!"
-                        }
+                      // Check if streak is broken (more than 1 day gap)
+                      const lastDate = new Date(lastStreakDate)
+                      const yesterday = new Date()
+                      yesterday.setDate(yesterday.getDate() - 1)
+                      const isConsecutive = lastDate.toDateString() === yesterday.toDateString()
+
+                      if (!isConsecutive) {
+                        return "Streak was broken. Starting fresh today!"
                       }
 
                       return "Ready to mark today's progress!"
@@ -342,7 +343,9 @@ export default function TaskCard({ goal, onUpdated }: TaskCardProps) {
             )}
 
             <div className="mt-4 flex justify-end gap-2">
-              <Button className="bg-green-500 text-white hover:bg-green-600" onClick={async () => {
+              {/* Hide "Mark all done" for streak tasks until streak is complete */}
+              {(!goal.is_streak_task || (goal.current_streak_days || 0) >= (goal.total_streak_days || 0)) && (
+                <Button className="bg-green-500 text-white hover:bg-green-600" onClick={async () => {
                   // Quick mark all done
                   const all = subtasks.map(s => ({ ...s, completed: true }))
                   setSubtasks(all)
@@ -373,6 +376,7 @@ export default function TaskCard({ goal, onUpdated }: TaskCardProps) {
                     setOpen(false)
                   }
                 }}>Mark all done</Button>
+              )}
             </div>
 
             {/* Delete button in bottom-left of modal */}
