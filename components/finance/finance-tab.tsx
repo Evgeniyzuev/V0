@@ -510,18 +510,19 @@ export default function FinanceTab() {
               </div>
 
               <div className="grid grid-cols-2 gap-3">
-                <div className="text-center p-3 bg-green-50 rounded-lg">
-                  <span className="text-xs text-gray-600 block mb-1">To Core</span>
-                  <span className="text-sm font-bold text-green-700">
-                    ${calculateDailyIncome(coreBalance).toCore.toFixed(8)}
-                  </span>
-                </div>
                 <div className="text-center p-3 bg-blue-50 rounded-lg">
-                  <span className="text-xs text-gray-600 block mb-1">To Wallet</span>
+                  {/* <span className="text-xs text-gray-600 block mb-1">To Wallet</span> */}
                   <span className="text-sm font-bold text-blue-700">
-                    ${calculateDailyIncome(coreBalance).toWallet.toFixed(8)}
+                    👛 ${calculateDailyIncome(coreBalance).toWallet.toFixed(8)}
                   </span>
                 </div>
+                <div className="text-center p-3 bg-green-50 rounded-lg">
+                  {/* <span className="text-xs text-gray-600 block mb-1">To Core</span> */}
+                  <span className="text-sm font-bold text-green-700">
+                    ☢️ ${calculateDailyIncome(coreBalance).toCore.toFixed(8)}
+                  </span>
+                </div>
+
               </div>
             </div>
           </CardContent>
