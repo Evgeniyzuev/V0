@@ -60,6 +60,7 @@ export default function TaskOrganizer() {
   const [isHistoryExpanded, setIsHistoryExpanded] = useState(false)
   const [timeThresholdInput, setTimeThresholdInput] = useState("25:00")
   const [timeThreshold, setTimeThreshold] = useState(25)
+  const [lastHiddenTime, setLastHiddenTime] = useState<number | null>(null)
   const supabase = typeof window !== 'undefined' ? createClientSupabaseClient() : null
 
   // Load settings and history from localStorage on mount
@@ -318,6 +319,33 @@ export default function TaskOrganizer() {
     const parsed = parseTimeInput(timeThresholdInput)
     setTimeThreshold(parsed)
   }, [timeThresholdInput])
+
+  // Handle page visibility changes to maintain timer accuracy
+  useEffect(() => {
+    const handleVisibilityChange = () => {
+      if (document.hidden) {
+        // Page is hidden - record the current time
+        setLastHiddenTime(Date.now())
+      } else {
+        // Page is visible again - adjust timer if it was running
+        if (isRunning && lastHiddenTime) {
+          const timeElapsed = Math.floor((Date.now() - lastHiddenTime) / 1000) // Convert to seconds
+
+          // Simply subtract elapsed time from current timeLeft
+          // The regular timer interval will handle any phase transitions
+          setTimeLeft((prevTimeLeft) => Math.max(0, prevTimeLeft - timeElapsed))
+
+          setLastHiddenTime(null)
+        }
+      }
+    }
+
+    document.addEventListener('visibilitychange', handleVisibilityChange)
+
+    return () => {
+      document.removeEventListener('visibilitychange', handleVisibilityChange)
+    }
+  }, [isRunning, lastHiddenTime])
 
   return (
     <div className="p-4 bg-white">
