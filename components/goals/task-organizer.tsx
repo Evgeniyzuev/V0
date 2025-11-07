@@ -51,7 +51,7 @@ export default function TaskOrganizer() {
   const [hasStarted, setHasStarted] = useState(false)
   const [currentRound, setCurrentRound] = useState(0)
   const [isWorkPhase, setIsWorkPhase] = useState(true)
-  const [timeLeft, setTimeLeft] = useState(20) // in seconds
+  const [timeLeft, setTimeLeft] = useState(25 * 60) // in seconds - default to 25 minutes
   const [totalWorkTime, setTotalWorkTime] = useState(0)
   const [history, setHistory] = useState<HistoryEntry[]>([])
   const [isBlinking, setIsBlinking] = useState(false)
@@ -76,6 +76,10 @@ export default function TaskOrganizer() {
       if (settings.restInput) setRestDurationInput(settings.restInput)
       if (settings.roundsInput) setRoundsInput(settings.roundsInput)
       if (settings.timeThresholdInput) setTimeThresholdInput(settings.timeThresholdInput)
+
+      // Update timeLeft based on loaded work duration
+      const workDuration = Math.round((settings.work || 25) * 60)
+      setTimeLeft(workDuration)
     }
 
     const savedHistory = localStorage.getItem('tabataHistory')
@@ -323,19 +327,30 @@ export default function TaskOrganizer() {
   // Handle page visibility changes to maintain timer accuracy
   useEffect(() => {
     const handleVisibilityChange = () => {
+      console.log('Visibility change:', document.hidden, 'isRunning:', isRunning, 'lastHiddenTime:', lastHiddenTime)
+
       if (document.hidden) {
         // Page is hidden - record the current time
+        console.log('Page hidden, recording time')
         setLastHiddenTime(Date.now())
       } else {
         // Page is visible again - adjust timer if it was running
+        console.log('Page visible, checking timer adjustment')
         if (isRunning && lastHiddenTime) {
           const timeElapsed = Math.floor((Date.now() - lastHiddenTime) / 1000) // Convert to seconds
+          console.log('Adjusting timer: timeElapsed =', timeElapsed, 'seconds, timeLeft before =', timeLeft)
 
           // Simply subtract elapsed time from current timeLeft
           // The regular timer interval will handle any phase transitions
-          setTimeLeft((prevTimeLeft) => Math.max(0, prevTimeLeft - timeElapsed))
+          setTimeLeft((prevTimeLeft) => {
+            const newTimeLeft = Math.max(0, prevTimeLeft - timeElapsed)
+            console.log('New timeLeft =', newTimeLeft)
+            return newTimeLeft
+          })
 
           setLastHiddenTime(null)
+        } else {
+          console.log('Not adjusting timer: isRunning =', isRunning, 'lastHiddenTime =', lastHiddenTime)
         }
       }
     }
@@ -345,7 +360,7 @@ export default function TaskOrganizer() {
     return () => {
       document.removeEventListener('visibilitychange', handleVisibilityChange)
     }
-  }, [isRunning, lastHiddenTime])
+  }, [isRunning, lastHiddenTime, timeLeft])
 
   return (
     <div className="p-4 bg-white">
