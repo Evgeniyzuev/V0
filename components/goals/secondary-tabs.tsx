@@ -13,8 +13,8 @@ export default function SecondaryTabs({ activeTab, setActiveTab, isAuthenticated
     { id: "wishboard", icon: Image, requiresAuth: false },
     { id: "addwish", icon: Plus, requiresAuth: false }, // Temporarily set to false for testing
     { id: "recommendations", icon: Radio, requiresAuth: false },
-    { id: "tasks", icon: LayoutList, requiresAuth: true },
-    { id: "roadmap", icon: ArrowUp, requiresAuth: true },
+    { id: "tasks", icon: LayoutList, requiresAuth: false }, // Temporarily set to false for testing
+    { id: "roadmap", icon: ArrowUp, requiresAuth: false }, // Temporarily set to false for testing
     { id: "results", icon: Trophy, requiresAuth: false },
   ]
 

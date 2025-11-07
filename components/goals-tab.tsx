@@ -34,6 +34,13 @@ export default function GoalsTab() {
       if (activeSecondaryTab === "results") {
         return <Results />
       }
+      // Allow viewing tasks and roadmap for testing even when unauthenticated
+      if (activeSecondaryTab === "tasks") {
+        return <TaskOrganizer />
+      }
+      if (activeSecondaryTab === "roadmap") {
+        return <Roadmap />
+      }
       return <WishBoard showOnlyRecommendations={true} />
     }
 

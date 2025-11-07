@@ -61,24 +61,113 @@ export default function TaskOrganizer() {
   const [timeThresholdInput, setTimeThresholdInput] = useState("25:00")
   const [timeThreshold, setTimeThreshold] = useState(25)
   const [lastHiddenTime, setLastHiddenTime] = useState<number | null>(null)
+  const [timerStartTime, setTimerStartTime] = useState<number | null>(null)
   const supabase = typeof window !== 'undefined' ? createClientSupabaseClient() : null
 
-  // Load settings and history from localStorage on mount
+  // Load settings, timer start time and history from localStorage on mount
   useEffect(() => {
+    let loadedWorkDurationMinutes = 25
+    let loadedRestDurationMinutes = 5
+    let loadedRounds = 4
+
     const savedSettings = localStorage.getItem('tabataSettings')
     if (savedSettings) {
       const settings = JSON.parse(savedSettings)
-      setWorkDurationMinutes(settings.work || 25)
-      setRestDurationMinutes(settings.rest || 5)
-      setRounds(settings.rounds || 4)
+      loadedWorkDurationMinutes = settings.work || 25
+      loadedRestDurationMinutes = settings.rest || 5
+      loadedRounds = settings.rounds || 4
+
+      setWorkDurationMinutes(loadedWorkDurationMinutes)
+      setRestDurationMinutes(loadedRestDurationMinutes)
+      setRounds(loadedRounds)
       // Set input values if they exist in settings
       if (settings.workInput) setWorkDurationInput(settings.workInput)
       if (settings.restInput) setRestDurationInput(settings.restInput)
       if (settings.roundsInput) setRoundsInput(settings.roundsInput)
       if (settings.timeThresholdInput) setTimeThresholdInput(settings.timeThresholdInput)
+    }
 
-      // Update timeLeft based on loaded work duration
-      const workDuration = Math.round((settings.work || 25) * 60)
+    // Load timer start time and settings, then restore timer state
+    const savedTimerStartTime = localStorage.getItem('tabataTimerStartTime')
+    const savedTimerSettings = localStorage.getItem('tabataTimerSettings')
+
+    if (savedTimerStartTime && savedTimerSettings) {
+      const startTime = parseInt(savedTimerStartTime)
+      const timerSettings = JSON.parse(savedTimerSettings)
+      const now = Date.now()
+      const elapsedSeconds = Math.floor((now - startTime) / 1000)
+
+      // Calculate using SAVED settings (the ones active when timer started)
+      const savedWorkDuration = Math.round(timerSettings.workDurationMinutes * 60)
+      const savedRestDuration = Math.round(timerSettings.restDurationMinutes * 60)
+      const savedRounds = timerSettings.rounds
+      const totalDuration = savedRounds * (savedWorkDuration + savedRestDuration)
+
+      console.log('Timer restoration with saved settings:', {
+        elapsedSeconds,
+        totalDuration,
+        savedWorkDuration: timerSettings.workDurationMinutes,
+        savedRestDuration: timerSettings.restDurationMinutes,
+        savedRounds: timerSettings.rounds
+      })
+
+      if (elapsedSeconds < totalDuration) {
+        // Timer is still running - simulate timer progression to find current state
+        let remainingTime = elapsedSeconds
+        let currentRound = 0
+        let isWorkPhase = true
+        let timeLeftInPhase = savedWorkDuration
+
+        // Simulate timer progression through all completed phases
+        while (remainingTime > 0 && currentRound < savedRounds) {
+          if (remainingTime >= timeLeftInPhase) {
+            // Phase completed
+            remainingTime -= timeLeftInPhase
+
+            if (isWorkPhase) {
+              // Work phase ended, move to rest (if not last round)
+              if (currentRound < savedRounds - 1) {
+                isWorkPhase = false
+                timeLeftInPhase = savedRestDuration
+              } else {
+                // Last work phase completed
+                break
+              }
+            } else {
+              // Rest phase ended, move to next round work phase
+              currentRound++
+              isWorkPhase = true
+              timeLeftInPhase = savedWorkDuration
+            }
+          } else {
+            // Current phase still in progress
+            timeLeftInPhase -= remainingTime
+            remainingTime = 0
+          }
+        }
+
+        console.log('Restored timer state:', {
+          currentRound,
+          isWorkPhase,
+          timeLeftInPhase
+        })
+
+        setTimerStartTime(startTime)
+        setIsRunning(true)
+        setHasStarted(true)
+        setCurrentRound(currentRound)
+        setIsWorkPhase(isWorkPhase)
+        setTimeLeft(timeLeftInPhase)
+      } else {
+        // Timer has completed
+        setIsCompleted(true)
+        setTimerStartTime(null)
+        localStorage.removeItem('tabataTimerStartTime')
+        localStorage.removeItem('tabataTimerSettings')
+      }
+    } else {
+      // No saved timer, use current work duration
+      const workDuration = Math.round(workDurationMinutes * 60)
       setTimeLeft(workDuration)
     }
 
@@ -144,6 +233,8 @@ export default function TaskOrganizer() {
     }
     localStorage.setItem('tabataSettings', JSON.stringify(settings))
   }, [workDurationMinutes, restDurationMinutes, rounds, workDurationInput, restDurationInput, roundsInput, timeThresholdInput])
+
+
 
   // Convert minutes to seconds
   const workDuration = Math.round(workDurationMinutes * 60)
@@ -287,12 +378,26 @@ export default function TaskOrganizer() {
   const startStop = () => {
     if (isRunning) {
       setIsRunning(false)
+      setTimerStartTime(null)
+      localStorage.removeItem('tabataTimerStartTime')
+      localStorage.removeItem('tabataTimerSettings')
     } else {
       if (!hasStarted) {
         setHasStarted(true)
         setCurrentRound(0)
         setIsWorkPhase(true)
         setTimeLeft(workDuration)
+        // Save start time AND current settings when timer starts
+        const startTime = Date.now()
+        const timerSettings = {
+          workDurationMinutes,
+          restDurationMinutes,
+          rounds,
+          startTime
+        }
+        setTimerStartTime(startTime)
+        localStorage.setItem('tabataTimerStartTime', startTime.toString())
+        localStorage.setItem('tabataTimerSettings', JSON.stringify(timerSettings))
       }
       setIsRunning(true)
     }
@@ -306,6 +411,9 @@ export default function TaskOrganizer() {
     setTimeLeft(workDuration)
     setIsBlinking(false)
     setIsCompleted(false)
+    setTimerStartTime(null)
+    localStorage.removeItem('tabataTimerStartTime')
+    localStorage.removeItem('tabataTimerSettings')
   }
 
   // Update numeric values from inputs
@@ -327,30 +435,19 @@ export default function TaskOrganizer() {
   // Handle page visibility changes to maintain timer accuracy
   useEffect(() => {
     const handleVisibilityChange = () => {
-      console.log('Visibility change:', document.hidden, 'isRunning:', isRunning, 'lastHiddenTime:', lastHiddenTime)
-
       if (document.hidden) {
         // Page is hidden - record the current time
-        console.log('Page hidden, recording time')
         setLastHiddenTime(Date.now())
       } else {
         // Page is visible again - adjust timer if it was running
-        console.log('Page visible, checking timer adjustment')
         if (isRunning && lastHiddenTime) {
           const timeElapsed = Math.floor((Date.now() - lastHiddenTime) / 1000) // Convert to seconds
-          console.log('Adjusting timer: timeElapsed =', timeElapsed, 'seconds, timeLeft before =', timeLeft)
 
           // Simply subtract elapsed time from current timeLeft
           // The regular timer interval will handle any phase transitions
-          setTimeLeft((prevTimeLeft) => {
-            const newTimeLeft = Math.max(0, prevTimeLeft - timeElapsed)
-            console.log('New timeLeft =', newTimeLeft)
-            return newTimeLeft
-          })
+          setTimeLeft((prevTimeLeft) => Math.max(0, prevTimeLeft - timeElapsed))
 
           setLastHiddenTime(null)
-        } else {
-          console.log('Not adjusting timer: isRunning =', isRunning, 'lastHiddenTime =', lastHiddenTime)
         }
       }
     }
@@ -360,7 +457,7 @@ export default function TaskOrganizer() {
     return () => {
       document.removeEventListener('visibilitychange', handleVisibilityChange)
     }
-  }, [isRunning, lastHiddenTime, timeLeft])
+  }, [isRunning, lastHiddenTime])
 
   return (
     <div className="p-4 bg-white">
