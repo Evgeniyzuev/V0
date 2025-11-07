@@ -7,7 +7,7 @@ import { createClientSupabaseClient } from "@/lib/supabase"
 import { toast } from "sonner"
 // TaskCard works with both legacy `user_goals` rows and new `personal_tasks` rows.
 // We accept a generic `any` for compatibility.
-import { Check, Trash2 } from "lucide-react"
+import { Check, Trash2, Flame } from "lucide-react"
 
 type SubtaskType = { id: string; title: string; completed?: boolean }
 
@@ -137,10 +137,24 @@ export default function TaskCard({ goal, onUpdated }: TaskCardProps) {
         <div className="flex-1 px-3 py-3">
           <div className="flex items-center justify-between">
             <div className="font-medium text-gray-900 line-clamp-1">{goal.title}</div>
-            <div className="text-sm text-gray-500">{goal.progress_percentage ?? 0}%</div>
+            <div className="flex items-center gap-1">
+              {goal.is_streak_task && (
+                <div className="flex items-center gap-1 text-orange-500">
+                  <Flame className="h-4 w-4" />
+                  <span className="text-sm">{goal.current_streak_days || 0}/{goal.total_streak_days || 0}</span>
+                </div>
+              )}
+              {!goal.is_streak_task && (
+                <div className="text-sm text-gray-500">{goal.progress_percentage ?? 0}%</div>
+              )}
+            </div>
           </div>
           <div className="w-full bg-gray-200 h-2 rounded-full mt-2">
-            <div className="bg-purple-500 h-2 rounded-full" style={{ width: `${goal.progress_percentage ?? 0}%` }} />
+            <div className={`h-2 rounded-full ${goal.is_streak_task ? 'bg-orange-500' : 'bg-purple-500'}`} style={{
+              width: goal.is_streak_task
+                ? `${((goal.current_streak_days || 0) / (goal.total_streak_days || 1)) * 100}%`
+                : `${goal.progress_percentage ?? 0}%`
+            }} />
           </div>
         </div>
       </div>
@@ -152,6 +166,14 @@ export default function TaskCard({ goal, onUpdated }: TaskCardProps) {
               <div>
                 <h3 className="text-lg font-semibold">{goal.title}</h3>
                 {goal.description && <p className="text-sm text-gray-600">{goal.description}</p>}
+                {goal.is_streak_task && (
+                  <div className="flex items-center gap-2 mt-2">
+                    <Flame className="h-5 w-5 text-orange-500" />
+                    <span className="text-sm font-medium text-orange-600">
+                      Streak: {goal.current_streak_days || 0} / {goal.total_streak_days || 0} days
+                    </span>
+                  </div>
+                )}
               </div>
               <div className="flex items-center gap-2">
                 <Button variant="ghost" onClick={() => setOpen(false)}>Close</Button>
@@ -187,6 +209,121 @@ export default function TaskCard({ goal, onUpdated }: TaskCardProps) {
                 </div>
               </div>
             </div>
+
+            {/* Streak marking section */}
+            {goal.is_streak_task && Array.isArray(goal?.subtasks) && (
+              <div className="mt-4 p-3 bg-orange-50 rounded-lg border border-orange-200">
+                <h4 className="font-medium mb-2 text-orange-800">Daily Streak</h4>
+                <div className="flex items-center justify-between">
+                  <div className="text-sm text-orange-700">
+                    {(() => {
+                      const today = new Date().toDateString()
+                      const lastStreakDate = goal.last_streak_date
+                      const canMarkToday = !lastStreakDate || lastStreakDate !== today
+
+                      if (!canMarkToday) {
+                        return "Already marked today! Come back tomorrow."
+                      }
+
+                      // Check if streak is broken (more than 1 day gap)
+                      if (lastStreakDate) {
+                        const lastDate = new Date(lastStreakDate)
+                        const yesterday = new Date()
+                        yesterday.setDate(yesterday.getDate() - 1)
+                        const isConsecutive = lastDate.toDateString() === yesterday.toDateString()
+
+                        if (!isConsecutive) {
+                          return "Streak was broken. Starting fresh today!"
+                        }
+                      }
+
+                      return "Ready to mark today's progress!"
+                    })()}
+                  </div>
+                  <Button
+                    onClick={async () => {
+                      if (!Array.isArray(goal?.subtasks)) return
+
+                      const today = new Date().toDateString()
+                      const lastStreakDate = goal.last_streak_date
+
+                      // Check if already marked today
+                      if (lastStreakDate === today) {
+                        toast.error("Already marked today!")
+                        return
+                      }
+
+                      // Check if streak is broken
+                      let newStreakCount = (goal.current_streak_days || 0) + 1
+                      if (lastStreakDate) {
+                        const lastDate = new Date(lastStreakDate)
+                        const yesterday = new Date()
+                        yesterday.setDate(yesterday.getDate() - 1)
+                        const isConsecutive = lastDate.toDateString() === yesterday.toDateString()
+
+                        if (!isConsecutive) {
+                          // Streak broken, reset to 1
+                          newStreakCount = 1
+                        }
+                      } else {
+                        // First time marking
+                        newStreakCount = 1
+                      }
+
+                      // Don't exceed total days
+                      if (newStreakCount > (goal.total_streak_days || 0)) {
+                        toast.error("Streak goal already completed!")
+                        return
+                      }
+
+                      try {
+                        setSaving(true)
+                        const supabase = createClientSupabaseClient()
+                        const updates: any = {
+                          current_streak_days: newStreakCount,
+                          last_streak_date: today
+                        }
+
+                        // Set start date if this is the first mark
+                        if (!goal.streak_start_date) {
+                          updates.streak_start_date = today
+                        }
+
+                        // Mark as completed if reached total days
+                        if (newStreakCount >= (goal.total_streak_days || 0)) {
+                          updates.status = 'completed'
+                          updates.progress_percentage = 100
+                        }
+
+                        const { error } = await supabase
+                          .from('personal_tasks')
+                          .update(updates)
+                          .eq('id', goal.id)
+
+                        if (error) throw error
+
+                        toast.success(`Day ${newStreakCount} marked! 🔥`)
+                        onUpdated && onUpdated()
+                        setOpen(false)
+                      } catch (err: any) {
+                        console.error('Failed to mark streak day:', err)
+                        toast.error(err?.message || 'Failed to mark day')
+                      } finally {
+                        setSaving(false)
+                      }
+                    }}
+                    disabled={saving || (() => {
+                      const today = new Date().toDateString()
+                      return goal.last_streak_date === today
+                    })()}
+                    className="bg-orange-500 hover:bg-orange-600 text-white"
+                  >
+                    <Flame className="h-4 w-4 mr-2" />
+                    Mark Today
+                  </Button>
+                </div>
+              </div>
+            )}
 
             {resources.length > 0 && (
               <div className="mt-4">

@@ -182,6 +182,29 @@ export interface UserGoal {
 }
 
 /**
+ * Represents the structure of the public.personal_tasks table.
+ */
+export interface PersonalTask {
+  id: string; // UUID
+  user_id: string; // UUID
+  title: string;
+  description?: string | null;
+  subtasks: any[]; // JSONB
+  resources: any[]; // JSONB
+  status: 'open' | 'completed' | 'canceled';
+  progress_percentage: number;
+  legacy_source?: string | null;
+  created_at: string; // ISO timestamp
+  updated_at: string; // ISO timestamp
+  // Streak fields
+  is_streak_task?: boolean;
+  total_streak_days?: number;
+  current_streak_days?: number;
+  last_streak_date?: string | null; // Date string
+  streak_start_date?: string | null; // Date string
+}
+
+/**
  * Represents the structure of the public.results table.
  * Unified table for items, books, achievements, base backgrounds, and character backgrounds.
  */

@@ -4,6 +4,7 @@ import React, { useState, useEffect } from "react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Textarea } from "@/components/ui/textarea"
+import { Switch } from "@/components/ui/switch"
 import { createClientSupabaseClient } from "@/lib/supabase"
 import { useUser } from "@/components/UserContext"
 import { toast } from "sonner"
@@ -26,6 +27,8 @@ export default function TaskEditor({ open, onClose, onSuccess, initial }: TaskEd
   const [subtasks, setSubtasks] = useState<Subtask[]>(initial?.subtasks || [])
   const [resources, setResources] = useState<Resource[]>(initial?.resources || [])
   const [isSaving, setIsSaving] = useState(false)
+  const [isStreakTask, setIsStreakTask] = useState(false)
+  const [totalStreakDays, setTotalStreakDays] = useState(30)
 
   useEffect(() => {
     if (open) {
@@ -115,6 +118,9 @@ export default function TaskEditor({ open, onClose, onSuccess, initial }: TaskEd
         resources: finalResources,
         status: 'open',
         progress_percentage: progress_percentage,
+        is_streak_task: isStreakTask,
+        total_streak_days: isStreakTask ? totalStreakDays : 0,
+        current_streak_days: 0,
       }
 
       const { data, error } = await supabase.from('personal_tasks').insert([insertPayload]).select().single()
@@ -193,6 +199,32 @@ export default function TaskEditor({ open, onClose, onSuccess, initial }: TaskEd
             ))}
             {!resources.length && <div className="text-sm text-gray-500">No resources yet</div>}
           </div>
+        </div>
+
+        <div className="mb-4 p-3 bg-orange-50 rounded-lg border border-orange-200">
+          <div className="flex items-center justify-between mb-2">
+            <h4 className="font-medium text-orange-800">Daily Streak Task</h4>
+            <Switch checked={isStreakTask} onCheckedChange={setIsStreakTask} />
+          </div>
+          {isStreakTask && (
+            <div className="space-y-2">
+              <div className="flex items-center gap-2">
+                <label className="text-sm text-orange-700">Total days:</label>
+                <Input
+                  type="number"
+                  min="1"
+                  max="365"
+                  value={totalStreakDays}
+                  onChange={(e) => setTotalStreakDays(parseInt(e.target.value) || 30)}
+                  className="w-20"
+                />
+              </div>
+              <p className="text-xs text-orange-600">
+                Mark this task as completed each day for {totalStreakDays} consecutive days.
+                You can only mark one day per calendar day.
+              </p>
+            </div>
+          )}
         </div>
 
         <div className="flex gap-2 justify-end">
