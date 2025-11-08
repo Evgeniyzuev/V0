@@ -232,7 +232,10 @@ export default function TaskCard({ goal, onUpdated }: TaskCardProps) {
                       const lastDate = new Date(lastStreakDate)
                       const yesterday = new Date()
                       yesterday.setDate(yesterday.getDate() - 1)
-                      const isConsecutive = lastDate.toDateString() === yesterday.toDateString()
+                      // Normalize to start of day for accurate comparison
+                      lastDate.setHours(0, 0, 0, 0)
+                      yesterday.setHours(0, 0, 0, 0)
+                      const isConsecutive = lastDate.getTime() === yesterday.getTime()
 
                       if (!isConsecutive) {
                         return "Streak was broken. Starting fresh today!"
@@ -260,7 +263,10 @@ export default function TaskCard({ goal, onUpdated }: TaskCardProps) {
                         const lastDate = new Date(lastStreakDate)
                         const yesterday = new Date()
                         yesterday.setDate(yesterday.getDate() - 1)
-                        const isConsecutive = lastDate.toDateString() === yesterday.toDateString()
+                        // Normalize to start of day for accurate comparison
+                        lastDate.setHours(0, 0, 0, 0)
+                        yesterday.setHours(0, 0, 0, 0)
+                        const isConsecutive = lastDate.getTime() === yesterday.getTime()
 
                         if (!isConsecutive) {
                           // Streak broken, reset to 1
