@@ -353,10 +353,13 @@ export default function ChallengesTab() {
               key={task.number}
               className="image-item animate-fade-in rounded overflow-hidden shadow-md aspect-square cursor-pointer"
               onClick={() => {
+                console.log('Clicked task:', task.number, task.title)
                 if (task.number === 1) {
+                  console.log('Launching cert_01 interface')
                   // Launch cert_01 interface
                   setCert01InterfaceOpen(true)
                 } else {
+                  console.log('Opening regular task modal')
                   // Regular task modal
                   setSelectedTask(task)
                 }
@@ -372,6 +375,9 @@ export default function ChallengesTab() {
                 <div className="absolute inset-0 bg-gradient-to-t from-black/50 to-transparent flex items-end">
                   <div className="p-3 text-white">
                     <div className="text-sm font-medium line-clamp-2">{task.title}</div>
+                    {task.number === 1 && (
+                      <div className="text-xs text-yellow-300 font-medium mt-1">🎓 Certificate Challenge</div>
+                    )}
                   </div>
                 </div>
               </div>
@@ -406,7 +412,18 @@ export default function ChallengesTab() {
                     <p className="text-gray-600">{selectedTask.description}</p>
                   </div>
                   <div className="flex gap-2">
-                    {selectedTask.status !== 'completed' && (
+                    {selectedTask.number === 1 && (
+                      <Button
+                        className="bg-gradient-to-r from-purple-500 to-blue-500 hover:from-purple-600 hover:to-blue-600 text-white"
+                        onClick={() => {
+                          setSelectedTask(null);
+                          setCert01InterfaceOpen(true);
+                        }}
+                      >
+                        🎓 Start Certificate Journey
+                      </Button>
+                    )}
+                    {selectedTask.status !== 'completed' && selectedTask.number !== 1 && (
                       <Button
                         className="bg-blue-500 hover:bg-blue-600 text-white"
                         onClick={(e) => {
