@@ -217,7 +217,7 @@ export default function TaskCard({ goal, onUpdated }: TaskCardProps) {
                 <div className="flex items-center justify-between">
                   <div className="text-sm text-orange-700">
                     {(() => {
-                      const today = new Date().toDateString()
+                      const today = new Date().toISOString().split('T')[0]
                       const lastStreakDate = goal.last_streak_date
 
                       if (lastStreakDate === today) {
@@ -229,26 +229,22 @@ export default function TaskCard({ goal, onUpdated }: TaskCardProps) {
                       }
 
                       // Check if streak is broken (more than 1 day gap)
-                      const lastDate = new Date(lastStreakDate)
                       const yesterday = new Date()
                       yesterday.setDate(yesterday.getDate() - 1)
-                      // Normalize to start of day for accurate comparison
-                      lastDate.setHours(0, 0, 0, 0)
-                      yesterday.setHours(0, 0, 0, 0)
-                      const isConsecutive = lastDate.getTime() === yesterday.getTime()
+                      const yesterdayStr = yesterday.toISOString().split('T')[0]
 
-                      if (!isConsecutive) {
+                      if (lastStreakDate === yesterdayStr) {
+                        return "Ready to mark today's progress!"
+                      } else {
                         return "Streak was broken. Starting fresh today!"
                       }
-
-                      return "Ready to mark today's progress!"
                     })()}
                   </div>
                   <Button
                     onClick={async () => {
                       if (!Array.isArray(goal?.subtasks)) return
 
-                      const today = new Date().toDateString()
+                      const today = new Date().toISOString().split('T')[0]
                       const lastStreakDate = goal.last_streak_date
 
                       // Check if already marked today
@@ -260,15 +256,11 @@ export default function TaskCard({ goal, onUpdated }: TaskCardProps) {
                       // Check if streak is broken
                       let newStreakCount = (goal.current_streak_days || 0) + 1
                       if (lastStreakDate) {
-                        const lastDate = new Date(lastStreakDate)
                         const yesterday = new Date()
                         yesterday.setDate(yesterday.getDate() - 1)
-                        // Normalize to start of day for accurate comparison
-                        lastDate.setHours(0, 0, 0, 0)
-                        yesterday.setHours(0, 0, 0, 0)
-                        const isConsecutive = lastDate.getTime() === yesterday.getTime()
+                        const yesterdayStr = yesterday.toISOString().split('T')[0]
 
-                        if (!isConsecutive) {
+                        if (lastStreakDate !== yesterdayStr) {
                           // Streak broken, reset to 1
                           newStreakCount = 1
                         }
@@ -320,7 +312,7 @@ export default function TaskCard({ goal, onUpdated }: TaskCardProps) {
                       }
                     }}
                     disabled={saving || (() => {
-                      const today = new Date().toDateString()
+                      const today = new Date().toISOString().split('T')[0]
                       return goal.last_streak_date === today
                     })()}
                     className="bg-orange-500 hover:bg-orange-600 text-white"
