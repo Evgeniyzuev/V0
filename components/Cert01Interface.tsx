@@ -70,10 +70,10 @@ export default function Cert01Interface({ isOpen, onClose }: Cert01InterfaceProp
     try {
       setLoading(true)
 
-      // Load all user interactions for cert01
+      // Load all user interactions for cert01 (now consolidated)
       const { data: interactionsData } = await supabase
         .from('user_certificate_interactions')
-        .select('card_id, interaction_type, content')
+        .select('card_id, progress, rating, comment, reactions')
         .eq('user_id', dbUser.id)
         .eq('certificate_code', 'cert01')
 
@@ -82,15 +82,17 @@ export default function Cert01Interface({ isOpen, onClose }: Cert01InterfaceProp
       const reactionsMap: Record<number, Record<string, boolean>> = {}
 
       interactionsData?.forEach(item => {
-        if (item.interaction_type === 'progress' && item.content === 'completed') {
+        if (item.progress === 'completed') {
           progressMap[item.card_id] = true
-        } else if (item.interaction_type === 'rating') {
-          ratingsMap[item.card_id] = parseInt(item.content || '0')
-        } else if (item.interaction_type === 'reaction') {
-          if (!reactionsMap[item.card_id]) {
-            reactionsMap[item.card_id] = {}
-          }
-          reactionsMap[item.card_id][item.content] = true
+        }
+        if (item.rating) {
+          ratingsMap[item.card_id] = item.rating
+        }
+        if (item.reactions && Array.isArray(item.reactions)) {
+          reactionsMap[item.card_id] = {}
+          item.reactions.forEach((reaction: string) => {
+            reactionsMap[item.card_id][reaction] = true
+          })
         }
       })
 
@@ -118,16 +120,15 @@ export default function Cert01Interface({ isOpen, onClose }: Cert01InterfaceProp
     setSelectedCard(card)
 
     // Mark card as viewed if not already viewed
-    if (!progress[card.id]) {
+    if (!progress[card.id] && dbUser?.id) {
       try {
         await supabase
           .from('user_certificate_interactions')
           .upsert({
-            user_id: dbUser?.id,
+            user_id: dbUser.id,
             certificate_code: 'cert01',
             card_id: card.id,
-            interaction_type: 'progress',
-            content: 'viewed'
+            progress: 'viewed'
           })
       } catch (error) {
         console.error('Error updating progress:', error)
@@ -136,15 +137,16 @@ export default function Cert01Interface({ isOpen, onClose }: Cert01InterfaceProp
   }
 
   const handleRating = async (cardId: number, rating: number) => {
+    if (!dbUser?.id) return
+
     try {
       await supabase
         .from('user_certificate_interactions')
         .upsert({
-          user_id: dbUser?.id,
+          user_id: dbUser.id,
           certificate_code: 'cert01',
           card_id: cardId,
-          interaction_type: 'rating',
-          content: rating.toString()
+          rating: rating
         })
 
       setRatings(prev => ({ ...prev, [cardId]: rating }))
@@ -160,40 +162,33 @@ export default function Cert01Interface({ isOpen, onClose }: Cert01InterfaceProp
     console.log('Handling reaction:', { cardId, reactionType, hasReacted, userId: dbUser.id })
 
     try {
+      // Get current reactions array
+      const currentReactions = userReactions[cardId] || {}
+      let newReactions: string[]
+
       if (hasReacted) {
-        // Remove reaction
-        console.log('Removing reaction')
-        const { error: deleteError } = await supabase
-          .from('user_certificate_interactions')
-          .delete()
-          .eq('user_id', dbUser.id)
-          .eq('certificate_code', 'cert01')
-          .eq('card_id', cardId)
-          .eq('interaction_type', 'reaction')
-          .eq('content', reactionType)
-
-        if (deleteError) {
-          console.error('Delete error:', deleteError)
-          throw deleteError
-        }
+        // Remove reaction from array
+        newReactions = Object.keys(currentReactions).filter(r => r !== reactionType)
+        console.log('Removing reaction, new array:', newReactions)
       } else {
-        // Add reaction
-        console.log('Adding reaction')
-        const { error: insertError } = await supabase
-          .from('user_certificate_interactions')
-          .insert({
-            user_id: dbUser.id,
-            certificate_code: 'cert01',
-            card_id: cardId,
-            interaction_type: 'reaction',
-            target_type: 'card',
-            content: reactionType
-          })
+        // Add reaction to array
+        newReactions = [...Object.keys(currentReactions), reactionType]
+        console.log('Adding reaction, new array:', newReactions)
+      }
 
-        if (insertError) {
-          console.error('Insert error:', insertError)
-          throw insertError
-        }
+      // Upsert the entire row with updated reactions
+      const { error } = await supabase
+        .from('user_certificate_interactions')
+        .upsert({
+          user_id: dbUser.id,
+          certificate_code: 'cert01',
+          card_id: cardId,
+          reactions: newReactions
+        })
+
+      if (error) {
+        console.error('Upsert error:', error)
+        throw error
       }
 
       // Update local state
@@ -214,15 +209,16 @@ export default function Cert01Interface({ isOpen, onClose }: Cert01InterfaceProp
   }
 
   const handleComplete = async (cardId: number) => {
+    if (!dbUser?.id) return
+
     try {
       await supabase
         .from('user_certificate_interactions')
         .upsert({
-          user_id: dbUser?.id,
+          user_id: dbUser.id,
           certificate_code: 'cert01',
           card_id: cardId,
-          interaction_type: 'progress',
-          content: 'completed'
+          progress: 'completed'
         })
 
       setProgress(prev => ({ ...prev, [cardId]: true }))

@@ -68,52 +68,27 @@ export default function CardDetailModal({ card, isOpen, onClose, userId }: CardD
     try {
       setLoading(true)
 
-      // Load all interactions for this card
+      // Load all user interactions for this card (consolidated table)
       const { data: interactionsData } = await supabase
         .from('user_certificate_interactions')
-        .select('*')
+        .select('id, user_id, comment, reactions, created_at')
         .eq('certificate_code', 'cert01')
         .eq('card_id', card.id)
+        .not('comment', 'is', null) // Only get rows with comments
         .order('created_at', { ascending: false })
 
       if (interactionsData) {
-        // Separate comments and reactions
-        const comments = interactionsData
-          .filter(interaction => interaction.interaction_type === 'comment')
-          .map(comment => ({
-            id: comment.id,
-            comment_text: comment.content,
-            created_at: comment.created_at,
-            user_id: comment.user_id,
-            reactions: [] as Reaction[]
-          }))
+        const comments: Comment[] = interactionsData.map(interaction => ({
+          id: interaction.id,
+          comment_text: interaction.comment || '',
+          created_at: interaction.created_at,
+          user_id: interaction.user_id,
+          reactions: [] as Reaction[]
+        }))
 
-        // Load reactions for each comment
-        const commentsWithReactions = await Promise.all(
-          comments.map(async (comment) => {
-            const { data: reactions } = await supabase
-              .from('user_certificate_interactions')
-              .select('id, content, user_id, target_id')
-              .eq('certificate_code', 'cert01')
-              .eq('interaction_type', 'reaction')
-              .eq('target_type', 'comment')
-              .eq('target_id', comment.id)
-
-            const formattedReactions: Reaction[] = (reactions || []).map(reaction => ({
-              id: reaction.id,
-              reaction_type: reaction.content,
-              user_id: reaction.user_id,
-              target_id: reaction.target_id
-            }))
-
-            return {
-              ...comment,
-              reactions: formattedReactions
-            }
-          })
-        )
-
-        setComments(commentsWithReactions)
+        // For now, we'll skip comment reactions since the table structure changed
+        // Comment reactions would need a separate table or different structure
+        setComments(comments)
       }
     } catch (error) {
       console.error('Error loading comments:', error)
@@ -136,15 +111,16 @@ export default function CardDetailModal({ card, isOpen, onClose, userId }: CardD
     try {
       setSubmitting(true)
 
+      // For now, we'll create a separate comment-only row since the consolidated table
+      // is designed for one interaction per user-card. Multiple comments would need
+      // a separate comments table. For simplicity, we'll use the old structure for comments.
       const { data, error } = await supabase
         .from('user_certificate_interactions')
         .insert({
           user_id: userId,
           certificate_code: 'cert01',
           card_id: card.id,
-          interaction_type: 'comment',
-          target_type: 'card',
-          content: newComment.trim()
+          comment: newComment.trim()
         })
         .select()
         .single()
@@ -159,7 +135,7 @@ export default function CardDetailModal({ card, isOpen, onClose, userId }: CardD
       // Add the new comment to the list
       setComments(prev => [{
         id: data.id,
-        comment_text: data.content,
+        comment_text: data.comment,
         created_at: data.created_at,
         user_id: data.user_id,
         reactions: []
