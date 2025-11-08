@@ -13,6 +13,7 @@ import TaskUpdater from "@/components/TaskUpdater"
 import { useTaskVerification } from '@/hooks/useTaskVerification'
 import { useLevelCheck } from '@/hooks/useLevelCheck'
 import TaskEditor from "@/components/tasks/TaskEditor"
+import Cert01Interface from "./Cert01Interface"
 
 // Initialize Supabase client
 const supabase = createClientSupabaseClient();
@@ -51,6 +52,7 @@ export default function ChallengesTab() {
     newCore?: number;
   } | null>(null)
   const [selectedTask, setSelectedTask] = useState<Challenge | null>(null)
+  const [cert01InterfaceOpen, setCert01InterfaceOpen] = useState(false)
   const [taskEditorOpen, setTaskEditorOpen] = useState(false)
   const [taskEditorInitial, setTaskEditorInitial] = useState<any>(null)
   const tasksLoadedRef = useRef<string | null>(null)
@@ -350,7 +352,15 @@ export default function ChallengesTab() {
             <div
               key={task.number}
               className="image-item animate-fade-in rounded overflow-hidden shadow-md aspect-square cursor-pointer"
-              onClick={() => setSelectedTask(task)}
+              onClick={() => {
+                if (task.number === 1) {
+                  // Launch cert_01 interface
+                  setCert01InterfaceOpen(true)
+                } else {
+                  // Regular task modal
+                  setSelectedTask(task)
+                }
+              }}
             >
               <div className="relative w-full h-full">
                 <img
@@ -489,6 +499,12 @@ export default function ChallengesTab() {
           )}
         </Dialog>
       )}
+
+      {/* Cert01 Interface */}
+      <Cert01Interface
+        isOpen={cert01InterfaceOpen}
+        onClose={() => setCert01InterfaceOpen(false)}
+      />
     </div>
   )
 }
