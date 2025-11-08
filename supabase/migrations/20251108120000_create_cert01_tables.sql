@@ -76,7 +76,7 @@ BEGIN
 
         -- Update the JSONB field
         UPDATE public.certificate_cards
-        SET reaction_counts = jsonb_set(reaction_counts, array[NEW.content], to_jsonb(current_count + 1))
+        SET reaction_counts = jsonb_set(COALESCE(reaction_counts, '{}'), array[NEW.content], to_jsonb(current_count + 1))
         WHERE id = NEW.card_id;
 
         RETURN NEW;
@@ -91,7 +91,7 @@ BEGIN
 
         -- Update the JSONB field (ensure count doesn't go below 0)
         UPDATE public.certificate_cards
-        SET reaction_counts = jsonb_set(reaction_counts, array[OLD.content], to_jsonb(GREATEST(current_count - 1, 0)))
+        SET reaction_counts = jsonb_set(COALESCE(reaction_counts, '{}'), array[OLD.content], to_jsonb(GREATEST(current_count - 1, 0)))
         WHERE id = OLD.card_id;
 
         RETURN OLD;

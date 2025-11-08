@@ -154,30 +154,46 @@ export default function Cert01Interface({ isOpen, onClose }: Cert01InterfaceProp
   }
 
   const handleReaction = async (cardId: number, reactionType: string) => {
+    if (!dbUser?.id) return
+
     const hasReacted = userReactions[cardId]?.[reactionType]
+    console.log('Handling reaction:', { cardId, reactionType, hasReacted, userId: dbUser.id })
 
     try {
       if (hasReacted) {
         // Remove reaction
-        await supabase
+        console.log('Removing reaction')
+        const { error: deleteError } = await supabase
           .from('user_certificate_interactions')
           .delete()
-          .eq('user_id', dbUser?.id)
+          .eq('user_id', dbUser.id)
           .eq('certificate_code', 'cert01')
           .eq('card_id', cardId)
           .eq('interaction_type', 'reaction')
           .eq('content', reactionType)
+
+        if (deleteError) {
+          console.error('Delete error:', deleteError)
+          throw deleteError
+        }
       } else {
         // Add reaction
-        await supabase
+        console.log('Adding reaction')
+        const { error: insertError } = await supabase
           .from('user_certificate_interactions')
           .insert({
-            user_id: dbUser?.id,
+            user_id: dbUser.id,
             certificate_code: 'cert01',
             card_id: cardId,
             interaction_type: 'reaction',
+            target_type: 'card',
             content: reactionType
           })
+
+        if (insertError) {
+          console.error('Insert error:', insertError)
+          throw insertError
+        }
       }
 
       // Update local state
@@ -190,7 +206,8 @@ export default function Cert01Interface({ isOpen, onClose }: Cert01InterfaceProp
       }))
 
       // Reload cards to update counts
-      loadCards()
+      await loadCards()
+      console.log('Reaction handled successfully')
     } catch (error) {
       console.error('Error handling reaction:', error)
     }

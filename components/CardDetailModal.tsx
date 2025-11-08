@@ -131,6 +131,8 @@ export default function CardDetailModal({ card, isOpen, onClose, userId }: CardD
   const handleSubmitComment = async () => {
     if (!newComment.trim() || !card || !userId) return
 
+    console.log('Submitting comment:', { userId, cardId: card.id, comment: newComment.trim() })
+
     try {
       setSubmitting(true)
 
@@ -141,12 +143,18 @@ export default function CardDetailModal({ card, isOpen, onClose, userId }: CardD
           certificate_code: 'cert01',
           card_id: card.id,
           interaction_type: 'comment',
+          target_type: 'card',
           content: newComment.trim()
         })
         .select()
         .single()
 
-      if (error) throw error
+      if (error) {
+        console.error('Comment insert error:', error)
+        throw error
+      }
+
+      console.log('Comment saved successfully:', data)
 
       // Add the new comment to the list
       setComments(prev => [{
