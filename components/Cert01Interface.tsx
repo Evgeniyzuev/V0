@@ -1,12 +1,10 @@
 "use client"
 
 import { useState, useEffect, useCallback } from "react"
-import { X, ChevronUp, ChevronDown, Star, MessageCircle, Heart, ThumbsUp, ThumbsDown, Laugh } from "lucide-react"
+import { X, Star, Heart, ThumbsUp, ThumbsDown, Laugh } from "lucide-react"
 import { createClientSupabaseClient } from "@/lib/supabase"
 import { useUser } from "@/components/UserContext"
 import { Button } from "@/components/ui/button"
-import { Dialog, DialogContent } from "@/components/ui/dialog"
-import LearningCard from "@/components/LearningCard"
 import CardDetailModal from "@/components/CardDetailModal"
 
 const supabase = createClientSupabaseClient()
@@ -29,11 +27,11 @@ interface LearningCardData {
 
 export default function Cert01Interface({ isOpen, onClose }: Cert01InterfaceProps) {
   const { dbUser } = useUser()
-  const [currentCardIndex, setCurrentCardIndex] = useState(0)
   const [selectedCard, setSelectedCard] = useState<LearningCardData | null>(null)
   const [learningCards, setLearningCards] = useState<LearningCardData[]>([])
   const [progress, setProgress] = useState<Record<number, boolean>>({})
   const [ratings, setRatings] = useState<Record<number, number>>({})
+  const [userReactions, setUserReactions] = useState<Record<number, Record<string, boolean>>>({})
   const [loading, setLoading] = useState(true)
 
   // Load certificate cards
@@ -55,7 +53,8 @@ export default function Cert01Interface({ isOpen, onClose }: Cert01InterfaceProp
           title: card.title,
           description: card.description || '',
           category: card.category || '',
-          cardOrder: card.card_order
+          cardOrder: card.card_order,
+          reaction_counts: card.reaction_counts || {}
         }))
         setLearningCards(formattedCards)
       }
@@ -64,7 +63,7 @@ export default function Cert01Interface({ isOpen, onClose }: Cert01InterfaceProp
     }
   }, [])
 
-  // Load user progress and ratings
+  // Load user progress, ratings, and reactions
   const loadUserData = useCallback(async () => {
     if (!dbUser?.id) return
 
@@ -80,17 +79,24 @@ export default function Cert01Interface({ isOpen, onClose }: Cert01InterfaceProp
 
       const progressMap: Record<number, boolean> = {}
       const ratingsMap: Record<number, number> = {}
+      const reactionsMap: Record<number, Record<string, boolean>> = {}
 
       interactionsData?.forEach(item => {
         if (item.interaction_type === 'progress' && item.content === 'completed') {
           progressMap[item.card_id] = true
         } else if (item.interaction_type === 'rating') {
           ratingsMap[item.card_id] = parseInt(item.content || '0')
+        } else if (item.interaction_type === 'reaction') {
+          if (!reactionsMap[item.card_id]) {
+            reactionsMap[item.card_id] = {}
+          }
+          reactionsMap[item.card_id][item.content] = true
         }
       })
 
       setProgress(progressMap)
       setRatings(ratingsMap)
+      setUserReactions(reactionsMap)
 
     } catch (error) {
       console.error('Error loading cert01 data:', error)
@@ -147,6 +153,49 @@ export default function Cert01Interface({ isOpen, onClose }: Cert01InterfaceProp
     }
   }
 
+  const handleReaction = async (cardId: number, reactionType: string) => {
+    const hasReacted = userReactions[cardId]?.[reactionType]
+
+    try {
+      if (hasReacted) {
+        // Remove reaction
+        await supabase
+          .from('user_certificate_interactions')
+          .delete()
+          .eq('user_id', dbUser?.id)
+          .eq('certificate_code', 'cert01')
+          .eq('card_id', cardId)
+          .eq('interaction_type', 'reaction')
+          .eq('content', reactionType)
+      } else {
+        // Add reaction
+        await supabase
+          .from('user_certificate_interactions')
+          .insert({
+            user_id: dbUser?.id,
+            certificate_code: 'cert01',
+            card_id: cardId,
+            interaction_type: 'reaction',
+            content: reactionType
+          })
+      }
+
+      // Update local state
+      setUserReactions(prev => ({
+        ...prev,
+        [cardId]: {
+          ...prev[cardId],
+          [reactionType]: !hasReacted
+        }
+      }))
+
+      // Reload cards to update counts
+      loadCards()
+    } catch (error) {
+      console.error('Error handling reaction:', error)
+    }
+  }
+
   const handleComplete = async (cardId: number) => {
     try {
       await supabase
@@ -165,92 +214,142 @@ export default function Cert01Interface({ isOpen, onClose }: Cert01InterfaceProp
     }
   }
 
-  const nextCard = () => {
-    setCurrentCardIndex((prev) => (prev + 1) % learningCards.length)
-  }
-
-  const prevCard = () => {
-    setCurrentCardIndex((prev) => (prev - 1 + learningCards.length) % learningCards.length)
-  }
-
   if (!isOpen) return null
 
   return (
     <>
-      <div className="fixed inset-0 z-50 bg-black bg-opacity-50 flex items-center justify-center p-4">
-        <div className="bg-white rounded-lg shadow-xl max-w-md w-full max-h-[90vh] overflow-hidden">
-          {/* Header */}
-          <div className="flex items-center justify-between p-4 border-b">
-            <h2 className="text-lg font-semibold">Learning Journey</h2>
-            <Button variant="ghost" size="sm" onClick={onClose}>
-              <X className="h-5 w-5" />
-            </Button>
-          </div>
+      {/* Full screen overlay */}
+      <div className="fixed inset-0 z-50 bg-white">
+        {/* Header */}
+        <div className="flex items-center justify-between p-4 border-b bg-white">
+          <h1 className="text-xl font-bold">Learning Journey Certificate</h1>
+          <Button variant="ghost" size="sm" onClick={onClose}>
+            <X className="h-6 w-6" />
+          </Button>
+        </div>
 
-          {/* Progress indicator */}
-          <div className="px-4 py-2 bg-gray-50">
-            <div className="flex justify-between items-center text-sm text-gray-600">
-              <span>Card {currentCardIndex + 1} of {learningCards.length}</span>
-              <div className="flex gap-1">
-                {learningCards.map((_, index) => (
-                  <div
-                    key={index}
-                    className={`w-2 h-2 rounded-full ${
-                      index === currentCardIndex ? 'bg-blue-500' : 'bg-gray-300'
-                    }`}
-                  />
-                ))}
-              </div>
-            </div>
-          </div>
+        {/* 2x2 Grid of Cards */}
+        <div className="h-[calc(100vh-80px)] p-4">
+          <div className="grid grid-cols-2 gap-4 h-full">
+            {learningCards.map((card) => (
+              <div
+                key={card.id}
+                className="bg-white rounded-lg shadow-lg overflow-hidden cursor-pointer hover:shadow-xl transition-shadow"
+                onClick={() => handleCardClick(card)}
+              >
+                {/* Card Images - was on top, became on bottom */}
+                <div className="relative h-3/5">
+                  {/* WAS image */}
+                  <div className="relative h-1/2">
+                    <img
+                      src={card.wasImage}
+                      alt="Before"
+                      className="w-full h-full object-cover"
+                      onError={(e) => {
+                        const target = e.target as HTMLImageElement
+                        target.src = "/placeholder.svg"
+                      }}
+                    />
+                    <div className="absolute top-2 left-2 bg-red-500 text-white px-2 py-1 rounded text-xs font-medium">
+                      WAS
+                    </div>
+                  </div>
 
-          {/* Card content */}
-          <div className="relative overflow-hidden" style={{ height: '60vh' }}>
-            <div
-              className="flex transition-transform duration-300 ease-in-out"
-              style={{
-                transform: `translateY(-${currentCardIndex * 100}%)`,
-                height: `${learningCards.length * 100}%`
-              }}
-            >
-              {learningCards.map((card) => (
-                <div key={card.id} className="w-full flex-shrink-0 p-4">
-                  <LearningCard
-                    card={card}
-                    isCompleted={progress[card.id] || false}
-                    rating={ratings[card.id] || 0}
-                    onClick={() => handleCardClick(card)}
-                    onRate={(rating: number) => handleRating(card.id, rating)}
-                    onComplete={() => handleComplete(card.id)}
-                  />
+                  {/* BECAME image */}
+                  <div className="relative h-1/2">
+                    <img
+                      src={card.becameImage}
+                      alt="After"
+                      className="w-full h-full object-cover"
+                      onError={(e) => {
+                        const target = e.target as HTMLImageElement
+                        target.src = "/placeholder.svg"
+                      }}
+                    />
+                    <div className="absolute top-2 right-2 bg-green-500 text-white px-2 py-1 rounded text-xs font-medium">
+                      BECAME
+                    </div>
+                  </div>
                 </div>
-              ))}
-            </div>
-          </div>
 
-          {/* Navigation */}
-          <div className="flex justify-between items-center p-4 border-t bg-gray-50">
-            <Button
-              variant="outline"
-              onClick={prevCard}
-              disabled={currentCardIndex === 0}
-            >
-              <ChevronUp className="h-4 w-4 mr-2" />
-              Previous
-            </Button>
+                {/* Card Content */}
+                <div className="p-3 h-2/5 flex flex-col">
+                  <h3 className="font-semibold text-sm mb-1 line-clamp-2">{card.title}</h3>
+                  <p className="text-xs text-gray-600 mb-2 line-clamp-2">{card.description}</p>
 
-            <div className="text-sm text-gray-500">
-              Swipe or use buttons to navigate
-            </div>
+                  {/* Rating Stars */}
+                  <div className="flex items-center gap-1 mb-2">
+                    {[1, 2, 3].map((star) => (
+                      <button
+                        key={star}
+                        onClick={(e) => {
+                          e.stopPropagation()
+                          handleRating(card.id, star)
+                        }}
+                        className="focus:outline-none"
+                      >
+                        <Star
+                          className={`h-4 w-4 ${
+                            star <= (ratings[card.id] || 0)
+                              ? 'text-yellow-400 fill-current'
+                              : 'text-gray-300'
+                          }`}
+                        />
+                      </button>
+                    ))}
+                  </div>
 
-            <Button
-              variant="outline"
-              onClick={nextCard}
-              disabled={currentCardIndex === learningCards.length - 1}
-            >
-              Next
-              <ChevronDown className="h-4 w-4 ml-2" />
-            </Button>
+                  {/* Reactions - only show if user hasn't reacted */}
+                  {!userReactions[card.id] && (
+                    <div className="flex items-center gap-1 mb-2">
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation()
+                          handleReaction(card.id, 'heart')
+                        }}
+                        className="flex items-center gap-1 px-2 py-1 rounded border hover:bg-gray-50"
+                      >
+                        <Heart className="h-3 w-3" />
+                        <span className="text-xs">{card.reaction_counts?.heart || 0}</span>
+                      </button>
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation()
+                          handleReaction(card.id, 'thumbs_up')
+                        }}
+                        className="flex items-center gap-1 px-2 py-1 rounded border hover:bg-gray-50"
+                      >
+                        <ThumbsUp className="h-3 w-3" />
+                        <span className="text-xs">{card.reaction_counts?.thumbs_up || 0}</span>
+                      </button>
+                    </div>
+                  )}
+
+                  {/* Complete Button */}
+                  {!progress[card.id] && (
+                    <Button
+                      size="sm"
+                      className="w-full text-xs"
+                      onClick={(e) => {
+                        e.stopPropagation()
+                        handleComplete(card.id)
+                      }}
+                    >
+                      Complete
+                    </Button>
+                  )}
+
+                  {/* Completed Badge */}
+                  {progress[card.id] && (
+                    <div className="text-center">
+                      <span className="inline-block bg-green-100 text-green-800 text-xs px-2 py-1 rounded-full">
+                        ✓ Completed
+                      </span>
+                    </div>
+                  )}
+                </div>
+              </div>
+            ))}
           </div>
         </div>
       </div>
