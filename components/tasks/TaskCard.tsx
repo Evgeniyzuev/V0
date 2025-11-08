@@ -215,31 +215,55 @@ export default function TaskCard({ goal, onUpdated }: TaskCardProps) {
               <div className="mt-4 p-3 bg-orange-50 rounded-lg border border-orange-200">
                 <h4 className="font-medium mb-2 text-orange-800">Daily Streak</h4>
                 <div className="flex items-center justify-between">
-                  <div className="text-sm text-orange-700">
-                    {(() => {
-                      const today = new Date().toISOString().split('T')[0]
-                      const lastStreakDate = goal.last_streak_date
+                <div className={`text-sm ${
+                  (() => {
+                    const today = new Date().toISOString().split('T')[0]
+                    const lastStreakDate = goal.last_streak_date
 
-                      if (lastStreakDate === today) {
-                        return "Already marked today! Come back tomorrow."
-                      }
+                    if (lastStreakDate === today) {
+                      return "text-green-700" // Marked today - green
+                    }
 
-                      if (!lastStreakDate) {
-                        return "Ready to mark today's progress!"
-                      }
+                    if (!lastStreakDate) {
+                      return "text-yellow-700" // Ready to mark - yellow
+                    }
 
-                      // Check if streak is broken (more than 1 day gap)
-                      const yesterday = new Date()
-                      yesterday.setDate(yesterday.getDate() - 1)
-                      const yesterdayStr = yesterday.toISOString().split('T')[0]
+                    // Check if streak is broken (more than 1 day gap)
+                    const yesterday = new Date()
+                    yesterday.setDate(yesterday.getDate() - 1)
+                    const yesterdayStr = yesterday.toISOString().split('T')[0]
 
-                      if (lastStreakDate === yesterdayStr) {
-                        return "Ready to mark today's progress!"
-                      } else {
-                        return "Streak was broken. Starting fresh today!"
-                      }
-                    })()}
-                  </div>
+                    if (lastStreakDate === yesterdayStr) {
+                      return "text-yellow-700" // Ready to mark - yellow
+                    } else {
+                      return "text-red-700" // Streak reset - red
+                    }
+                  })()
+                }`}>
+                  {(() => {
+                    const today = new Date().toISOString().split('T')[0]
+                    const lastStreakDate = goal.last_streak_date
+
+                    if (lastStreakDate === today) {
+                      return "Already marked today! Come back tomorrow."
+                    }
+
+                    if (!lastStreakDate) {
+                      return "Ready to mark today's progress!"
+                    }
+
+                    // Check if streak is broken (more than 1 day gap)
+                    const yesterday = new Date()
+                    yesterday.setDate(yesterday.getDate() - 1)
+                    const yesterdayStr = yesterday.toISOString().split('T')[0]
+
+                    if (lastStreakDate === yesterdayStr) {
+                      return "Ready to mark today's progress!"
+                    } else {
+                      return "Streak was broken. Starting fresh today!"
+                    }
+                  })()}
+                </div>
                   <Button
                     onClick={async () => {
                       if (!Array.isArray(goal?.subtasks)) return
