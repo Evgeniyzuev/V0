@@ -15,6 +15,14 @@ export interface Task {
   notes: string | null;
   number: number;
   completion_condition: string | null;
+  verification_type: 'manual' | 'pdf_open' | 'cert' | 'custom';
+  materials?: Array<{
+    type: 'pdf' | 'link' | 'video';
+    url: string;
+    title: string;
+    downloadable?: boolean;
+  }>;
+  verification_config?: Record<string, any>;
 }
 
 /**

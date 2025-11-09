@@ -32,6 +32,14 @@ type Challenge = {
   current_step_index: number
   progress_details: string
   steps_total?: number
+  verification_type: 'manual' | 'pdf_open' | 'cert' | 'custom'
+  materials?: Array<{
+    type: 'pdf' | 'link' | 'video'
+    url: string
+    title: string
+    downloadable?: boolean
+  }>
+  verification_config?: Record<string, any>
 }
 
 export default function ChallengesTab() {
@@ -56,6 +64,7 @@ export default function ChallengesTab() {
   const [taskEditorOpen, setTaskEditorOpen] = useState(false)
   const [taskEditorInitial, setTaskEditorInitial] = useState<any>(null)
   const [buttonPhase, setButtonPhase] = useState<'accept' | 'start' | 'check'>('accept')
+  const [pdfOpened, setPdfOpened] = useState<Record<number, boolean>>({})
   const tasksLoadedRef = useRef<string | null>(null)
 
   const onTaskComplete = useCallback((taskNumber: number, reward: number, oldCore: number, newCore: number) => {
@@ -181,6 +190,122 @@ export default function ChallengesTab() {
         return tasks.filter((task) => task.status === 'assigned' || task.status === 'in_progress')
     }
   }
+
+  const renderMaterials = (task: Challenge) => {
+    if (!task.materials || task.materials.length === 0) return null;
+
+    return (
+      <div className="mb-4">
+        <h4 className="font-medium mb-2 text-gray-700">Materials</h4>
+        <div className="space-y-2">
+          {task.materials.map((material, index) => {
+            switch (material.type) {
+              case 'pdf':
+                return (
+                  <div key={index} className="flex gap-2">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => {
+                        window.open(material.url, '_blank');
+                        if (task.verification_type === 'pdf_open') {
+                          setPdfOpened(prev => ({ ...prev, [task.number]: true }));
+                        }
+                      }}
+                    >
+                      📄 Open PDF: {material.title}
+                    </Button>
+                    {material.downloadable && (
+                      <a
+                        href={material.url}
+                        download={`${material.title}.pdf`}
+                        className="inline-flex items-center px-3 py-2 border border-gray-300 shadow-sm text-sm leading-4 font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+                      >
+                        ⬇️ Download
+                      </a>
+                    )}
+                  </div>
+                );
+              case 'link':
+                return (
+                  <Button
+                    key={index}
+                    variant="outline"
+                    size="sm"
+                    onClick={() => window.open(material.url, '_blank')}
+                  >
+                    🔗 Open Link: {material.title}
+                  </Button>
+                );
+              case 'video':
+                return (
+                  <Button
+                    key={index}
+                    variant="outline"
+                    size="sm"
+                    onClick={() => window.open(material.url, '_blank')}
+                  >
+                    🎥 Watch Video: {material.title}
+                  </Button>
+                );
+              default:
+                return null;
+            }
+          })}
+        </div>
+      </div>
+    );
+  };
+
+  const handleVerification = (task: Challenge) => {
+    switch (task.verification_type) {
+      case 'pdf_open':
+        if (!pdfOpened[task.number]) {
+          // Open PDF first
+          const pdfMaterial = task.materials?.find(m => m.type === 'pdf');
+          if (pdfMaterial) {
+            window.open(pdfMaterial.url, '_blank');
+            setPdfOpened(prev => ({ ...prev, [task.number]: true }));
+          }
+        } else {
+          // PDF already opened, proceed to verification
+          handleTaskVerification(task.number, goals);
+          setSelectedTask(null);
+        }
+        break;
+      case 'cert':
+        setSelectedTask(null);
+        setCert01InterfaceOpen(true);
+        break;
+      default:
+        handleTaskVerification(task.number, goals);
+        setSelectedTask(null);
+    }
+  };
+
+  const getButtonConfig = (task: Challenge) => {
+    if (task.status === 'assigned') {
+      return { text: 'Accept Challenge', action: () => handleAcceptTask(task.number), icon: Check };
+    }
+
+    if (task.status === 'in_progress') {
+      switch (task.verification_type) {
+        case 'pdf_open':
+          return {
+            text: pdfOpened[task.number] ? 'Check Challenge' : 'Open PDF & Start',
+            action: () => handleVerification(task),
+            icon: pdfOpened[task.number] ? Check : Play,
+            disabled: false
+          };
+        case 'cert':
+          return { text: '🎓 Start Certificate Journey', action: () => handleVerification(task), icon: null };
+        default:
+          return { text: 'Start Challenge', action: () => setButtonPhase('check'), icon: Play };
+      }
+    }
+
+    return { text: 'Check Challenge', action: () => handleVerification(task), icon: Check };
+  };
 
   if (isUserLoading) {
     return <div className="flex items-center justify-center h-full">Loading user data...</div>
@@ -382,9 +507,9 @@ export default function ChallengesTab() {
               key={task.number}
               className="image-item animate-fade-in rounded overflow-hidden shadow-md aspect-square cursor-pointer"
               onClick={() => {
-                console.log('Clicked task:', task.number, task.title, 'condition:', task.completion_condition)
-                if (task.completion_condition?.startsWith('Cert')) {
-                  console.log('Launching certificate interface for:', task.completion_condition)
+                console.log('Clicked task:', task.number, task.title, 'verification_type:', task.verification_type)
+                if (task.verification_type === 'cert') {
+                  console.log('Launching certificate interface for:', task.verification_type)
                   // Launch certificate interface
                   setCert01InterfaceOpen(true)
                 } else {
@@ -438,48 +563,31 @@ export default function ChallengesTab() {
                   <div>
                     <h2 className="text-2xl font-bold mb-2">{selectedTask.title}</h2>
                     <p className="text-gray-600">{selectedTask.description}</p>
+                    {renderMaterials(selectedTask)}
                   </div>
                   <div className="flex gap-2">
-                    {selectedTask.completion_condition?.startsWith('Cert') && (
-                      <Button
-                        className="bg-gradient-to-r from-purple-500 to-blue-500 hover:from-purple-600 hover:to-blue-600 text-white"
-                        onClick={() => {
-                          setSelectedTask(null);
-                          setCert01InterfaceOpen(true);
-                        }}
-                      >
-                        🎓 Start Certificate Journey
-                      </Button>
-                    )}
-                    {selectedTask.status !== 'completed' && !selectedTask.completion_condition?.startsWith('Cert') && (
-                      (() => {
-                        const buttonConfigs = {
-                          accept: { text: 'Accept Challenge', action: () => handleAcceptTask(selectedTask.number), icon: Check },
-                          start: { text: 'Start Challenge', action: () => setButtonPhase('check'), icon: Play },
-                          check: { text: 'Check Challenge', action: () => { handleTaskVerification(selectedTask.number, goals); setSelectedTask(null); }, icon: Check }
-                        }
-                        const config = buttonConfigs[buttonPhase]
-                        return (
-                          <Button
-                            className="bg-blue-500 hover:bg-blue-600 text-white"
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              config.action()
-                            }}
-                            disabled={verifying && buttonPhase === 'check'}
-                          >
-                            {verifying && buttonPhase === 'check' ? (
-                              <span className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></span>
-                            ) : (
-                              <>
-                                <config.icon className="h-4 w-4 mr-2" />
-                                {config.text}
-                              </>
-                            )}
-                          </Button>
-                        )
-                      })()
-                    )}
+                    {selectedTask.status !== 'completed' && (() => {
+                      const config = getButtonConfig(selectedTask);
+                      return (
+                        <Button
+                          className={selectedTask.verification_type === 'cert' ? "bg-gradient-to-r from-purple-500 to-blue-500 hover:from-purple-600 hover:to-blue-600 text-white" : "bg-blue-500 hover:bg-blue-600 text-white"}
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            config.action();
+                          }}
+                          disabled={verifying || config.disabled}
+                        >
+                          {verifying ? (
+                            <span className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></span>
+                          ) : (
+                            <>
+                              {config.icon && <config.icon className="h-4 w-4 mr-2" />}
+                              {config.text}
+                            </>
+                          )}
+                        </Button>
+                      );
+                    })()}
                     <Button
                       variant="outline"
                       onClick={() => {
