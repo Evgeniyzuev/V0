@@ -153,7 +153,7 @@ export default function TaskEditor({ open, onClose, onSuccess, initial }: TaskEd
   if (!open) return null
 
   return (
-    <div className="fixed inset-0 z-50 bg-white flex flex-col">
+    <div className="fixed inset-0 z-[100] bg-white flex flex-col">
       <div className="flex items-center justify-between p-4 border-b">
         <Button variant="ghost" size="sm" onClick={onClose} className="flex items-center gap-2">
           <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
