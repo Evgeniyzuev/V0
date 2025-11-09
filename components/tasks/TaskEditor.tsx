@@ -153,83 +153,103 @@ export default function TaskEditor({ open, onClose, onSuccess, initial }: TaskEd
   if (!open) return null
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4">
-      <div className="w-full max-w-2xl bg-white rounded-lg p-6">
-        <h3 className="text-lg font-semibold mb-2">Create Task</h3>
+    <div className="fixed inset-0 z-50 bg-white flex flex-col">
+      <div className="flex items-center justify-between p-4 border-b">
+        <Button variant="ghost" size="sm" onClick={onClose} className="flex items-center gap-2">
+          <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+          </svg>
+          Back
+        </Button>
+        <h3 className="text-lg font-semibold">Create Task</h3>
+        <div className="w-16"></div>
+      </div>
 
-        <div className="space-y-3 mb-4">
-          <Input placeholder="Title" value={title} onChange={(e) => setTitle(e.target.value)} />
-          <Textarea placeholder="Description" value={description || ""} onChange={(e) => setDescription(e.target.value)} rows={4} />
-        </div>
+      <div className="flex-1 overflow-y-auto p-4">
+        <div className="space-y-4">
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">Title</label>
+            <Input placeholder="Enter task title" value={title} onChange={(e) => setTitle(e.target.value)} />
+          </div>
 
-        <div className="mb-4">
-          <div className="flex items-center justify-between mb-2">
-            <h4 className="font-medium">Checklist</h4>
-            <Button size="sm" onClick={addSubtask}>Add</Button>
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">Description</label>
+            <Textarea placeholder="Enter task description" value={description || ""} onChange={(e) => setDescription(e.target.value)} rows={4} />
           </div>
-          <div className="space-y-2">
-            {subtasks.map((st) => (
-              <div key={st.id} className="flex gap-2 items-center">
-                <input type="checkbox" checked={st.completed} onChange={(e) => updateSubtask(st.id, { completed: e.target.checked })} />
-                <Input value={st.title} onChange={(e) => updateSubtask(st.id, { title: e.target.value })} className="flex-1" />
-                <Button variant="ghost" size="sm" onClick={() => removeSubtask(st.id)}>Remove</Button>
-              </div>
-            ))}
-            {!subtasks.length && <div className="text-sm text-gray-500">No subtasks yet</div>}
-          </div>
-        </div>
 
-        <div className="mb-4">
-          <div className="flex items-center justify-between mb-2">
-            <h4 className="font-medium">Resources</h4>
-            <Button size="sm" onClick={addResource}>Add</Button>
-          </div>
-          <div className="space-y-2">
-            {resources.map((res) => (
-              <div key={res.id} className="flex gap-2 items-center">
-                <select value={res.type} onChange={(e) => updateResource(res.id, { type: e.target.value as any })}>
-                  <option value="link">Link</option>
-                  <option value="text">Text</option>
-                  <option value="image">Image</option>
-                </select>
-                <Input value={res.title || ""} placeholder="Title (optional)" onChange={(e) => updateResource(res.id, { title: e.target.value })} />
-                <Input value={res.content} placeholder="URL or text" onChange={(e) => updateResource(res.id, { content: e.target.value })} className="flex-1" />
-                <Button variant="ghost" size="sm" onClick={() => removeResource(res.id)}>Remove</Button>
-              </div>
-            ))}
-            {!resources.length && <div className="text-sm text-gray-500">No resources yet</div>}
-          </div>
-        </div>
-
-        <div className="mb-4 p-3 bg-orange-50 rounded-lg border border-orange-200">
-          <div className="flex items-center justify-between mb-2">
-            <h4 className="font-medium text-orange-800">Daily Streak Task</h4>
-            <Switch checked={isStreakTask} onCheckedChange={setIsStreakTask} />
-          </div>
-          {isStreakTask && (
-            <div className="space-y-2">
-              <div className="flex items-center gap-2">
-                <label className="text-sm text-orange-700">Total days:</label>
-                <Input
-                  type="number"
-                  min="1"
-                  max="365"
-                  value={totalStreakDays}
-                  onChange={(e) => setTotalStreakDays(parseInt(e.target.value) || 30)}
-                  className="w-20"
-                />
-              </div>
-              <p className="text-xs text-orange-600">
-                Mark this task as completed each day for {totalStreakDays} consecutive days.
-                You can only mark one day per calendar day.
-              </p>
+          <div>
+            <div className="flex items-center justify-between mb-3">
+              <h4 className="font-medium text-gray-900">Checklist</h4>
+              <Button size="sm" onClick={addSubtask}>Add Item</Button>
             </div>
-          )}
-        </div>
+            <div className="space-y-2">
+              {subtasks.map((st) => (
+                <div key={st.id} className="flex gap-2 items-center">
+                  <input type="checkbox" checked={st.completed} onChange={(e) => updateSubtask(st.id, { completed: e.target.checked })} />
+                  <Input value={st.title} onChange={(e) => updateSubtask(st.id, { title: e.target.value })} className="flex-1" />
+                  <Button variant="ghost" size="sm" onClick={() => removeSubtask(st.id)}>Remove</Button>
+                </div>
+              ))}
+              {!subtasks.length && <div className="text-sm text-gray-500">No subtasks yet</div>}
+            </div>
+          </div>
 
-        <div className="flex gap-2 justify-end">
-          <Button variant="ghost" onClick={onClose}>Cancel</Button>
-          <Button onClick={handleSave} disabled={isSaving}>{isSaving ? "Saving..." : "Save Task"}</Button>
+          <div>
+            <div className="flex items-center justify-between mb-3">
+              <h4 className="font-medium text-gray-900">Resources</h4>
+              <Button size="sm" onClick={addResource}>Add Resource</Button>
+            </div>
+            <div className="space-y-2">
+              {resources.map((res) => (
+                <div key={res.id} className="flex gap-2 items-center">
+                  <select value={res.type} onChange={(e) => updateResource(res.id, { type: e.target.value as any })}>
+                    <option value="link">Link</option>
+                    <option value="text">Text</option>
+                    <option value="image">Image</option>
+                  </select>
+                  <Input value={res.title || ""} placeholder="Title (optional)" onChange={(e) => updateResource(res.id, { title: e.target.value })} />
+                  <Input value={res.content} placeholder="URL or text" onChange={(e) => updateResource(res.id, { content: e.target.value })} className="flex-1" />
+                  <Button variant="ghost" size="sm" onClick={() => removeResource(res.id)}>Remove</Button>
+                </div>
+              ))}
+              {!resources.length && <div className="text-sm text-gray-500">No resources yet</div>}
+            </div>
+          </div>
+
+          <div className="p-4 bg-orange-50 rounded-lg border border-orange-200">
+            <div className="flex items-center justify-between mb-3">
+              <h4 className="font-medium text-orange-800">Daily Streak Task</h4>
+              <Switch checked={isStreakTask} onCheckedChange={setIsStreakTask} />
+            </div>
+            {isStreakTask && (
+              <div className="space-y-3">
+                <div className="flex items-center gap-2">
+                  <label className="text-sm text-orange-700">Total days:</label>
+                  <Input
+                    type="number"
+                    min="1"
+                    max="365"
+                    value={totalStreakDays}
+                    onChange={(e) => setTotalStreakDays(parseInt(e.target.value) || 30)}
+                    className="w-20"
+                  />
+                </div>
+                <p className="text-xs text-orange-600">
+                  Mark this task as completed each day for {totalStreakDays} consecutive days.
+                  You can only mark one day per calendar day.
+                </p>
+              </div>
+            )}
+          </div>
+        </div>
+      </div>
+
+      <div className="p-4 border-t bg-white">
+        <div className="flex gap-3 justify-end">
+          <Button variant="outline" onClick={onClose}>Cancel</Button>
+          <Button onClick={handleSave} disabled={isSaving || !title.trim()}>
+            {isSaving ? "Saving..." : "Save Task"}
+          </Button>
         </div>
       </div>
     </div>

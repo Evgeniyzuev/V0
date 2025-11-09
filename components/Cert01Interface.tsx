@@ -137,17 +137,45 @@ export default function Cert01Interface({ isOpen, onClose }: Cert01InterfaceProp
   }
 
   const handleRating = async (cardId: number, rating: number) => {
-    if (!dbUser?.id) return
+    if (!dbUser?.id) {
+      console.error('No user ID available')
+      return
+    }
+
+    console.log('Saving rating:', { userId: dbUser.id, cardId, rating })
 
     try {
-      await supabase
+      // First try to update existing row
+      const { data: updateData, error: updateError } = await supabase
         .from('user_certificate_interactions')
-        .upsert({
-          user_id: dbUser.id,
-          certificate_code: 'cert01',
-          card_id: cardId,
-          rating: rating
-        })
+        .update({ rating: rating })
+        .eq('user_id', dbUser.id)
+        .eq('certificate_code', 'cert01')
+        .eq('card_id', cardId)
+        .select()
+
+      if (updateError || !updateData || updateData.length === 0) {
+        console.log('Update failed or no existing row, trying insert')
+        // If update failed or no row exists, insert new row
+        const { data: insertData, error: insertError } = await supabase
+          .from('user_certificate_interactions')
+          .insert({
+            user_id: dbUser.id,
+            certificate_code: 'cert01',
+            card_id: cardId,
+            rating: rating
+          })
+          .select()
+
+        if (insertError) {
+          console.error('Rating insert error:', insertError)
+          throw insertError
+        }
+
+        console.log('Rating inserted successfully:', insertData)
+      } else {
+        console.log('Rating updated successfully:', updateData)
+      }
 
       setRatings(prev => ({ ...prev, [cardId]: rating }))
     } catch (error) {
@@ -176,19 +204,36 @@ export default function Cert01Interface({ isOpen, onClose }: Cert01InterfaceProp
         console.log('Adding reaction, new array:', newReactions)
       }
 
-      // Upsert the entire row with updated reactions
-      const { error } = await supabase
+      // First try to update existing row
+      const { data: updateData, error: updateError } = await supabase
         .from('user_certificate_interactions')
-        .upsert({
-          user_id: dbUser.id,
-          certificate_code: 'cert01',
-          card_id: cardId,
-          reactions: newReactions
-        })
+        .update({ reactions: newReactions })
+        .eq('user_id', dbUser.id)
+        .eq('certificate_code', 'cert01')
+        .eq('card_id', cardId)
+        .select()
 
-      if (error) {
-        console.error('Upsert error:', error)
-        throw error
+      if (updateError || !updateData || updateData.length === 0) {
+        console.log('Update failed or no existing row, trying insert')
+        // If update failed or no row exists, insert new row
+        const { data: insertData, error: insertError } = await supabase
+          .from('user_certificate_interactions')
+          .insert({
+            user_id: dbUser.id,
+            certificate_code: 'cert01',
+            card_id: cardId,
+            reactions: newReactions
+          })
+          .select()
+
+        if (insertError) {
+          console.error('Reaction insert error:', insertError)
+          throw insertError
+        }
+
+        console.log('Reaction inserted successfully:', insertData)
+      } else {
+        console.log('Reaction updated successfully:', updateData)
       }
 
       // Update local state
@@ -211,15 +256,40 @@ export default function Cert01Interface({ isOpen, onClose }: Cert01InterfaceProp
   const handleComplete = async (cardId: number) => {
     if (!dbUser?.id) return
 
+    console.log('Marking complete:', { userId: dbUser.id, cardId })
+
     try {
-      await supabase
+      // First try to update existing row
+      const { data: updateData, error: updateError } = await supabase
         .from('user_certificate_interactions')
-        .upsert({
-          user_id: dbUser.id,
-          certificate_code: 'cert01',
-          card_id: cardId,
-          progress: 'completed'
-        })
+        .update({ progress: 'completed' })
+        .eq('user_id', dbUser.id)
+        .eq('certificate_code', 'cert01')
+        .eq('card_id', cardId)
+        .select()
+
+      if (updateError || !updateData || updateData.length === 0) {
+        console.log('Update failed or no existing row, trying insert')
+        // If update failed or no row exists, insert new row
+        const { data: insertData, error: insertError } = await supabase
+          .from('user_certificate_interactions')
+          .insert({
+            user_id: dbUser.id,
+            certificate_code: 'cert01',
+            card_id: cardId,
+            progress: 'completed'
+          })
+          .select()
+
+        if (insertError) {
+          console.error('Complete insert error:', insertError)
+          throw insertError
+        }
+
+        console.log('Complete inserted successfully:', insertData)
+      } else {
+        console.log('Complete updated successfully:', updateData)
+      }
 
       setProgress(prev => ({ ...prev, [cardId]: true }))
     } catch (error) {
