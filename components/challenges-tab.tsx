@@ -1,7 +1,7 @@
 "use client"
 
 import { useState, useEffect, useCallback, useRef } from "react"
-import { Calendar, Tag, ChevronDown, ChevronUp, Check, User, Trophy, X } from "lucide-react"
+import { Calendar, Tag, ChevronDown, ChevronUp, Check, User, Trophy, X, Play } from "lucide-react"
 import { createClientSupabaseClient } from "@/lib/supabase"
 import { useUser } from "@/components/UserContext"
 import { Button } from "@/components/ui/button"
@@ -55,6 +55,7 @@ export default function ChallengesTab() {
   const [cert01InterfaceOpen, setCert01InterfaceOpen] = useState(false)
   const [taskEditorOpen, setTaskEditorOpen] = useState(false)
   const [taskEditorInitial, setTaskEditorInitial] = useState<any>(null)
+  const [buttonPhase, setButtonPhase] = useState<'accept' | 'start' | 'check'>('accept')
   const tasksLoadedRef = useRef<string | null>(null)
 
   const onTaskComplete = useCallback((taskNumber: number, reward: number, oldCore: number, newCore: number) => {
@@ -121,6 +122,22 @@ export default function ChallengesTab() {
     }
   }, [dbUser?.id])
 
+  const handleAcceptTask = useCallback(async (taskNumber: number) => {
+    try {
+      const { error } = await supabase
+        .from('user_tasks')
+        .update({ status: 'in_progress' })
+        .eq('user_id', dbUser!.id)
+        .eq('task_id', taskNumber)
+      if (error) throw error
+      setSelectedTask(prev => prev ? { ...prev, status: 'in_progress' } : null)
+      fetchTasks(true)
+      setStatusMessage({ type: 'success', text: 'Challenge accepted!' })
+    } catch (err) {
+      setStatusMessage({ type: 'error', text: 'Failed to accept challenge' })
+    }
+  }, [dbUser, fetchTasks])
+
   useEffect(() => {
     if (dbUser?.id) {
       fetchTasks()
@@ -133,6 +150,18 @@ export default function ChallengesTab() {
   useEffect(() => {
     tasksLoadedRef.current = null
   }, [dbUser?.id])
+
+  useEffect(() => {
+    if (selectedTask) {
+      if (selectedTask.status === 'assigned') {
+        setButtonPhase('accept')
+      } else if (selectedTask.status === 'in_progress') {
+        setButtonPhase('start')
+      } else {
+        setButtonPhase('check')
+      }
+    }
+  }, [selectedTask])
 
   const toggleTaskExpansion = (taskNumber: number) => {
     if (expandedTaskId === taskNumber) {
@@ -389,8 +418,7 @@ export default function ChallengesTab() {
       {/* Task Detail Modal */}
       {selectedTask && (
         <Dialog open={!!selectedTask} onOpenChange={() => setSelectedTask(null)}>
-          <div className="fixed inset-0 z-50 flex items-center justify-center">
-            <div className="bg-white rounded-lg shadow-xl max-w-3xl w-full mx-4 max-h-[90vh] overflow-y-auto">
+          <div className="fixed inset-0 z-50 bg-white overflow-y-auto">
               <div className="relative">
                 <img
                   src={selectedTask.icon_url || "/placeholder.svg"}
@@ -424,24 +452,33 @@ export default function ChallengesTab() {
                       </Button>
                     )}
                     {selectedTask.status !== 'completed' && !selectedTask.completion_condition?.startsWith('Cert') && (
-                      <Button
-                        className="bg-blue-500 hover:bg-blue-600 text-white"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          handleTaskVerification(selectedTask.number, goals);
-                          setSelectedTask(null);
-                        }}
-                        disabled={verifying}
-                      >
-                        {verifying ? (
-                          <span className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></span>
-                        ) : (
-                          <>
-                            <Check className="h-4 w-4 mr-2" />
-                            Check Challenge
-                          </>
-                        )}
-                      </Button>
+                      (() => {
+                        const buttonConfigs = {
+                          accept: { text: 'Accept Challenge', action: () => handleAcceptTask(selectedTask.number), icon: Check },
+                          start: { text: 'Start Challenge', action: () => setButtonPhase('check'), icon: Play },
+                          check: { text: 'Check Challenge', action: () => { handleTaskVerification(selectedTask.number, goals); setSelectedTask(null); }, icon: Check }
+                        }
+                        const config = buttonConfigs[buttonPhase]
+                        return (
+                          <Button
+                            className="bg-blue-500 hover:bg-blue-600 text-white"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              config.action()
+                            }}
+                            disabled={verifying && buttonPhase === 'check'}
+                          >
+                            {verifying && buttonPhase === 'check' ? (
+                              <span className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></span>
+                            ) : (
+                              <>
+                                <config.icon className="h-4 w-4 mr-2" />
+                                {config.text}
+                              </>
+                            )}
+                          </Button>
+                        )
+                      })()
                     )}
                     <Button
                       variant="outline"
@@ -509,7 +546,6 @@ export default function ChallengesTab() {
                   </div>
                 )}
               </div>
-            </div>
           </div>
           {taskEditorOpen && (
             <TaskEditor open={taskEditorOpen} onClose={() => setTaskEditorOpen(false)} initial={taskEditorInitial} />
