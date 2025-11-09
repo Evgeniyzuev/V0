@@ -63,7 +63,6 @@ export default function ChallengesTab() {
   const [cert01InterfaceOpen, setCert01InterfaceOpen] = useState(false)
   const [taskEditorOpen, setTaskEditorOpen] = useState(false)
   const [taskEditorInitial, setTaskEditorInitial] = useState<any>(null)
-  const [buttonPhase, setButtonPhase] = useState<'accept' | 'start' | 'check'>('accept')
   const [pdfOpened, setPdfOpened] = useState<Record<number, boolean>>({})
   const tasksLoadedRef = useRef<string | null>(null)
 
@@ -159,18 +158,6 @@ export default function ChallengesTab() {
   useEffect(() => {
     tasksLoadedRef.current = null
   }, [dbUser?.id])
-
-  useEffect(() => {
-    if (selectedTask) {
-      if (selectedTask.status === 'assigned') {
-        setButtonPhase('accept')
-      } else if (selectedTask.status === 'in_progress') {
-        setButtonPhase('start')
-      } else {
-        setButtonPhase('check')
-      }
-    }
-  }, [selectedTask])
 
   const toggleTaskExpansion = (taskNumber: number) => {
     if (expandedTaskId === taskNumber) {
@@ -285,14 +272,14 @@ export default function ChallengesTab() {
 
   const getButtonConfig = (task: Challenge) => {
     if (task.status === 'assigned') {
-      return { text: 'Accept Challenge', action: () => handleAcceptTask(task.number), icon: Check };
+      return { text: 'Accept', action: () => handleAcceptTask(task.number), icon: Check };
     }
 
     if (task.status === 'in_progress') {
       switch (task.verification_type) {
         case 'pdf_open':
           return {
-            text: pdfOpened[task.number] ? 'Check Challenge' : 'Open PDF & Start',
+            text: pdfOpened[task.number] ? 'Check' : 'Open PDF & Start',
             action: () => handleVerification(task),
             icon: pdfOpened[task.number] ? Check : Play,
             disabled: false
@@ -300,11 +287,11 @@ export default function ChallengesTab() {
         case 'cert':
           return { text: '🎓 Start Certificate Journey', action: () => handleVerification(task), icon: null };
         default:
-          return { text: 'Start Challenge', action: () => setButtonPhase('check'), icon: Play };
+          return { text: 'Check', action: () => handleVerification(task), icon: Check };
       }
     }
 
-    return { text: 'Check Challenge', action: () => handleVerification(task), icon: Check };
+    return { text: 'Check', action: () => handleVerification(task), icon: Check };
   };
 
   if (isUserLoading) {
@@ -559,46 +546,47 @@ export default function ChallengesTab() {
               </div>
 
               <div className="p-6">
-                <div className="flex justify-between items-start mb-4">
-                  <div>
-                    <h2 className="text-2xl font-bold mb-2">{selectedTask.title}</h2>
-                    <p className="text-gray-600">{selectedTask.description}</p>
-                    {renderMaterials(selectedTask)}
-                  </div>
-                  <div className="flex gap-2">
-                    {selectedTask.status !== 'completed' && (() => {
-                      const config = getButtonConfig(selectedTask);
-                      return (
-                        <Button
-                          className={selectedTask.verification_type === 'cert' ? "bg-gradient-to-r from-purple-500 to-blue-500 hover:from-purple-600 hover:to-blue-600 text-white" : "bg-blue-500 hover:bg-blue-600 text-white"}
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            config.action();
-                          }}
-                          disabled={verifying || config.disabled}
-                        >
-                          {verifying ? (
-                            <span className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></span>
-                          ) : (
-                            <>
-                              {config.icon && <config.icon className="h-4 w-4 mr-2" />}
-                              {config.text}
-                            </>
-                          )}
-                        </Button>
-                      );
-                    })()}
-                    <Button
-                      variant="outline"
-                      onClick={() => {
-                        // Prefill TaskEditor with selected challenge info
-                        setTaskEditorInitial({ title: selectedTask.title, description: selectedTask.description, estimated_cost: null, difficulty_level: 1, image_url: selectedTask.icon_url })
-                        setTaskEditorOpen(true)
-                      }}
-                    >
-                      Create Personal Task
-                    </Button>
-                  </div>
+                {/* Buttons at the top */}
+                <div className="flex gap-2 mb-6">
+                  {selectedTask.status !== 'completed' && (() => {
+                    const config = getButtonConfig(selectedTask);
+                    return (
+                      <Button
+                        className={selectedTask.verification_type === 'cert' ? "bg-gradient-to-r from-purple-500 to-blue-500 hover:from-purple-600 hover:to-blue-600 text-white" : "bg-blue-500 hover:bg-blue-600 text-white"}
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          config.action();
+                        }}
+                        disabled={verifying || config.disabled}
+                      >
+                        {verifying ? (
+                          <span className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></span>
+                        ) : (
+                          <>
+                            {config.icon && <config.icon className="h-4 w-4 mr-2" />}
+                            {config.text}
+                          </>
+                        )}
+                      </Button>
+                    );
+                  })()}
+                  <Button
+                    variant="outline"
+                    onClick={() => {
+                      // Prefill TaskEditor with selected challenge info
+                      setTaskEditorInitial({ title: selectedTask.title, description: selectedTask.description, estimated_cost: null, difficulty_level: 1, image_url: selectedTask.icon_url })
+                      setTaskEditorOpen(true)
+                    }}
+                  >
+                    Create Personal Task
+                  </Button>
+                </div>
+
+                {/* Title and description full width below buttons */}
+                <div className="mb-4">
+                  <h2 className="text-2xl font-bold mb-2">{selectedTask.title}</h2>
+                  <p className="text-gray-600">{selectedTask.description}</p>
+                  {renderMaterials(selectedTask)}
                 </div>
 
                 <div className="grid grid-cols-2 gap-4 text-sm text-gray-600 mb-4">
